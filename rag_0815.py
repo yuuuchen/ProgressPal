@@ -7,16 +7,6 @@ Original file is located at
     https://colab.research.google.com/drive/14jAxpxWKDhlFS2xe0hTOhfQiZ7txP5-P
 """
 
-!pip install -U langchain-community langchain-openai langchain-chroma langchain-qdrant langchain-google-vertexai -q
-
-!pip install pypdf -q
-
-!pip install -U sentence-transformers -q
-
-!pip install pdf2image pytesseract
-!apt-get install -y poppler-utils tesseract-ocr
-!apt-get install -y tesseract-ocr-chi-tra  #繁體中文語言包
-
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -83,7 +73,6 @@ for i, doc in enumerate(related_docs, 1):
 
 """Chroma + BM25 混合搜尋"""
 
-!pip install rank_bm25 -q
 
 from rank_bm25 import BM25Okapi
 from sklearn.preprocessing import MinMaxScaler
