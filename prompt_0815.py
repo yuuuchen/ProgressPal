@@ -7,10 +7,6 @@ Original file is located at
     https://colab.research.google.com/drive/1WZxOXf_k4WJRDoBJji2S9D58hEVl2v19
 """
 
-# Commented out IPython magic to ensure Python compatibility.
-!git clone https://github.com/yuuuchen/ProgressPal.git
-# %cd ProgressPal
-
 """Prompt 模板庫（Template Library）"""
 
 # 全域模板庫
