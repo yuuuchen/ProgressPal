@@ -118,7 +118,6 @@ def generate_materials(emotion, materials, stage="初學"):
 {materials_text}
 
 請以自然語言回答，避免使用 Markdown、項目符號或表格，直接用完整句子表達。
-請用 5 句話以內完成回答。
 """
   return prompt
 
@@ -140,24 +139,3 @@ result = generate_prompt(
 
 print("=== Prompt Text ===")
 print(result)
-
-"""找最佳prompt結構"""
-
-test_input = {
-  "emotion": "困惑",
-  "question": "linked list 和 array 差在哪裡？",
-  "materials": [
-      "Linked List 是由節點組成，每個節點包含資料與指向下一個節點的指標。",
-      "Array 的記憶體分配是連續的，存取速度快，但插入與刪除成本高。"
-  ]
-}
-for i in PROMPT_TEMPLATES.keys():
-  CURRENT_PROMPT_MODE = i
-  result = generate_prompt(
-      emotion=test_input["emotion"],
-      question=test_input["question"],
-      materials=test_input["materials"]
-  )
-  print(f"=== Mode：{i} ===")
-  print(result)
-  print("\n")
