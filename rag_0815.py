@@ -7,11 +7,6 @@ Original file is located at
     https://colab.research.google.com/drive/14jAxpxWKDhlFS2xe0hTOhfQiZ7txP5-P
 """
 
-!pip install -U langchain-community langchain-openai langchain-chroma langchain-qdrant langchain-google-vertexai -q
-
-!pip install pypdf -q
-
-!pip install -U sentence-transformers -q
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.embeddings.openai import OpenAIEmbeddings
@@ -76,7 +71,6 @@ for i, doc in enumerate(related_docs, 1):
 
 """Chroma + BM25 混合搜尋"""
 
-!pip install rank_bm25 -q
 
 from rank_bm25 import BM25Okapi
 from sklearn.preprocessing import MinMaxScaler
