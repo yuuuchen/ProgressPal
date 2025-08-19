@@ -139,6 +139,6 @@ def clean_text(text):
   "example": "範例解釋（依照舉例對照、比喻解釋，貼近學生生活或常見案例或程式碼範例）",
   "summary": "總結"
   '''
-  clean_text = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_text, flags=re.MULTILINE).strip()
+  clean_text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text, flags=re.MULTILINE).strip()
   data = json.loads(clean_text)
   return data
