@@ -199,6 +199,7 @@ for i, doc in enumerate(related_docs, 1):
 回傳教材內容
 """
 
+import re
 docs_dict = {}
 
 for doc in docs:
@@ -225,8 +226,6 @@ for unit_code, paragraphs in docs_dict.items():
     for p in paragraphs:
         print(p)
     print("-" * 50)  # 分隔線
-
-import re
 
 #number:使用者輸入單元編號(1,2,3...)
 #docs_dict: key = 單元編號, value = list of 段落文字
