@@ -97,44 +97,50 @@ def generate_prompt(emotion, question, materials, stage='初學'):
 
 # 依照學習階段與情緒產生教材 prompt
 def generate_materials(emotion, materials, stage="初學"):
-  """
-  stage: '初學' 或 '複習'
-  emotion: 學生情緒
-  materials: 教材 str
-  return: 可直接丟給 API 的 prompt
-  """
-  learner_profile = map_emotion_to_profile(emotion)
+    """
+    產生教學用的 prompt
+    ----------
+    stage: '初學' 或 '複習'
+    emotion: 學生情緒
+    materials: 教材文字 (str)
+    return: 可直接丟給 API 的 prompt (str)
+    """
+    learner_profile = map_emotion_to_profile(emotion)
 
-  # 根據學習階段微調說明
-  if stage == '初學':
-      intro = "你是一位老師，正在引導初學者理解以下概念。"
-  else:
-      intro = "你是一位老師，正在協助學生複習以下概念。"
+    # 根據學習階段微調開場說明
+    if stage == '初學':
+        intro = "你是一位老師，正在引導初學者理解以下概念，請用清晰的觀念拆解，並提供基礎範例。"
+    else:
+        intro = "你是一位老師，正在協助學生複習以下概念，請用重點提示的方式，並提供進階範例。"
 
-  #materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
+    rules = f"""
+請嚴格遵守以下規則：
+1. 僅輸出 **合法 JSON**，不要有任何多餘文字、標記或說明。
+2. "teaching" 欄位：解釋核心概念，列出常見迷思，理性陳述，不要使用比喻、故事或情感性描述。
+3. "example" 欄位：提供簡單範例或程式碼示例，貼近學生生活或常見情境，並使用「{learner_profile['style']}」教學策略。
+4. "summary" 欄位：總結重點回顧，簡潔明瞭。
+5. 所有文字必須使用繁體中文，JSON 中的雙引號必須合法，必要時使用 \\" 轉義。
+"""
 
-  prompt = f"""{intro}
-面對一位感到{emotion}的學生，請用{learner_profile['tone']}語氣，教導學生以下內容：
-{materials}
-
-請嚴格遵守以下要求：
-1. 僅輸出合法 JSON，**不要有任何多餘文字、標記或說明**。
-2. teaching 欄位：只解釋核心概念，列出常見迷思，請理性陳述，不要使用比喻、故事或舉例。
-3. example 欄位：提供簡單範例或程式碼示例，貼近學生生活或常見情境。
-4. summary 欄位：總結重點回顧，簡潔明瞭。
-5. 所有文字使用繁體中文，JSON 中的雙引號必須合法，必要時使用 \" 轉義。
-
+    schema = """
 輸出 JSON 格式：
-{{
+{
   "teaching": "",
   "example": "",
   "summary": ""
-}}
+}
 """
 
+    prompt = f"""{intro}
 
-  return prompt
+面對一位感到「{emotion}」的學生，請用「{learner_profile['tone']}」語氣，教導以下教材：
+{materials}
 
+{rules}
+{schema}
+"""
+    return prompt
+    
 """格式整理工具"""
 
 import re
