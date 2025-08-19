@@ -119,9 +119,9 @@ def generate_materials(emotion, materials, stage="初學"):
 
 請輸出 JSON 格式：
 {{
-  "teaching": "教學說明（簡短清楚）",
+  "teaching": "只解釋核心概念，列出常見迷思，避免使用比喻或生活例子。",
   "example": "範例解釋（依照{learner_profile['style']}，貼近學生生活或常見案例或程式碼範例）",
-  "summary": "總結"
+  "summary": "總結，重點回顧"
 }}
 請注意：不要在輸出中加入 ```json 或 ``` 之類的標記。只輸出純粹的 JSON。
 """
