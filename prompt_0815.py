@@ -116,18 +116,13 @@ def generate_materials(emotion, materials, stage="初學"):
   prompt = f"""{intro}
 面對一位感到{emotion}的學生，請用{learner_profile['tone']}語氣，教導學生以下內容：
 {materials}
-
-請輸出 JSON 格式：
+---
+請嚴格遵守輸出 JSON 格式，並且使用繁體中文進行教學：
 {{
   "teaching": "只解釋核心概念，列出常見迷思，請理性陳述。",
   "example": "範例解釋（依照{learner_profile['style']}，貼近學生生活或常見案例或程式碼範例）",
   "summary": "總結，重點回顧"
 }}
-請輸出完全合法 JSON：
-- 使用繁體中文進行教學
-- 只用英文雙引號 "
-- 不要使用中文引號 ‘ ’
-- 不要在字串中出現未轉義的換行符號
 
 """
 
