@@ -100,7 +100,7 @@ def generate_materials(emotion, materials, stage="初學"):
   """
   stage: '初學' 或 '複習'
   emotion: 學生情緒
-  materials: 教材清單 (list of str)
+  materials: 教材 str
   return: 可直接丟給 API 的 prompt
   """
   learner_profile = map_emotion_to_profile(emotion)
@@ -111,11 +111,11 @@ def generate_materials(emotion, materials, stage="初學"):
   else:
       intro = "你是一位老師，正在協助學生複習以下概念。"
 
-  materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
+  #materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
 
   prompt = f"""{intro}
 面對一位感到{emotion}的學生，請用{learner_profile['tone']}語氣，{learner_profile['style']}方式，教導學生以下內容：
-{materials_text}
+{materials}
 
 請以自然語言回答，避免使用 Markdown、項目符號或表格，直接用完整句子表達。
 """
