@@ -123,33 +123,99 @@ def generate_materials(emotion, materials, stage="初學"):
   "example": "範例解釋（依照{learner_profile['style']}，貼近學生生活或常見案例或程式碼範例）",
   "summary": "總結，重點回顧"
 }}
-請注意：不要在輸出中加入 ```json 或 ``` 之類的標記。只輸出純粹的 JSON。
+請輸出完全合法 JSON：
+- 只用英文雙引號 "
+- 不要使用中文引號 ‘ ’
+- 不要在字串中出現未轉義的換行符號
+
 """
 
   return prompt
 
 """格式整理工具"""
 
-import re, json
-def clean_text(text):
-    # 移除 ``` 或 ```json 標記
-    clean_text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text, flags=re.MULTILINE).strip()
-    
-    # 將換行轉成 \n，避免破壞 JSON
-    clean_text = clean_text.replace("\n", "\\n")
-    
-    # 將單引號改成雙引號（若有必要，可再加更複雜處理）
-    clean_text = clean_text.replace("'", '"')
-    
-    # 移除 JSON 最後可能的多餘逗號
-    clean_text = re.sub(r',(\s*})', r'\1', clean_text)
-    
-    # 嘗試解析
-    try:
-        data = json.loads(clean_text)
-        return data
-    except json.JSONDecodeError as e:
-        print("JSON 解析失敗，請檢查輸出內容：", e)
-        print(clean_text[:500])  # 顯示前 500 字做檢查
-        return None
+import re
+import json
 
+def clean_text(raw_text):
+    """
+    將模型回傳的文字轉成 dict 格式。
+    1. 移除 ```json 或 ``` 標記
+    2. 將換行、制表符改成空格
+    3. 嘗試修正單引號 -> 雙引號
+    4. 嘗試解析 JSON，如果失敗回傳空 dict
+    """
+    try:
+        # 移除 ```json 或 ``` 標記
+        text = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_text, flags=re.MULTILINE).strip()
+        # 將換行與制表符轉空格
+        text = text.replace("\n", " ").replace("\t", " ")
+        # 移除多餘空格
+        text = re.sub(r'\s+', ' ', text)
+
+        # 嘗試解析 JSON
+        return json.loads(text)
+    except json.JSONDecodeError:
+        # 嘗試單引號轉雙引號（非標準 JSON 修正）
+        try:
+            text_fixed = text.replace("'", '"')
+            return json.loads(text_fixed)
+        except json.JSONDecodeError:
+            print("⚠ 無法解析為 JSON，回傳空 dict")
+            return {}
+
+"""使用範例："""
+
+test_input = {
+  "emotion": "困惑",
+  "question": "linked list 和 array 差在哪裡？",
+  "materials": [
+      "Linked List 是由節點組成，每個節點包含資料與指向下一個節點的指標。",
+      "Array 的記憶體分配是連續的，存取速度快，但插入與刪除成本高。"
+  ]
+}
+result = generate_prompt(
+    emotion=test_input["emotion"],
+    question=test_input["question"],
+    materials=test_input["materials"]
+)
+
+print("=== Prompt Text ===")
+print(result)
+
+test_input = {
+  "emotion": "困惑",
+  "materials": [
+      "陣列(Array)是將相同資料型別的多個變數結合在一起，每個陣列中 的元素皆可視為變數使用。陣列佔有連續的記憶體空間，提供索引 值(Index)存取陣列內個別元素。 陣列第一個元素其索引值為 0，第二個元素其索引值為 1，第三個元 素其索引值為 2，依此類推，n 個元素的陣列，存取陣列最後一個元 素其索引值為 n-1。"
+  ],
+  "stage":"初學"
+}
+result = generate_materials(
+    emotion=test_input["emotion"],
+    stage=test_input["stage"],
+    materials=test_input["materials"]
+)
+
+print("=== Prompt Text ===")
+print(result)
+
+"""找最佳prompt結構"""
+
+test_input = {
+  "emotion": "困惑",
+  "question": "linked list 和 array 差在哪裡？",
+  "materials": [
+      "Linked List 是由節點組成，每個節點包含資料與指向下一個節點的指標。",
+      "Array 的記憶體分配是連續的，存取速度快，但插入與刪除成本高。"
+  ]
+}
+for i in PROMPT_TEMPLATES.keys():
+  CURRENT_PROMPT_MODE = i
+  result = generate_prompt(
+      emotion=test_input["emotion"],
+      question=test_input["question"],
+      materials=test_input["materials"]
+  )
+  print(f"=== Mode：{i} ===")
+  print(result)
+  print("\n")
