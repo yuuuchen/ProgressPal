@@ -117,8 +117,15 @@ def generate_materials(emotion, materials, stage="初學"):
 面對一位感到{emotion}的學生，請用{learner_profile['tone']}語氣，{learner_profile['style']}方式，教導學生以下內容：
 {materials}
 
-請以自然語言回答，避免使用 Markdown、項目符號或表格，直接用完整句子表達。
+請輸出 JSON 格式：
+{{
+  "teaching": "教學說明（簡短清楚）",
+  "example": "範例解釋（依照{learner_profile['style']}，貼近學生生活或常見案例或程式碼範例）",
+  "summary": "總結"
+}}
+請確保輸出為有效 JSON，避免使用 Markdown 或其他格式。
 """
+
   return prompt
 
 """使用範例："""
