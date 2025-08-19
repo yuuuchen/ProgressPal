@@ -171,6 +171,10 @@ def clean_text(raw_text: str) -> dict:
         elif title == "總結":
             sections["summary"] = content
 
+        if not sections["summary"]:
+          sections["summary"] = "（模型未輸出）"
+
+
     return sections
 
 
