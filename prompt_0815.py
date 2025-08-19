@@ -119,7 +119,7 @@ def generate_materials(emotion, materials, stage="初學"):
 
 請輸出 JSON 格式：
 {{
-  "teaching": "只解釋核心概念，列出常見迷思，避免使用比喻或生活例子。",
+  "teaching": "只解釋核心概念，列出常見迷思，請理性陳述。",
   "example": "範例解釋（依照{learner_profile['style']}，貼近學生生活或常見案例或程式碼範例）",
   "summary": "總結，重點回顧"
 }}
