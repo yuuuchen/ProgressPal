@@ -7,6 +7,11 @@ Original file is located at
     https://colab.research.google.com/drive/14jAxpxWKDhlFS2xe0hTOhfQiZ7txP5-P
 """
 
+!pip install -U langchain-community langchain-openai langchain-chroma langchain-qdrant langchain-google-vertexai -q
+
+!pip install pypdf -q
+
+!pip install -U sentence-transformers -q
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.embeddings.openai import OpenAIEmbeddings
@@ -16,8 +21,12 @@ from langchain.vectorstores import Chroma
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.chains import ConversationalRetrievalChain
 from sentence_transformers import SentenceTransformer
+from langchain.schema import Document
 
-"""Chunk 切分"""
+"""# RecursiveCharacterTextSplitter方法讀取教材(/chroma_db)
+
+Chunk 切分
+"""
 
 #載入教材PDF
 loader = PyPDFLoader("/content/drive/MyDrive/專題/教材/CH3陣列_整理版.pdf")
@@ -28,8 +37,8 @@ docs = text_splitter.split_documents(documents)
 
 print(f"共分成 {len(docs)} 段")
 
-for i, chunk in enumerate(docs, 1):
-  print(f"段落 {i}:\n{chunk.page_content}\n{'-'*50}")
+# for i, chunk in enumerate(docs, 1):
+#   print(f"段落 {i}:\n{chunk.page_content}\n{'-'*50}")
 
 """Embeddings"""
 
@@ -43,7 +52,7 @@ vectorstore.persist()
 
 """將使用者問題轉成向量，找教材裡最相似的幾段內容
 
-Chroma
+**Chroma**
 """
 
 def retrieve_docs_rc(query, top_k):
@@ -69,8 +78,9 @@ print("找到的相關教材段落：")
 for i, doc in enumerate(related_docs, 1):
   print(f"{i}. {doc}\n")
 
-"""Chroma + BM25 混合搜尋"""
+"""**Chroma + BM25 混合搜尋**"""
 
+!pip install rank_bm25 -q
 
 from rank_bm25 import BM25Okapi
 from sklearn.preprocessing import MinMaxScaler
@@ -121,7 +131,7 @@ print("找到的相關教材段落：")
 for i, doc in enumerate(related_docs, 1):
   print(f"{i}. {doc}\n")
 
-"""**MarkdownHeaderTextSplitter方法讀取教材**
+"""# MarkdownHeaderTextSplitter方法讀取教材(/chroma_db_md)
 
 Chunk 切分
 """
@@ -161,7 +171,7 @@ embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 """用Chroma建立向量庫
 
-Chroma
+**Chroma**
 """
 
 vectorstore = Chroma.from_documents(docs, embeddings, persist_directory="/content/drive/MyDrive/專題/程式碼專區/chroma_db_md")
@@ -171,7 +181,7 @@ vectorstore.persist()
 
 """
 
-def retrieve_docs_md(query, top_k):
+def retrieve_docs_md(query, top_k=3):
   #載入Embeddings和Chroma向量庫
   embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
   vectorstore = Chroma(persist_directory="/content/drive/MyDrive/專題/程式碼專區/chroma_db_md", embedding_function=embeddings)
@@ -180,26 +190,113 @@ def retrieve_docs_md(query, top_k):
   related_texts = []
 
   for doc, score in results:
-    if score <= 1:
+    #if score <= 1:
       related_texts.append((doc.page_content))
 
   return related_texts #回傳成一個list
 
 """測試"""
 
-query = "二維陣列概念是什麼?"
+query = "二維陣列是甚麼"
 related_docs = retrieve_docs_md(query, top_k=3)
 
 print("找到的相關教材段落：")
 for i, doc in enumerate(related_docs, 1):
   print(f"{i}. {doc}\n")
 
-"""**單元教材提供**
+"""# MarkdownHeaderTextSplitter+ RecursiveCharacterTextSplitter方法讀取教材(/chroma_db_mdrc)"""
+
+#載入教材PDF
+loader = PyPDFLoader("/content/drive/MyDrive/專題/教材/CH3陣列_markdown.pdf")
+pages = loader.load()
+
+# 合併文字
+text = "\n".join([p.page_content for p in pages])
+
+# 定義標題層級
+headers_to_split_on = [
+    ("#", "章節"),
+    ("##", "小節"),
+    ("###", "段落"),
+    ("####", "子段落")
+]
+
+#MarkdownHeaderTextSplitter分段
+markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
+docs = splitter.split_text(text)
+
+#RecursiveCharacterTextSplitter分段
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=250,   # 每塊字數上限
+    chunk_overlap=50, # 交疊避免斷句
+    separators=["\n\n", "\n", "。", " "]  # 分割優先順序
+)
+
+final_docs = []
+for doc in docs:
+    sub_docs = text_splitter.split_text(doc.page_content)
+    for sub_doc in sub_docs:
+        final_docs.append(
+            Document(
+              page_content=sub_doc,
+              metadata=doc.metadata  # 保留章節、小節資訊
+          )
+        )
+
+# 總段落數
+print(f"共有{len(final_docs)}個段落")
+
+# 每個段落內容
+for i, d in enumerate(final_docs, 1):
+  print(f"\n--- 段落 {i} ---")
+  print("標題階層：", d.metadata)
+  print("內容：", d.page_content)
+
+"""Embeddings"""
+
+#將文本轉成向量
+embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+
+"""用Chroma建立向量庫
+
+**Chroma**
+"""
+
+vectorstore = Chroma.from_documents(final_docs, embeddings, persist_directory="/content/drive/MyDrive/專題/程式碼專區/chroma_db_mdrc")
+vectorstore.persist()
+
+"""將使用者問題轉成向量，找教材裡最相似的幾段內容
+
+"""
+
+def retrieve_docs(query, top_k=3):
+  #載入Embeddings和Chroma向量庫
+  embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+  vectorstore = Chroma(persist_directory="/content/drive/MyDrive/專題/程式碼專區/chroma_db_mdrc", embedding_function=embeddings)
+
+  results = vectorstore.similarity_search_with_score(query, k=top_k)
+  related_texts = []
+
+  for doc, score in results:
+    #if score <= 1:
+      related_texts.append((doc.page_content))
+
+  return related_texts #回傳成一個list
+
+"""測試"""
+
+query = "一維陣列和二維陣列差別"
+related_docs = retrieve_docs(query, top_k=5)
+
+print("找到的相關教材段落：")
+for i, doc in enumerate(related_docs, 1):
+  print(f"{i}. {doc}\n")
+
+"""# 單元教材提供
 
 回傳教材內容
 """
 
-import re
 docs_dict = {}
 
 for doc in docs:
@@ -226,6 +323,8 @@ for unit_code, paragraphs in docs_dict.items():
     for p in paragraphs:
         print(p)
     print("-" * 50)  # 分隔線
+
+import re
 
 #number:使用者輸入單元編號(1,2,3...)
 #docs_dict: key = 單元編號, value = list of 段落文字
