@@ -132,14 +132,24 @@ def generate_materials(emotion, materials, stage="初學"):
 
 import re, json
 def clean_text(text):
-  '''
-  輸入：generate_material 並由API回傳的結果
-  輸出：dict格式：
-  "teaching": "教學說明（簡短清楚）",
-  "example": "範例解釋（依照舉例對照、比喻解釋，貼近學生生活或常見案例或程式碼範例）",
-  "summary": "總結"
-  '''
-  clean_text = re.sub(r"^```json|```$", "", text, flags=re.MULTILINE).strip()
-  #clean_text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text, flags=re.MULTILINE).strip()
-  data = json.loads(clean_text)
-  return data
+    # 移除 ``` 或 ```json 標記
+    clean_text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text, flags=re.MULTILINE).strip()
+    
+    # 將換行轉成 \n，避免破壞 JSON
+    clean_text = clean_text.replace("\n", "\\n")
+    
+    # 將單引號改成雙引號（若有必要，可再加更複雜處理）
+    clean_text = clean_text.replace("'", '"')
+    
+    # 移除 JSON 最後可能的多餘逗號
+    clean_text = re.sub(r',(\s*})', r'\1', clean_text)
+    
+    # 嘗試解析
+    try:
+        data = json.loads(clean_text)
+        return data
+    except json.JSONDecodeError as e:
+        print("JSON 解析失敗，請檢查輸出內容：", e)
+        print(clean_text[:500])  # 顯示前 500 字做檢查
+        return None
+
