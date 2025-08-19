@@ -63,7 +63,7 @@ def retrieve_docs_rc(query, top_k):
 """測試"""
 
 query = "二維陣列是什麼?"
-related_docs = retrieve_docs(query, top_k=5)
+related_docs = retrieve_docs_rc(query, top_k=5)
 
 print("找到的相關教材段落：")
 for i, doc in enumerate(related_docs, 1):
