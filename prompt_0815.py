@@ -124,6 +124,7 @@ def generate_materials(emotion, materials, stage="初學"):
   "summary": "總結，重點回顧"
 }}
 請輸出完全合法 JSON：
+- 使用繁體中文進行教學
 - 只用英文雙引號 "
 - 不要使用中文引號 ‘ ’
 - 不要在字串中出現未轉義的換行符號
