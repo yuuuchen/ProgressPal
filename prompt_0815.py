@@ -131,6 +131,7 @@ def generate_materials(emotion, materials, stage="初學"):
   "summary": ""
 }}
 """
+    return prompt
 
 """格式整理工具"""
 
