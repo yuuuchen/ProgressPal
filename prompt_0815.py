@@ -146,3 +146,40 @@ result = generate_prompt(
 
 print("=== Prompt Text ===")
 print(result)
+
+test_input = {
+  "emotion": "困惑",
+  "materials": [
+      "陣列(Array)是將相同資料型別的多個變數結合在一起，每個陣列中 的元素皆可視為變數使用。陣列佔有連續的記憶體空間，提供索引 值(Index)存取陣列內個別元素。 陣列第一個元素其索引值為 0，第二個元素其索引值為 1，第三個元 素其索引值為 2，依此類推，n 個元素的陣列，存取陣列最後一個元 素其索引值為 n-1。"
+  ],
+  "stage":"初學"
+}
+result = generate_materials(
+    emotion=test_input["emotion"],
+    stage=test_input["stage"],
+    materials=test_input["materials"]
+)
+
+print("=== Prompt Text ===")
+print(result)
+
+"""找最佳prompt結構"""
+
+test_input = {
+  "emotion": "困惑",
+  "question": "linked list 和 array 差在哪裡？",
+  "materials": [
+      "Linked List 是由節點組成，每個節點包含資料與指向下一個節點的指標。",
+      "Array 的記憶體分配是連續的，存取速度快，但插入與刪除成本高。"
+  ]
+}
+for i in PROMPT_TEMPLATES.keys():
+  CURRENT_PROMPT_MODE = i
+  result = generate_prompt(
+      emotion=test_input["emotion"],
+      question=test_input["question"],
+      materials=test_input["materials"]
+  )
+  print(f"=== Mode：{i} ===")
+  print(result)
+  print("\n")
