@@ -290,6 +290,7 @@ for i, doc in enumerate(related_docs, 1):
 
 回傳教材內容
 """
+import re
 
 docs_dict = {}
 
