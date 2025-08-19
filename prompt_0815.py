@@ -128,58 +128,17 @@ def generate_materials(emotion, materials, stage="初學"):
 
   return prompt
 
-"""使用範例："""
+"""格式整理工具"""
 
-test_input = {
-  "emotion": "困惑",
-  "question": "linked list 和 array 差在哪裡？",
-  "materials": [
-      "Linked List 是由節點組成，每個節點包含資料與指向下一個節點的指標。",
-      "Array 的記憶體分配是連續的，存取速度快，但插入與刪除成本高。"
-  ]
-}
-result = generate_prompt(
-    emotion=test_input["emotion"],
-    question=test_input["question"],
-    materials=test_input["materials"]
-)
-
-print("=== Prompt Text ===")
-print(result)
-
-test_input = {
-  "emotion": "困惑",
-  "materials": [
-      "陣列(Array)是將相同資料型別的多個變數結合在一起，每個陣列中 的元素皆可視為變數使用。陣列佔有連續的記憶體空間，提供索引 值(Index)存取陣列內個別元素。 陣列第一個元素其索引值為 0，第二個元素其索引值為 1，第三個元 素其索引值為 2，依此類推，n 個元素的陣列，存取陣列最後一個元 素其索引值為 n-1。"
-  ],
-  "stage":"初學"
-}
-result = generate_materials(
-    emotion=test_input["emotion"],
-    stage=test_input["stage"],
-    materials=test_input["materials"]
-)
-
-print("=== Prompt Text ===")
-print(result)
-
-"""找最佳prompt結構"""
-
-test_input = {
-  "emotion": "困惑",
-  "question": "linked list 和 array 差在哪裡？",
-  "materials": [
-      "Linked List 是由節點組成，每個節點包含資料與指向下一個節點的指標。",
-      "Array 的記憶體分配是連續的，存取速度快，但插入與刪除成本高。"
-  ]
-}
-for i in PROMPT_TEMPLATES.keys():
-  CURRENT_PROMPT_MODE = i
-  result = generate_prompt(
-      emotion=test_input["emotion"],
-      question=test_input["question"],
-      materials=test_input["materials"]
-  )
-  print(f"=== Mode：{i} ===")
-  print(result)
-  print("\n")
+import re, json
+def clean_text(text):
+  '''
+  輸入：generate_material 並由API回傳的結果
+  輸出：dict格式：
+  "teaching": "教學說明（簡短清楚）",
+  "example": "範例解釋（依照舉例對照、比喻解釋，貼近學生生活或常見案例或程式碼範例）",
+  "summary": "總結"
+  '''
+  clean_text = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_text, flags=re.MULTILINE).strip()
+  data = json.loads(clean_text)
+  return data
