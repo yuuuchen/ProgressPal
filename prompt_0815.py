@@ -152,22 +152,15 @@ import re
 def clean_text(raw_text: str) -> dict:
     """
     將 Markdown 格式 (含 ### 教學重點、範例、總結) 轉成 dict
-    輸出：
-    {
-      "teaching": "...",
-      "example": "...",
-      "summary": "..."
-    }
     """
-    sections = {
-        "teaching": "",
-        "example": "",
-        "summary": ""
-    }
+    sections = {"teaching": "", "example": "", "summary": ""}
 
-    # 使用正則把段落切出來
-    pattern = r"###\s*(教學重點|範例|總結)\s*(.*?)(?=###|$)"
-    matches = re.findall(pattern, raw_text, flags=re.DOTALL)
+    # 確保最後有換行，避免最後一段抓不到
+    raw_text = raw_text.strip() + "\n"
+
+    # 改良正則，多行匹配
+    pattern = r"###\s*(教學重點|範例|總結)\s*([\s\S]*?)(?=\n###|\Z)"
+    matches = re.findall(pattern, raw_text)
 
     for title, content in matches:
         content = content.strip()
@@ -179,6 +172,7 @@ def clean_text(raw_text: str) -> dict:
             sections["summary"] = content
 
     return sections
+
 
 
 """使用範例："""
