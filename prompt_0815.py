@@ -123,7 +123,7 @@ def generate_materials(emotion, materials, stage="初學"):
   "example": "範例解釋（依照{learner_profile['style']}，貼近學生生活或常見案例或程式碼範例）",
   "summary": "總結"
 }}
-請確保輸出為有效 JSON，避免使用 Markdown 或其他格式。
+請注意：不要在輸出中加入 ```json 或 ``` 之類的標記。只輸出純粹的 JSON。
 """
 
   return prompt
