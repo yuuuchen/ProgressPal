@@ -114,7 +114,7 @@ def generate_materials(emotion, materials, stage="初學"):
   #materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
 
   prompt = f"""{intro}
-面對一位感到{emotion}的學生，請用{learner_profile['tone']}語氣，{learner_profile['style']}方式，教導學生以下內容：
+面對一位感到{emotion}的學生，請用{learner_profile['tone']}語氣，教導學生以下內容：
 {materials}
 
 請輸出 JSON 格式：
@@ -155,14 +155,17 @@ def clean_text(raw_text):
 
         # 嘗試解析 JSON
         return json.loads(text)
-    except json.JSONDecodeError:
-        # 嘗試單引號轉雙引號（非標準 JSON 修正）
+
+    except json.JSONDecodeError as e:
+        print("JSON解析失敗，嘗試修復…")
+        # 嘗試簡單的補雙引號策略：將鍵用正則補上雙引號
+        text_fixed = re.sub(r'(\s*)(\w+)\s*:', r'\1"\2":', text)
         try:
-            text_fixed = text.replace("'", '"')
-            return json.loads(text_fixed)
-        except json.JSONDecodeError:
-            print("⚠ 無法解析為 JSON，回傳空 dict")
-            return {}
+            data = json.loads(text_fixed)
+            return data
+        except Exception as e2:
+            print("修復後仍解析失敗:", e2)
+            return None
 
 """使用範例："""
 
