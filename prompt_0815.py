@@ -116,17 +116,21 @@ def generate_materials(emotion, materials, stage="初學"):
   prompt = f"""{intro}
 面對一位感到{emotion}的學生，請用{learner_profile['tone']}語氣，教導學生以下內容：
 {materials}
----
-請嚴格遵守輸出 JSON 格式，並且使用繁體中文進行教學：
+
+請嚴格遵守以下要求：
+1. 僅輸出合法 JSON，**不要有任何多餘文字、標記或說明**。
+2. teaching 欄位：只解釋核心概念，列出常見迷思，請理性陳述，不要使用比喻、故事或舉例。
+3. example 欄位：提供簡單範例或程式碼示例，貼近學生生活或常見情境。
+4. summary 欄位：總結重點回顧，簡潔明瞭。
+5. 所有文字使用繁體中文，JSON 中的雙引號必須合法，必要時使用 \" 轉義。
+
+輸出 JSON 格式：
 {{
-  "teaching": "只解釋核心概念，列出常見迷思，請理性陳述。",
-  "example": "範例解釋（依照{learner_profile['style']}，貼近學生生活或常見案例或程式碼範例）",
-  "summary": "總結，重點回顧"
+  "teaching": "",
+  "example": "",
+  "summary": ""
 }}
-
 """
-
-  return prompt
 
 """格式整理工具"""
 
@@ -136,32 +140,33 @@ import json
 def clean_text(raw_text):
     """
     將模型回傳的文字轉成 dict 格式。
+    
     1. 移除 ```json 或 ``` 標記
     2. 將換行、制表符改成空格
     3. 嘗試修正單引號 -> 雙引號
-    4. 嘗試解析 JSON，如果失敗回傳空 dict
+    4. 嘗試修正鍵名未加雙引號
+    5. 嘗試解析 JSON，如果失敗回傳空 dict
     """
+    # 移除 ```json 或 ``` 標記
+    text = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_text, flags=re.MULTILINE).strip()
+    # 換行、制表符轉空格
+    text = text.replace("\n", " ").replace("\t", " ")
+    # 移除多餘空格
+    text = re.sub(r'\s+', ' ', text)
+
     try:
-        # 移除 ```json 或 ``` 標記
-        text = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_text, flags=re.MULTILINE).strip()
-        # 將換行與制表符轉空格
-        text = text.replace("\n", " ").replace("\t", " ")
-        # 移除多餘空格
-        text = re.sub(r'\s+', ' ', text)
-
-        # 嘗試解析 JSON
         return json.loads(text)
-
-    except json.JSONDecodeError as e:
-        print("JSON解析失敗，嘗試修復…")
-        # 嘗試簡單的補雙引號策略：將鍵用正則補上雙引號
-        text_fixed = re.sub(r'(\s*)(\w+)\s*:', r'\1"\2":', text)
+    except json.JSONDecodeError:
+        # 嘗試單引號改雙引號
+        text_fixed = text.replace("'", '"')
+        # 嘗試補全鍵名雙引號（簡單策略）
+        text_fixed = re.sub(r'(\s*)(\w+)\s*:', r'\1"\2":', text_fixed)
         try:
-            data = json.loads(text_fixed)
-            return data
-        except Exception as e2:
-            print("修復後仍解析失敗:", e2)
-            return None
+            return json.loads(text_fixed)
+        except Exception as e:
+            print("JSON解析失敗，修復仍失敗:", e)
+            return {}
+
 
 """使用範例："""
 
