@@ -98,7 +98,7 @@ def generate_prompt(emotion, question, materials, stage='初學'):
 # 依照學習階段與情緒產生教材 prompt
 def generate_materials(emotion, materials, stage="初學"):
     """
-    產生教學用的 prompt
+    產生教學用的 prompt (Markdown 輸出)
     ----------
     stage: '初學' 或 '複習'
     emotion: 學生情緒
@@ -115,20 +115,24 @@ def generate_materials(emotion, materials, stage="初學"):
 
     rules = f"""
 請嚴格遵守以下規則：
-1. 僅輸出 **合法 JSON**，不要有任何多餘文字、標記或說明。
-2. "teaching" 欄位：解釋核心概念，列出常見迷思，理性陳述，不要使用比喻、故事或情感性描述。
-3. "example" 欄位：提供簡單範例或程式碼示例，貼近學生生活或常見情境，並使用「{learner_profile['style']}」教學策略。
-4. "summary" 欄位：總結重點回顧，簡潔明瞭。
-5. 所有文字必須使用繁體中文，JSON 中的雙引號必須合法，必要時使用 \\" 轉義。
+1. 僅輸出 Markdown，不要有 JSON 或其他額外格式。
+2. 「### 教學重點」：解釋核心概念，列出常見迷思，理性陳述，不要使用比喻或故事。
+3. 「### 範例」：提供簡單範例或程式碼示例，貼近學生生活或常見情境，並使用「{learner_profile['style']}」教學策略。
+4. 「### 總結」：總結重點回顧，簡潔明瞭。
+5. 所有文字必須使用繁體中文。
 """
 
     schema = """
-輸出 JSON 格式：
-{
-  "teaching": "",
-  "example": "",
-  "summary": ""
-}
+輸出格式範例如下（請確保完全遵守結構）：
+
+### 教學重點
+...
+
+### 範例
+...
+
+### 總結
+...
 """
 
     prompt = f"""{intro}
@@ -140,41 +144,41 @@ def generate_materials(emotion, materials, stage="初學"):
 {schema}
 """
     return prompt
+
     
 """格式整理工具"""
-
 import re
-import json
 
-def clean_text(raw_text):
+def clean_text(raw_text: str) -> dict:
     """
-    將模型回傳的文字轉成 dict 格式。
-    
-    1. 移除 ```json 或 ``` 標記
-    2. 將換行、制表符改成空格
-    3. 嘗試修正單引號 -> 雙引號
-    4. 嘗試修正鍵名未加雙引號
-    5. 嘗試解析 JSON，如果失敗回傳空 dict
+    將 Markdown 格式 (含 ### 教學重點、範例、總結) 轉成 dict
+    輸出：
+    {
+      "teaching": "...",
+      "example": "...",
+      "summary": "..."
+    }
     """
-    # 移除 ```json 或 ``` 標記
-    text = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_text, flags=re.MULTILINE).strip()
-    # 換行、制表符轉空格
-    text = text.replace("\n", " ").replace("\t", " ")
-    # 移除多餘空格
-    text = re.sub(r'\s+', ' ', text)
+    sections = {
+        "teaching": "",
+        "example": "",
+        "summary": ""
+    }
 
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        # 嘗試單引號改雙引號
-        text_fixed = text.replace("'", '"')
-        # 嘗試補全鍵名雙引號（簡單策略）
-        text_fixed = re.sub(r'(\s*)(\w+)\s*:', r'\1"\2":', text_fixed)
-        try:
-            return json.loads(text_fixed)
-        except Exception as e:
-            print("JSON解析失敗，修復仍失敗:", e)
-            return {}
+    # 使用正則把段落切出來
+    pattern = r"###\s*(教學重點|範例|總結)\s*(.*?)(?=###|$)"
+    matches = re.findall(pattern, raw_text, flags=re.DOTALL)
+
+    for title, content in matches:
+        content = content.strip()
+        if title == "教學重點":
+            sections["teaching"] = content
+        elif title == "範例":
+            sections["example"] = content
+        elif title == "總結":
+            sections["summary"] = content
+
+    return sections
 
 
 """使用範例："""
