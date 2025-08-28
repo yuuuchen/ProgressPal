@@ -11,57 +11,72 @@ Prompt 模板庫（Template Library）
 
 # 全域模板庫
 '''
-simple：(精簡)一句話指令，直接用三個欄位填入
-structured：(分段式)角色設定 + 背景 + 限制
-dialogue:(對話式)模擬師生對話
-example_driven：(範例驅動)提供回答範例
-
-# 要加入 請以自然語言輸出，避免使用 Markdown、項目符號或表格，直接用完整句子表達。
-# 請用 5 句話以內完成回答。
-
+設定動態指令
 '''
 
 PROMPT_TEMPLATES = {
-    "simple": """你是一位{tone}的資料結構助教。
-請用{style}方式，面對一位感到{emotion}的學生，學習階段為{stage}，
-回答以下問題：{question}
-請根據以下教材回答，避免超出範圍：
-{materials}
+    # 行為 1：答疑（簡短自然語言）
+    "qa": """
+學生提問：{question}
+
+學習階段：{stage}
+學習參與度：{engagement}
+教學風格：{style}
+
+請依照「{tone}」語氣進行回覆。
 """,
 
-    "structured": """[角色設定]
-你是一位{tone}的資料結構助教。
-
-[任務]
-面對一位感到{emotion}的學生，學習階段為{stage}，請用{style}方式，
-協助解答以下問題，並確保依據教材內容。
-
-[學生問題]
-{question}
-
-[教材]
+    # 行為 2：教學（教材結構化）
+    "tutoring": """
+學習階段：{stage}
+學習參與度：{engagement}
+教學風格：{style}
+教材內容：
 {materials}
 
-[回答限制]
-1. 不要超出教材內容
-2. 使用貼合情緒的語氣
-""",
-
-    "dialogue": """以下是你與一位學生的對話：
-學生（感到{emotion}，學習階段：{stage}）: {question}
-助教（{tone}，採用{style}）:
-請根據以下教材回應學生：
-{materials}
-""",
-
-    "example_driven": """你是一位{tone}的資料結構助教，擅長用{style}方式解釋。
-請回答感到{emotion}的學生的問題（學習階段：{stage}）：{question}
-請根據以下教材回答，並至少提供一個具體例子：
-{materials}
+請依照「{tone}」語氣進行教學。
 """
 }
 
-CURRENT_PROMPT_MODE = "simple"
+
+CURRENT_PROMPT_MODE = "tutoring"
+
+### 系統指令 System Prompts
+
+# 問答設定
+SYSTEM_PROMPT_QA = """
+你是一位智慧助教，專精於資料結構教學。
+你的任務是針對學生的問題，依照參與度調整語氣與解釋深度，進行簡短回覆。
+
+### 規則
+1. 僅能使用自然語言分段回答，不要使用 Markdown 或表格。
+2. 語氣需「溫暖、易於理解」。
+3. 輸出需限制在 **150字以內**。
+4. 回覆結尾需簡要總結學生可能的困惑點。
+"""
+
+# 教學設定
+SYSTEM_PROMPT_MATERIALS = """
+你是一位智慧助教，專精於資料結構教學。
+你的任務是根據學生的學習參與度與學習階段，結合教材進行教學，並提供結構化回覆。
+
+### 規則 (RULE)
+1. 僅輸出 Markdown，不要有 JSON 或其他額外格式。
+2. 「### 教學重點」：解釋核心概念，列出常見迷思，理性陳述，不要使用比喻或故事。
+3. 「### 範例」：提供簡單範例或程式碼示例，貼近學生生活或常見情境，並使用學習風格調整解釋。
+4. 「### 總結」：總結重點回顧，簡潔明瞭。
+5. 所有文字必須使用繁體中文。
+
+### 輸出格式 (SCHEMA)
+### 教學重點
+...
+
+### 範例
+...
+
+### 總結
+...
+"""
 
 # 映射方法：情緒 → 語氣 + 教學策略
 def map_emotion_to_profile(emotion):
@@ -75,79 +90,51 @@ def map_emotion_to_profile(emotion):
   }
   return mapping.get(emotion, {"tone": "中性", "style": "一般解釋"})
 
-# 主方法：Prompt 生成方法
-def generate_prompt(emotion, question, materials, stage='初學'):
-  learner_profile = map_emotion_to_profile(emotion)  # 情緒解析層　挫折、困惑、無聊、投入、驚訝、喜悅
+# 映射方法：參與度 → 語氣 + 教學策略
+def map_engagement_to_profile(engagement):
+  mapping = {
+    "high": {
+        "tone": "積極且肯定",  # 對應ABCDE理論中E（效果）階段，強化理性信念，鼓勵正向感受
+        "style": "深入探討、引導延伸思考"  # 對應控制價值理論中高控制與高價值狀態，促使挑戰性學習
+    },
+    "low": {
+        "tone": "溫和且耐心",  # 適用於Ellis理論中D（駁斥）階段，溫柔調整非理性信念，降低焦慮
+        "style": "舉例對照、比喻解釋"  # 依控制價值理論降低學習困難度，提升控制感
+    }
+  }
+  return mapping.get(engagement, {"tone": "中性", "style": "一般解釋"})
 
-  materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
 
-  # 使用模板組合 Prompt
-  template = PROMPT_TEMPLATES[CURRENT_PROMPT_MODE]
-  prompt_text = template.format(
-      tone=learner_profile["tone"],
-      style=learner_profile["style"],
-      emotion=emotion,
-      question=question,
-      materials=materials_text,
-      stage=stage
-  )
+# 主方法：回答學生提問。使用學習參與度
+def generate_prompt(engagement, question, materials, stage='初學'):
+    learner_profile = map_engagement_to_profile(engagement)
+    template = PROMPT_TEMPLATES["qa"]
+    prompt_text = template.format(
+        tone=learner_profile["tone"],
+        style=learner_profile["style"],
+        engagement=engagement,
+        question=question,
+        stage=stage
+    )
+    return prompt_text
 
-  output_format_hint = "以自然語言分段回答，語氣溫暖、易於理解，最後總結困惑點，避免使用 Markdown 或表格，限制在150字以內"
-  return f"{prompt_text.strip()}\n\n請注意輸出格式：{output_format_hint}"
 
-# 依照學習階段與情緒產生教材 prompt
-def generate_materials(emotion, materials, stage="初學"):
-    """
-    產生教學用的 prompt (Markdown 輸出)
-    ----------
-    stage: '初學' 或 '複習'
-    emotion: 學生情緒
-    materials: 教材文字 (str)
-    return: 可直接丟給 API 的 prompt (str)
-    """
-    learner_profile = map_emotion_to_profile(emotion)
+# 根據教材進行教學
+def generate_materials(engagement, materials, stage="初學"):
+    learner_profile = map_engagement_to_profile(engagement)
+    materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
+    template = PROMPT_TEMPLATES["tutoring"]
+    prompt_text = template.format(
+        tone=learner_profile["tone"],
+        style=learner_profile["style"],
+        engagement=engagement,
+        materials=materials_text,
+        stage=stage
+    )
+    return prompt_text
 
-    # 根據學習階段微調開場說明
-    if stage == '初學':
-        intro = "你是一位老師，正在引導初學者理解以下概念，請用清晰的觀念拆解，並提供基礎範例。"
-    else:
-        intro = "你是一位老師，正在協助學生複習以下概念，請用重點提示的方式，並提供進階範例。"
-
-    rules = f"""
-請嚴格遵守以下規則：
-1. 僅輸出 Markdown，不要有 JSON 或其他額外格式。
-2. 「### 教學重點」：解釋核心概念，列出常見迷思，理性陳述，不要使用比喻或故事。
-3. 「### 範例」：提供簡單範例或程式碼示例，貼近學生生活或常見情境，並使用「{learner_profile['style']}」教學策略。
-4. 「### 總結」：總結重點回顧，簡潔明瞭。
-5. 三個段落缺一不可。
-6. 所有文字必須使用繁體中文。
-"""
-
-    schema = """
-輸出格式範例如下（請確保完全遵守結構）：
-
-### 教學重點
-...
-
-### 範例
-...
-
-### 總結
-...
-"""
-
-    prompt = f"""{intro}
-
-面對一位感到「{emotion}」的學生，請用「{learner_profile['tone']}」語氣，教導以下教材：
-{materials}
-
-{rules}
-{schema}
-"""
-    return prompt
-
-    
 """格式整理工具"""
+
 import re
 
 def clean_text(raw_text: str) -> dict:
@@ -178,60 +165,4 @@ def clean_text(raw_text: str) -> dict:
 
     return sections
 
-
-
 """使用範例："""
-
-test_input = {
-  "emotion": "困惑",
-  "question": "linked list 和 array 差在哪裡？",
-  "materials": [
-      "Linked List 是由節點組成，每個節點包含資料與指向下一個節點的指標。",
-      "Array 的記憶體分配是連續的，存取速度快，但插入與刪除成本高。"
-  ]
-}
-result = generate_prompt(
-    emotion=test_input["emotion"],
-    question=test_input["question"],
-    materials=test_input["materials"]
-)
-
-print("=== Prompt Text ===")
-print(result)
-
-test_input = {
-  "emotion": "困惑",
-  "materials": [
-      "陣列(Array)是將相同資料型別的多個變數結合在一起，每個陣列中 的元素皆可視為變數使用。陣列佔有連續的記憶體空間，提供索引 值(Index)存取陣列內個別元素。 陣列第一個元素其索引值為 0，第二個元素其索引值為 1，第三個元 素其索引值為 2，依此類推，n 個元素的陣列，存取陣列最後一個元 素其索引值為 n-1。"
-  ],
-  "stage":"初學"
-}
-result = generate_materials(
-    emotion=test_input["emotion"],
-    stage=test_input["stage"],
-    materials=test_input["materials"]
-)
-
-print("=== Prompt Text ===")
-print(result)
-
-"""找最佳prompt結構"""
-
-test_input = {
-  "emotion": "困惑",
-  "question": "linked list 和 array 差在哪裡？",
-  "materials": [
-      "Linked List 是由節點組成，每個節點包含資料與指向下一個節點的指標。",
-      "Array 的記憶體分配是連續的，存取速度快，但插入與刪除成本高。"
-  ]
-}
-for i in PROMPT_TEMPLATES.keys():
-  CURRENT_PROMPT_MODE = i
-  result = generate_prompt(
-      emotion=test_input["emotion"],
-      question=test_input["question"],
-      materials=test_input["materials"]
-  )
-  print(f"=== Mode：{i} ===")
-  print(result)
-  print("\n")
