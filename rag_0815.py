@@ -7,15 +7,6 @@ Original file is located at
     https://colab.research.google.com/drive/14jAxpxWKDhlFS2xe0hTOhfQiZ7txP5-P
 """
 
-from google.colab import drive
-drive.mount('/content/drive')
-
-!pip install -U langchain-community langchain-openai langchain-chroma langchain-qdrant langchain-google-vertexai -q
-
-!pip install pypdf -q
-
-!pip install -U sentence-transformers -q
-
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.document_loaders import TextLoader
@@ -27,7 +18,7 @@ from sentence_transformers import SentenceTransformer
 from langchain.schema import Document
 import re
 
-!pip install rank_bm25 -q
+
 
 """# RecursiveCharacterTextSplitter方法讀取教材(/chroma_db)
 
