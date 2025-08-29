@@ -7,6 +7,17 @@ Original file is located at
     https://colab.research.google.com/drive/14jAxpxWKDhlFS2xe0hTOhfQiZ7txP5-P
 """
 
+from google.colab import drive
+drive.mount('/content/drive')
+
+!pip install -U langchain-community langchain-openai langchain-chroma langchain-qdrant langchain-google-vertexai -q
+
+!pip install pypdf -q
+
+!pip install -U sentence-transformers -q
+
+!pip install rank_bm25 -q
+
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.document_loaders import TextLoader
@@ -27,10 +38,10 @@ from sklearn.preprocessing import MinMaxScaler
 loader = PyPDFLoader("/content/drive/MyDrive/專題/教材/CH3陣列_markdown.pdf")
 pages = loader.load()
 
-# 合併文字
+#合併文字
 text = "\n".join([p.page_content for p in pages])
 
-# 定義標題層級
+#定義標題層級
 headers_to_split_on = [
     ("#", "章節"),
     ("##", "小節"),
@@ -44,9 +55,9 @@ docs = markdown_splitter.split_text(text)
 
 #RecursiveCharacterTextSplitter分段
 text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=200,   # 每塊字數上限
-    chunk_overlap=50, # 交疊避免斷句
-    separators=["\n\n", "\n", "。", " "]  # 分割優先順序
+    chunk_size=350,   #每塊字數
+    chunk_overlap=50, #交疊
+    separators=["\n\n", "\n", "。", " "]  #分割優先順序
 )
 
 final_docs = []
@@ -81,8 +92,8 @@ vectorstore.persist()
 
 """**Chroma + BM25 混合搜尋**"""
 
-def retrieve_docs(query, top_k=5, weight_bm25=0.7, weight_vector=0.3, k_bm25=20):
-  # 載入 Embeddings 和 Chroma
+def retrieve_docs(query, top_k=5, weight_bm25=0.7, weight_vector=0.3):
+  #載入Embeddings和Chroma
   embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
   vectorstore = Chroma(
       persist_directory="/content/drive/MyDrive/專題/程式碼專區/chroma_db_mdrc",
@@ -92,19 +103,19 @@ def retrieve_docs(query, top_k=5, weight_bm25=0.7, weight_vector=0.3, k_bm25=20)
   #取得關鍵字
   query_text = " ".join(query.get("keywords", []))
 
-  # 取得所有段落文字
-  all_docs = vectorstore.get(include=["documents"])["documents"]
+  #取得所有段落文字
+  all_docs = [doc.page_content for doc in final_docs]
 
-  # BM25 準備
+  #BM25準備
   tokenized_corpus = [doc.split() for doc in all_docs]
   bm25 = BM25Okapi(tokenized_corpus)
 
-  # BM25 排序，取前 k_bm25 作為候選
+  #BM25排序，取前20筆作為候選
   bm25_scores = bm25.get_scores(query_text.split())
   bm25_ranked = sorted(zip(bm25_scores, all_docs), key=lambda x: x[0], reverse=True)
-  candidate_docs = [doc for _, doc in bm25_ranked[:k_bm25]]
+  candidate_docs = [doc for _, doc in bm25_ranked[:20]]
 
-  # 向量檢索
+  #向量檢索
   query_emb = embeddings.embed_query(query_text)
   vector_results = []
   for doc in candidate_docs:
@@ -112,8 +123,8 @@ def retrieve_docs(query, top_k=5, weight_bm25=0.7, weight_vector=0.3, k_bm25=20)
       score = np.dot(query_emb, doc_emb) / (np.linalg.norm(query_emb) * np.linalg.norm(doc_emb))
       vector_results.append((doc, score))
 
-  # 標準化並融合分數
-  bm25_scores_candidates = np.array([score for score, _ in bm25_ranked[:k_bm25]])
+  #標準化並融合分數
+  bm25_scores_candidates = np.array([score for score, _ in bm25_ranked[:20]])
   vector_scores = np.array([score for _, score in vector_results])
   scaler = MinMaxScaler()
   bm25_scores_norm = scaler.fit_transform(bm25_scores_candidates.reshape(-1,1)).flatten()
@@ -121,10 +132,10 @@ def retrieve_docs(query, top_k=5, weight_bm25=0.7, weight_vector=0.3, k_bm25=20)
 
   final_scores = weight_bm25 * bm25_scores_norm + weight_vector * vector_scores_norm
 
-  # 排序回傳
+  #排序回傳
   sorted_pairs = sorted(zip(final_scores, candidate_docs), key=lambda x: x[0], reverse=True)
   sorted_results = [text for _, text in sorted_pairs]
-    
+
   #去除重複段落
   sorted_results = list(dict.fromkeys(sorted_results))
 
@@ -132,7 +143,7 @@ def retrieve_docs(query, top_k=5, weight_bm25=0.7, weight_vector=0.3, k_bm25=20)
 
 """測試"""
 
-query = {"keywords": ["一維陣列", "二維陣列"]}
+query = {"keywords": ["二維陣列"]}
 related_docs = retrieve_docs(query,top_k=5)
 
 print("找到的相關教材段落：")
