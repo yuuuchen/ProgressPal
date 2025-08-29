@@ -7,6 +7,17 @@ Original file is located at
     https://colab.research.google.com/drive/14jAxpxWKDhlFS2xe0hTOhfQiZ7txP5-P
 """
 
+from google.colab import drive
+drive.mount('/content/drive')
+
+!pip install -U langchain-community langchain-openai langchain-chroma langchain-qdrant langchain-google-vertexai -q
+
+!pip install pypdf -q
+
+!pip install -U sentence-transformers -q
+
+!pip install rank_bm25 -q
+
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.document_loaders import TextLoader
@@ -19,8 +30,7 @@ from langchain.schema import Document
 import re
 from rank_bm25 import BM25Okapi
 import numpy as np
-
-
+from sklearn.preprocessing import MinMaxScaler
 
 """# RecursiveCharacterTextSplitter方法讀取教材(/chroma_db)
 
@@ -355,7 +365,7 @@ def retrieve_docs_mdrc(query, top_k=5):
 """測試"""
 
 query = {"keywords": ["一維陣列", "索引"]}
-related_docs = retrieve_docs(query, top_k=5)
+related_docs = retrieve_docs_mdrc(query, top_k=5)
 
 print("找到的相關教材段落：")
 for i, doc in enumerate(related_docs, 1):
@@ -412,7 +422,7 @@ def retrieve_docs(query, top_k=5, weight_bm25=0.7, weight_vector=0.3, k_bm25=20)
 """測試"""
 
 query = {"keywords": ["一維陣列", "二維陣列"]}
-related_docs = hybrid_search(query,top_k=5)
+related_docs = retrieve_docs(query,top_k=5)
 
 print("找到的相關教材段落：")
 for i, doc in enumerate(related_docs, 1):
