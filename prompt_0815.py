@@ -17,7 +17,7 @@ Prompt 模板庫（Template Library）
 PROMPT_TEMPLATES = {
     # 行為 1：問答（簡短自然語言）
     "qa": """
-回覆模式：QA 模式
+任務：QA
 學生的參與度：{engagement}
 學習階段：{stage}
 問題：{question}
@@ -26,7 +26,6 @@ PROMPT_TEMPLATES = {
 
     # 行為 2：教學（教材結構化）
     "tutoring": """
-回覆模式：教材模式
 任務：教學
 學生的參與度：{engagement}
 學習階段：{stage}
@@ -44,7 +43,7 @@ SYSTEM_PROMPT = """
 1. 使用自然語言分段回答，可使用 Markdown 或表格。
 2. 語氣需「溫暖、易於理解」。
 3. 直接回應問題，不要打招呼。
-4. 你有兩個回覆模式：
+4. 你有兩個任務：
   1. QA 模式：輸出需限制在 200 字以內，回覆結尾需簡要總結學生可能的困惑點。
   2. 教材模式：輸出需依照以下結構：
     - 「### 教學重點」：解釋核心概念，理性陳述單元內容與重點。
@@ -94,7 +93,7 @@ def generate_prompt(engagement, question, materials, stage='初學'):
   prompt_text = template.format(
       engagement=engagement,
       question=question,
-      stage=stage
+      stage=stage,
       materials=materials_text
   )
   return prompt_text
@@ -137,8 +136,10 @@ def clean_text(raw_text: str) -> dict:
         elif title == "總結":
             sections["summary"] = content
 
-        if not sections["summary"]:
-          sections["summary"] = "（模型未輸出）"
+    if not sections["summary"]:
+      sections["summary"] = "（模型未輸出）"
 
 
     return sections
+
+"""使用範例："""
