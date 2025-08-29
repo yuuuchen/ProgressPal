@@ -101,7 +101,7 @@ def generate_prompt(engagement, question, materials, stage='初學'):
 
 
 # 根據教材進行教學
-def generate_materials(engagement='high', materials, stage="初學"):
+def generate_materials(engagement ,materials ,stage="初學"):
   materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
   template = PROMPT_TEMPLATES["tutoring"]
   prompt_text = template.format(
