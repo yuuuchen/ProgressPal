@@ -15,69 +15,51 @@ Prompt 模板庫（Template Library）
 '''
 
 PROMPT_TEMPLATES = {
-    # 行為 1：答疑（簡短自然語言）
+    # 行為 1：問答（簡短自然語言）
     "qa": """
-學生提問：{question}
-
+回覆模式：QA 模式
+學生的參與度：{engagement}
 學習階段：{stage}
-學習參與度：{engagement}
-教學風格：{style}
-
-請依照「{tone}」語氣進行回覆。
+問題：{question}
+教材：{materials}
 """,
 
     # 行為 2：教學（教材結構化）
     "tutoring": """
+回覆模式：教材模式
+任務：教學
+學生的參與度：{engagement}
 學習階段：{stage}
-學習參與度：{engagement}
-教學風格：{style}
-教材內容：
-{materials}
-
-請依照「{tone}」語氣進行教學。
+教材：{materials}
 """
 }
 
+### 系統指令 System Prompt
 
-CURRENT_PROMPT_MODE = "tutoring"
-
-### 系統指令 System Prompts
-
-# 問答設定
-SYSTEM_PROMPT_QA = """
+SYSTEM_PROMPT = """
 你是一位智慧助教，專精於資料結構教學。
-你的任務是針對學生的問題，依照參與度調整語氣與解釋深度，進行簡短回覆。
+你需要根據學生的「學習參與度」調整語氣、解釋深度與互動方式。
 
 ### 規則
-1. 僅能使用自然語言分段回答，不要使用 Markdown 或表格。
+1. 使用自然語言分段回答，可使用 Markdown 或表格。
 2. 語氣需「溫暖、易於理解」。
-3. 輸出需限制在 **150字以內**。
-4. 回覆結尾需簡要總結學生可能的困惑點。
+3. 直接回應問題，不要打招呼。
+4. 你有兩個回覆模式：
+  1. QA 模式：輸出需限制在 200 字以內，回覆結尾需簡要總結學生可能的困惑點。
+  2. 教材模式：輸出需依照以下結構：
+    - 「### 教學重點」：解釋核心概念，理性陳述單元內容與重點。
+    - 「### 範例」：提供簡單範例或程式碼示例，並使用指定教學策略。
+    - 「### 總結」：總結重點回顧，簡潔明瞭。
+    - 全文需使用繁體中文。
+5. 請依照教材內容進行回應
+
+### 學習參與度對應行為
+- high: 語氣「積極且肯定」，教學風格「引導延伸思考，促使挑戰性學習」，回覆時「提供更深入的概念解釋，並附帶挑戰性問題，鼓勵學生反思」。
+- low: 語氣「溫和且耐心」，教學風格「降低學習困難度，舉例對照、比喻解釋」，回覆時「用簡單清楚的方式解釋，加入生活化例子，並在最後給予鼓勵」。
+- default: 語氣「中性」，教學風格「一般解釋」，回覆時「提供直接的解釋，避免額外挑戰或比喻」。
 """
 
-# 教學設定
-SYSTEM_PROMPT_MATERIALS = """
-你是一位智慧助教，專精於資料結構教學。
-你的任務是根據學生的學習參與度與學習階段，結合教材進行教學，並提供結構化回覆。
-
-### 規則 (RULE)
-1. 僅輸出 Markdown，不要有 JSON 或其他額外格式。
-2. 「### 教學重點」：解釋核心概念，列出常見迷思，理性陳述，不要使用比喻或故事。
-3. 「### 範例」：提供簡單範例或程式碼示例，貼近學生生活或常見情境，並使用學習風格調整解釋。
-4. 「### 總結」：總結重點回顧，簡潔明瞭。
-5. 所有文字必須使用繁體中文。
-
-### 輸出格式 (SCHEMA)
-### 教學重點
-...
-
-### 範例
-...
-
-### 總結
-...
-"""
-
+'''
 # 映射方法：情緒 → 語氣 + 教學策略
 def map_emotion_to_profile(emotion):
   mapping = {
@@ -95,43 +77,38 @@ def map_engagement_to_profile(engagement):
   mapping = {
     "high": {
         "tone": "積極且肯定",  # 對應ABCDE理論中E（效果）階段，強化理性信念，鼓勵正向感受
-        "style": "深入探討、引導延伸思考"  # 對應控制價值理論中高控制與高價值狀態，促使挑戰性學習
+        "style": "引導延伸思考，促使挑戰性學習"  # 對應控制價值理論中高控制與高價值狀態，促使挑戰性學習
     },
     "low": {
         "tone": "溫和且耐心",  # 適用於Ellis理論中D（駁斥）階段，溫柔調整非理性信念，降低焦慮
-        "style": "舉例對照、比喻解釋"  # 依控制價值理論降低學習困難度，提升控制感
+        "style": "降低學習困難度，舉例對照、比喻解釋"  # 依控制價值理論降低學習困難度，提升控制感
     }
   }
   return mapping.get(engagement, {"tone": "中性", "style": "一般解釋"})
-
+'''
 
 # 主方法：回答學生提問。使用學習參與度
 def generate_prompt(engagement, question, materials, stage='初學'):
-    learner_profile = map_engagement_to_profile(engagement)
-    template = PROMPT_TEMPLATES["qa"]
-    prompt_text = template.format(
-        tone=learner_profile["tone"],
-        style=learner_profile["style"],
-        engagement=engagement,
-        question=question,
-        stage=stage
-    )
-    return prompt_text
+  materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
+  template = PROMPT_TEMPLATES["qa"]
+  prompt_text = template.format(
+      engagement=engagement,
+      question=question,
+      stage=stage
+  )
+  return prompt_text
 
 
 # 根據教材進行教學
-def generate_materials(engagement, materials, stage="初學"):
-    learner_profile = map_engagement_to_profile(engagement)
-    materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
-    template = PROMPT_TEMPLATES["tutoring"]
-    prompt_text = template.format(
-        tone=learner_profile["tone"],
-        style=learner_profile["style"],
-        engagement=engagement,
-        materials=materials_text,
-        stage=stage
-    )
-    return prompt_text
+def generate_materials(engagement='high', materials, stage="初學"):
+  materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
+  template = PROMPT_TEMPLATES["tutoring"]
+  prompt_text = template.format(
+      engagement=engagement,
+      materials=materials_text,
+      stage=stage
+  )
+  return prompt_text
 
 """格式整理工具"""
 
@@ -164,5 +141,3 @@ def clean_text(raw_text: str) -> dict:
 
 
     return sections
-
-"""使用範例："""
