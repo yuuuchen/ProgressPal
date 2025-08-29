@@ -40,7 +40,7 @@ headers_to_split_on = [
 
 #MarkdownHeaderTextSplitter分段
 markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
-docs = splitter.split_text(text)
+docs = markdown_splitter.split_text(text)
 
 #RecursiveCharacterTextSplitter分段
 text_splitter = RecursiveCharacterTextSplitter(
