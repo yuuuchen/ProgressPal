@@ -95,6 +95,7 @@ def generate_prompt(engagement, question, materials, stage='初學'):
       engagement=engagement,
       question=question,
       stage=stage
+      materials=materials_text
   )
   return prompt_text
 
