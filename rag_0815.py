@@ -18,6 +18,7 @@ from sentence_transformers import SentenceTransformer
 from langchain.schema import Document
 import re
 from rank_bm25 import BM25Okapi
+import numpy as np
 
 
 
