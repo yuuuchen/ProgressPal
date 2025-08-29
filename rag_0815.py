@@ -124,6 +124,9 @@ def retrieve_docs(query, top_k=5, weight_bm25=0.7, weight_vector=0.3, k_bm25=20)
   # 排序回傳
   sorted_pairs = sorted(zip(final_scores, candidate_docs), key=lambda x: x[0], reverse=True)
   sorted_results = [text for _, text in sorted_pairs]
+    
+  #去除重複段落
+  sorted_results = list(dict.fromkeys(sorted_results))
 
   return sorted_results[:top_k]
 
