@@ -7,6 +7,17 @@ Original file is located at
     https://colab.research.google.com/drive/14jAxpxWKDhlFS2xe0hTOhfQiZ7txP5-P
 """
 
+from google.colab import drive
+drive.mount('/content/drive')
+
+!pip install -U langchain-community langchain-openai langchain-chroma langchain-qdrant langchain-google-vertexai -q
+
+!pip install pypdf -q
+
+!pip install -U sentence-transformers -q
+
+!pip install rank_bm25 -q
+
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.document_loaders import TextLoader
@@ -20,256 +31,6 @@ import re
 from rank_bm25 import BM25Okapi
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
-
-"""# RecursiveCharacterTextSplitter方法讀取教材(/chroma_db)
-
-Chunk 切分
-"""
-
-#載入教材PDF
-loader = PyPDFLoader("/content/drive/MyDrive/專題/教材/CH3陣列_整理版.pdf")
-documents = loader.load()
-#切分文字
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=150, chunk_overlap=50)
-docs = text_splitter.split_documents(documents)
-
-print(f"共分成 {len(docs)} 段")
-
-# for i, chunk in enumerate(docs, 1):
-#   print(f"段落 {i}:\n{chunk.page_content}\n{'-'*50}")
-
-"""Embeddings"""
-
-#將文本轉成向量
-embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-
-"""用Chroma建立向量庫"""
-
-vectorstore = Chroma.from_documents(docs, embeddings, persist_directory="/content/drive/MyDrive/專題/程式碼專區/chroma_db")
-vectorstore.persist()
-
-"""將使用者問題轉成向量，找教材裡最相似的幾段內容
-
-**Chroma**
-"""
-
-def retrieve_docs_rc(query, top_k):
-  #載入Embeddings和Chroma向量庫
-  embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-  vectorstore = Chroma(persist_directory="/content/drive/MyDrive/專題/程式碼專區/chroma_db", embedding_function=embeddings)
-
-  results = vectorstore.similarity_search_with_score(query, k=top_k)
-  related_texts = []
-
-  for doc, score in results:
-    if score <= 1:
-      related_texts.append((doc.page_content))
-
-  return related_texts #回傳成一個list
-
-"""測試"""
-
-query = "一維陣列"
-related_docs = retrieve_docs_rc(query, top_k=5)
-
-print("找到的相關教材段落：")
-for i, doc in enumerate(related_docs, 1):
-  print(f"{i}. {doc}\n")
-
-"""**Chroma + BM25 混合搜尋**"""
-
-def hybrid_search_rc(query,top_k=5, weight_bm25=0.7, weight_vector=0.3):
-    #載入Embeddings和Chroma向量庫
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-    vectorstore = Chroma(
-      persist_directory="/content/drive/MyDrive/專題/程式碼專區/chroma_db",
-      embedding_function=embeddings
-    )
-
-    #抓取所有文件（for BM25）
-    all_docs = vectorstore.get(include=["documents"])["documents"]
-
-    #準備BM25資料
-    #把每份文件用split拆成單詞
-    tokenized_corpus = [doc.split() for doc in all_docs]
-    bm25 = BM25Okapi(tokenized_corpus)
-
-    #BM25排序
-    bm25_scores = bm25.get_scores(query.split())
-    bm25_ranked = sorted(zip(bm25_scores, all_docs), key=lambda x: x[0], reverse=True)
-
-    #取前20筆作為候選
-    candidate_docs = [doc for _, doc in bm25_ranked[:20]]
-
-    #做向量檢索
-    query_emb = embeddings.embed_query(query) #把 query 轉成向量
-    vector_results = []
-    for doc in candidate_docs:
-        doc_emb = embeddings.embed_query(doc)
-        #餘弦相似度（越大越相似）
-        score = np.dot(query_emb, doc_emb) / (np.linalg.norm(query_emb) * np.linalg.norm(doc_emb))
-        vector_results.append((doc, score))
-
-    #取出BM25 數與向量分數
-    bm25_scores_candidates = np.array([score for score, _ in bm25_ranked[:20]])
-    vector_scores = np.array([score for _, score in vector_results])
-
-    #標準化
-    scaler = MinMaxScaler()
-    bm25_scores_norm = scaler.fit_transform(bm25_scores_candidates.reshape(-1, 1)).flatten()
-    vector_scores_norm = scaler.fit_transform(vector_scores.reshape(-1, 1)).flatten()
-
-    #融合分數(70%來自BM25/30%來自向量相似度)
-    final_scores = weight_bm25 * bm25_scores_norm + weight_vector * vector_scores_norm
-
-    #排序
-    sorted_pairs = sorted(zip(final_scores, candidate_docs), key=lambda x: x[0], reverse=True)
-    sorted_results = [text for _, text in sorted_pairs]
-
-    return sorted_results[:top_k]
-
-"""測試"""
-
-query = "一維陣列"
-related_docs = hybrid_search_rc(query,top_k=5)
-
-print("找到的相關教材段落：")
-for i, doc in enumerate(related_docs, 1):
-  print(f"{i}. {doc}\n")
-
-"""# MarkdownHeaderTextSplitter方法讀取教材(/chroma_db_md)
-
-Chunk 切分
-"""
-
-#載入教材PDF
-loader = PyPDFLoader("/content/drive/MyDrive/專題/教材/CH3陣列_markdown.pdf")
-pages = loader.load()
-
-# 合併文字
-text = "\n".join([p.page_content for p in pages])
-
-# 定義標題層級
-headers_to_split_on = [
-    ("#", "章節"),
-    ("##", "小節"),
-    ("###", "段落"),
-    ("####", "子段落")
-]
-
-# 分段
-splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
-docs = splitter.split_text(text)
-
-# 總段落數
-print(f"共有{len(docs)}個段落")
-
-# 每個段落內容
-for i, d in enumerate(docs, 1):
-  print(f"\n--- 段落 {i} ---")
-  print("標題階層：", d.metadata)
-  print("內容：", d.page_content,)
-
-"""Embeddings"""
-
-#將文本轉成向量
-embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-
-"""用Chroma建立向量庫
-
-**Chroma**
-"""
-
-vectorstore = Chroma.from_documents(docs, embeddings, persist_directory="/content/drive/MyDrive/專題/程式碼專區/chroma_db_md")
-vectorstore.persist()
-
-"""將使用者問題轉成向量，找教材裡最相似的幾段內容
-
-"""
-
-def retrieve_docs_md(query, top_k=3):
-  #載入Embeddings和Chroma向量庫
-  embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-  vectorstore = Chroma(persist_directory="/content/drive/MyDrive/專題/程式碼專區/chroma_db_md", embedding_function=embeddings)
-
-  results = vectorstore.similarity_search_with_score(query, k=top_k)
-  related_texts = []
-
-  for doc, score in results:
-    #if score <= 1:
-      related_texts.append((doc.page_content))
-
-  return related_texts #回傳成一個list
-
-"""測試"""
-
-query = "一維陣列"
-related_docs = retrieve_docs_md(query, top_k=3)
-
-print("找到的相關教材段落：")
-for i, doc in enumerate(related_docs, 1):
-  print(f"{i}. {doc}\n")
-
-"""**Chroma + BM25 混合搜尋**"""
-
-def hybrid_search_md(query,top_k=5, weight_bm25=0.7, weight_vector=0.3):
-    #載入Embeddings和Chroma向量庫
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-    vectorstore = Chroma(
-      persist_directory="/content/drive/MyDrive/專題/程式碼專區/chroma_db_md",
-      embedding_function=embeddings
-    )
-
-    #抓取所有文件（for BM25）
-    all_docs = vectorstore.get(include=["documents"])["documents"]
-
-    #準備BM25資料
-    #把每份文件用split拆成單詞
-    tokenized_corpus = [doc.split() for doc in all_docs]
-    bm25 = BM25Okapi(tokenized_corpus)
-
-    #BM25排序
-    bm25_scores = bm25.get_scores(query.split())
-    bm25_ranked = sorted(zip(bm25_scores, all_docs), key=lambda x: x[0], reverse=True)
-
-    #取前20筆作為候選
-    candidate_docs = [doc for _, doc in bm25_ranked[:20]]
-
-    #做向量檢索
-    query_emb = embeddings.embed_query(query) #把 query 轉成向量
-    vector_results = []
-    for doc in candidate_docs:
-        doc_emb = embeddings.embed_query(doc)
-        #餘弦相似度（越大越相似）
-        score = np.dot(query_emb, doc_emb) / (np.linalg.norm(query_emb) * np.linalg.norm(doc_emb))
-        vector_results.append((doc, score))
-
-    #取出BM25 數與向量分數
-    bm25_scores_candidates = np.array([score for score, _ in bm25_ranked[:20]])
-    vector_scores = np.array([score for _, score in vector_results])
-
-    #標準化
-    scaler = MinMaxScaler()
-    bm25_scores_norm = scaler.fit_transform(bm25_scores_candidates.reshape(-1, 1)).flatten()
-    vector_scores_norm = scaler.fit_transform(vector_scores.reshape(-1, 1)).flatten()
-
-    #融合分數(70%來自BM25/30%來自向量相似度)
-    final_scores = weight_bm25 * bm25_scores_norm + weight_vector * vector_scores_norm
-
-    #排序
-    sorted_pairs = sorted(zip(final_scores, candidate_docs), key=lambda x: x[0], reverse=True)
-    sorted_results = [text for _, text in sorted_pairs]
-
-    return sorted_results[:top_k]
-
-"""測試"""
-
-query = "一維陣列"
-related_docs = hybrid_search_md(query,top_k=5)
-
-print("找到的相關教材段落：")
-for i, doc in enumerate(related_docs, 1):
-  print(f"{i}. {doc}\n")
 
 """# MarkdownHeaderTextSplitter+ RecursiveCharacterTextSplitter方法讀取教材(/chroma_db_mdrc)"""
 
@@ -328,37 +89,6 @@ embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 vectorstore = Chroma.from_documents(final_docs, embeddings, persist_directory="/content/drive/MyDrive/專題/程式碼專區/chroma_db_mdrc")
 vectorstore.persist()
-
-"""**Chroma**
-
-將使用者問題轉成向量，找教材裡最相似的幾段內容
-"""
-
-def retrieve_docs_mdrc(query, top_k=5):
-  #載入Embeddings和Chroma向量庫
-  embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-  vectorstore = Chroma(persist_directory="/content/drive/MyDrive/專題/程式碼專區/chroma_db_mdrc", embedding_function=embeddings)
-
-  #取得關鍵字
-  query_text = " ".join(query.get("keywords", []))
-
-  results = vectorstore.similarity_search_with_score(query_text, k=top_k)
-  related_texts = []
-
-  for doc, score in results:
-    #if score <= 1:
-      related_texts.append((doc.page_content))
-
-  return related_texts #回傳成一個list
-
-"""測試"""
-
-query = {"keywords": ["一維陣列", "索引"]}
-related_docs = retrieve_docs_mdrc(query, top_k=5)
-
-print("找到的相關教材段落：")
-for i, doc in enumerate(related_docs, 1):
-  print(f"{i}. {doc}\n")
 
 """**Chroma + BM25 混合搜尋**"""
 
