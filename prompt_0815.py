@@ -18,6 +18,9 @@ PROMPT_TEMPLATES = {
     # 行為 1：問答（簡短自然語言）
     "qa": """
 任務：QA
+- 回答字數總計不得超過 200 字
+- 根據學生參與度調整語氣與解釋深度
+回應風格:{style}
 學生的參與度：{engagement}
 學習階段：{stage}
 問題：{question}
@@ -27,6 +30,11 @@ PROMPT_TEMPLATES = {
     # 行為 2：教學（教材結構化）
     "tutoring": """
 任務：教學
+輸出需依照以下結構：
+  - 「### 教學重點」：解釋核心概念，理性陳述單元內容與重點。
+  - 「### 範例」：提供簡單範例或python程式碼示例，並使用指定教學策略。
+  - 「### 總結」：總結重點回顧，簡潔明瞭。
+回應風格:{style}
 學生的參與度：{engagement}
 學習階段：{stage}
 教材：{materials}
@@ -43,35 +51,9 @@ SYSTEM_PROMPT = """
 1. 使用自然語言分段回答，可使用 Markdown 或表格。
 2. 語氣需「溫暖、易於理解」。
 3. 直接回應問題，不要打招呼。
-4. 你有兩個任務：
-  1. QA 模式：
-    - 回答字數總計不得超過 200 字
-    - 結尾必須包含學生可能的困惑點
-  2. 教材模式：輸出需依照以下結構：
-    - 「### 教學重點」：解釋核心概念，理性陳述單元內容與重點。
-    - 「### 範例」：提供簡單範例或python程式碼示例，並使用指定教學策略。
-    - 「### 總結」：總結重點回顧，簡潔明瞭。
-    - 全文需使用繁體中文。
+4. 全文需使用繁體中文。
 5. 請依照教材內容進行回應
 6. 範例使用語言標籤 (例如 ```python)
-
-### 學習參與度對應行為
-- high:
-    - 語氣：積極且肯定
-    - 教學風格：引導延伸思考，促使挑戰性學習
-    - 回覆時：提供更深入的概念解釋，並在結尾附帶延伸思考問題，鼓勵學生反思，例如「你覺得在什麼場景下使用 Linked List 的插入刪除優勢最明顯？」
-
-- low:
-    - 語氣：溫和且耐心
-    - 教學風格：降低學習困難度，舉例對照、比喻解釋
-    - 回覆時：用簡單清楚的方式解釋概念，加入生活化例子，結尾加入正向鼓勵，例如「你已經掌握基礎概念了，下一步可以試著操作一下程式碼，看看效果如何。」
-    - **禁止在結尾使用任何提問或挑戰性問題**
-
-- default:
-    - 語氣：中性
-    - 教學風格：一般解釋
-    - 回覆時：提供直接的解釋，避免額外挑戰或比喻
-
 """
 
 '''
@@ -88,25 +70,27 @@ def map_emotion_to_profile(emotion):
   return mapping.get(emotion, {"tone": "中性", "style": "一般解釋"})
 
 # 映射方法：參與度 → 語氣 + 教學策略
+'''
 def map_engagement_to_profile(engagement):
   mapping = {
-    "high": {
-        "tone": "積極且肯定",  # 對應ABCDE理論中E（效果）階段，強化理性信念，鼓勵正向感受
-        "style": "引導延伸思考，促使挑戰性學習"  # 對應控制價值理論中高控制與高價值狀態，促使挑戰性學習
-    },
-    "low": {
-        "tone": "溫和且耐心",  # 適用於Ellis理論中D（駁斥）階段，溫柔調整非理性信念，降低焦慮
-        "style": "降低學習困難度，舉例對照、比喻解釋"  # 依控制價值理論降低學習困難度，提升控制感
-    }
+    "high": '''- 語氣：積極且肯定
+    - 教學風格：引導延伸思考，促使挑戰性學習
+    - 回覆時：提供更深入的概念解釋，並在結尾附帶延伸思考問題，鼓勵學生反思，例如「你覺得在什麼場景下使用 Linked List 的插入刪除優勢最明顯？」'''
+    ,
+    "low": '''- 語氣：溫和且耐心
+    - 教學風格：降低學習困難度，舉例對照、比喻解釋
+    - 回覆時：用簡單清楚的方式解釋概念，加入生活化例子，結尾加入正向鼓勵，例如「你已經掌握基礎概念了，下一步可以試著操作一下程式碼，看看效果如何。」
+    - **禁止在結尾使用任何提問或挑戰性問題**'''
   }
-  return mapping.get(engagement, {"tone": "中性", "style": "一般解釋"})
-'''
+  return mapping.get(engagement, '提供直接的解釋，避免額外挑戰或比喻')
+
 
 # 主方法：回答學生提問。使用學習參與度
 def generate_prompt(engagement, question, materials, stage='初學'):
   materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
   template = PROMPT_TEMPLATES["qa"]
   prompt_text = template.format(
+      style=map_engagement_to_profile(engagement),
       engagement=engagement,
       question=question,
       stage=stage,
@@ -120,6 +104,7 @@ def generate_materials(engagement ,materials ,stage="初學"):
   materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
   template = PROMPT_TEMPLATES["tutoring"]
   prompt_text = template.format(
+      style=map_engagement_to_profile(engagement),
       engagement=engagement,
       materials=materials_text,
       stage=stage
