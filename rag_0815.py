@@ -7,6 +7,17 @@ Original file is located at
     https://colab.research.google.com/drive/14jAxpxWKDhlFS2xe0hTOhfQiZ7txP5-P
 """
 
+from google.colab import drive
+drive.mount('/content/drive')
+
+!pip install -U langchain-community langchain-openai langchain-chroma langchain-qdrant langchain-google-vertexai -q
+
+!pip install pypdf -q
+
+!pip install -U sentence-transformers -q
+
+!pip install rank_bm25 -q
+
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.document_loaders import TextLoader
@@ -20,64 +31,131 @@ import re
 from rank_bm25 import BM25Okapi
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
+import os
 
-"""# MarkdownHeaderTextSplitter+ RecursiveCharacterTextSplitter方法讀取教材(/chroma_db_mdrc)"""
+"""測試
 
-#載入教材PDF
-loader = PyPDFLoader("/content/drive/MyDrive/專題/教材/CH3陣列_markdown.pdf")
-pages = loader.load()
+# **教材向量庫**
 
-#合併文字
-text = "\n".join([p.page_content for p in pages])
+建立向量庫
+"""
+
+#讀取資料夾裡的所有.md檔案
+md_files = [f for f in os.listdir("/content/drive/MyDrive/專題/教材") if f.endswith(".md")]
+
+all_docs = []
 
 #定義標題層級
 headers_to_split_on = [
     ("#", "章節"),
-    ("##", "小節"),
+    ("##", "單元"),
     ("###", "段落"),
     ("####", "子段落")
 ]
-
-#MarkdownHeaderTextSplitter分段
 markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
-docs = markdown_splitter.split_text(text)
 
-#RecursiveCharacterTextSplitter分段
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=350,   #每塊字數
-    chunk_overlap=50, #交疊
-    separators=["\n\n", "\n", "。", " "]  #分割優先順序
-)
+for file in md_files:
+  file_path = os.path.join("/content/drive/MyDrive/專題/教材", file)
 
-final_docs = []
-for doc in docs:
-    sub_docs = text_splitter.split_text(doc.page_content)
-    for sub_doc in sub_docs:
-        final_docs.append(
+  #讀取檔案
+  loader = TextLoader(file_path, encoding="utf-8")
+  docs = loader.load()
+
+  for d in docs:
+    #MarkdownHeaderTextSplitter分段
+    md_header_splits = markdown_splitter.split_text(d.page_content)
+
+    #RecursiveCharacterTextSplitter分段
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=350,
+        chunk_overlap=50,
+        separators=["\n\n", "\n", "。", " "]
+    )
+
+    for doc in md_header_splits:
+      sub_docs = text_splitter.split_text(doc.page_content)
+      for sub_doc in sub_docs:
+        all_docs.append(
             Document(
-              page_content=sub_doc,
-              metadata=doc.metadata  # 保留章節、小節資訊
-          )
+                page_content=sub_doc,
+                metadata={
+                    **doc.metadata,   # 保留章節、小節資訊
+                    "source": file    # 加上檔名來源
+                }
+            )
         )
 
-# 總段落數
-print(f"共有{len(final_docs)}個段落")
+print(f"總共有 {len(all_docs)} 個段落，來自 {len(md_files)} 個 Markdown 檔案")
 
-# 每個段落內容
-for i, d in enumerate(final_docs, 1):
-  print(f"\n--- 段落 {i} ---")
-  print("標題階層：", d.metadata)
-  print("內容：", d.page_content)
-
-"""Embeddings"""
-
-#將文本轉成向量
+#將文本轉為向量
 embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
-"""用Chroma建立向量庫"""
+#存入 Chroma 向量資料庫
+vectorstore = Chroma.from_documents(
+    documents=all_docs,
+    embedding=embeddings,
+    persist_directory="/content/drive/MyDrive/專題/教材/teaching_material"
+)
 
-vectorstore = Chroma.from_documents(final_docs, embeddings, persist_directory="/content/drive/MyDrive/專題/程式碼專區/chroma_db_mdrc")
 vectorstore.persist()
+
+for i, doc in enumerate(all_docs[:50], 1):
+    print(f"--- 段落 {i} ---")
+    print(doc.page_content.strip())   # 段落文字
+    print("Metadata:", doc.metadata)  # 對應的標題資訊（章節/單元/來源檔案）
+    print()
+
+"""**回傳教材內容**"""
+
+#排序單元編號
+def parse_unit_code(unit_code):
+  parts = unit_code.split("-")
+  nums = []
+  for p in parts:
+    match = re.match(r"(\d+)", p) #只取開頭數字
+    if match:
+      nums.append(int(match.group(1)))
+    else:
+        nums.append(0)
+  return nums #回傳一個數字列表，例如 "1-1-1" → [1,1,1]
+
+#依據章節與單元號碼，輸出該單元的教材內容字串
+def get_unit(chapter, unit):
+  docs_dict = {}
+
+  for doc in all_docs:
+    text = doc.page_content.strip()
+    meta = doc.metadata
+
+    chapter_title = meta.get("章節", "")
+    unit_title = meta.get("單元", "")
+
+    unit_code = ""
+    if chapter_title and unit_title:
+      chap_num = re.match(r"(\d+)", chapter_title).group(1) if chapter_title else "" #章節開頭數字
+      unit_num = re.match(r"(\d+(-\d+)*)", unit_title).group(1) if unit_title else "" #單元開頭數字
+      unit_code = f"{chap_num}-{unit_num}" #組合成 "章節-單元"
+
+      if unit_code not in docs_dict:
+          docs_dict[unit_code] = []
+      docs_dict[unit_code].append(text)
+
+  target_code = f"{chapter}-{unit}" #組合成目標單元編號
+
+  combined = []
+  for key in sorted(docs_dict.keys(), key=parse_unit_code):
+    if key == target_code or key.startswith(target_code + "-"):
+        combined.append(f"=== {key} ===")
+        combined.extend(docs_dict[key])
+
+  if combined:
+    return "\n".join(combined)
+  else:
+    return "找不到該單元教材"
+
+"""測試"""
+
+print(get_unit(1,1))
 
 """**Chroma + BM25 混合搜尋**"""
 
@@ -85,7 +163,7 @@ def retrieve_docs(query, top_k=5, weight_bm25=0.7, weight_vector=0.3):
   #載入Embeddings和Chroma
   embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
   vectorstore = Chroma(
-      persist_directory="/content/drive/MyDrive/專題/程式碼專區/chroma_db_mdrc",
+      persist_directory="/content/drive/MyDrive/專題/程式碼專區/teaching_material",
       embedding_function=embeddings
   )
 
@@ -93,15 +171,15 @@ def retrieve_docs(query, top_k=5, weight_bm25=0.7, weight_vector=0.3):
   query_text = " ".join(query.get("keywords", []))
 
   #取得所有段落文字
-  all_docs = [doc.page_content for doc in final_docs]
+  all_texts = [doc.page_content for doc in all_docs]
 
   #BM25準備
-  tokenized_corpus = [doc.split() for doc in all_docs]
+  tokenized_corpus = [doc.split() for doc in all_texts]
   bm25 = BM25Okapi(tokenized_corpus)
 
   #BM25排序，取前20筆作為候選
   bm25_scores = bm25.get_scores(query_text.split())
-  bm25_ranked = sorted(zip(bm25_scores, all_docs), key=lambda x: x[0], reverse=True)
+  bm25_ranked = sorted(zip(bm25_scores, all_texts), key=lambda x: x[0], reverse=True)
   candidate_docs = [doc for _, doc in bm25_ranked[:20]]
 
   #向量檢索
@@ -130,96 +208,9 @@ def retrieve_docs(query, top_k=5, weight_bm25=0.7, weight_vector=0.3):
 
   return sorted_results[:top_k]
 
-"""測試"""
-
-query = {"keywords": ["二維陣列"]}
+query = {"keywords": ["陣列"]}
 related_docs = retrieve_docs(query,top_k=5)
 
 print("找到的相關教材段落：")
 for i, doc in enumerate(related_docs, 1):
   print(f"{i}. {doc}\n")
-
-"""# 單元教材提供
-
-回傳教材內容
-"""
-
-docs_dict = {}
-
-for doc in docs:
-  text = doc.page_content.strip()
-  meta = doc.metadata
-
-  # 從 metadata 取「章節」當作單元代號
-  chapter_title = meta.get("章節")
-  if chapter_title:
-    #轉成 '3.1' 格式
-    match = re.match(r"(\d+)-(\d+)", chapter_title)
-    if match:
-      unit_code = f"{match.group(1)}.{match.group(2)}"
-    else:
-      unit_code = chapter_title  #如果沒對應到，保留原樣
-
-    if unit_code not in docs_dict:
-        docs_dict[unit_code] = []
-    docs_dict[unit_code].append(text)
-
-for unit_code, paragraphs in docs_dict.items():
-    print(f"單元編號: {unit_code}")
-
-    for p in paragraphs:
-        print(p)
-    print("-" * 50)  # 分隔線
-
-#number:使用者輸入單元編號(1,2,3...)
-#docs_dict: key = 單元編號, value = list of 段落文字
-def get_unit(number):
-
-  #建立docs_dict
-  docs_dict = {}
-
-  for doc in docs:
-    text = doc.page_content.strip() #取出文字內容
-    meta = doc.metadata #取出標題
-
-    #從metadata取章節
-    chapter_title = meta.get("章節")
-    if chapter_title:
-      #轉成 '3.1' 格式
-      match = re.match(r"(\d+)-(\d+)", chapter_title)
-      if match:
-        unit_code = f"{match.group(1)}.{match.group(2)}"
-      else:
-        unit_code = chapter_title  #如果沒對應到，保留原樣
-
-      if unit_code not in docs_dict:
-          docs_dict[unit_code] = []
-      docs_dict[unit_code].append(text)
-
-  #單元編號
-  unit_map = {
-    1: "3.1",
-    2: "3.2",
-    3: "3.3",
-    4: "3.4",
-  }
-
-  #根據number從unit_map取出對應的單元編號
-  unit_code = unit_map.get(number)
-  if not unit_code:
-    return "找不到對應單元"
-
-  combined = []
-
-  #key:單元編號 / value:該單元段落列表
-  for key, paragraphs in docs_dict.items():
-    #加入子單元
-    if key.startswith(unit_code + ".") or key == unit_code:
-      combined.append(f"=== {key} ===") #加上單元
-      combined.extend(paragraphs) #合併列表
-  if combined:
-    return "\n".join(combined)
-  else:
-    return "找不到該單元教材"
-
-print(get_unit(4))
