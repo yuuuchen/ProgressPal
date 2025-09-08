@@ -7,6 +7,17 @@ Original file is located at
     https://colab.research.google.com/drive/14jAxpxWKDhlFS2xe0hTOhfQiZ7txP5-P
 """
 
+from google.colab import drive
+drive.mount('/content/drive')
+
+!pip install -U langchain-community langchain-openai langchain-chroma langchain-qdrant langchain-google-vertexai -q
+
+!pip install pypdf -q
+
+!pip install -U sentence-transformers -q
+
+!pip install rank_bm25 -q
+
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.document_loaders import TextLoader
@@ -98,15 +109,15 @@ for i, doc in enumerate(all_docs[:50], 1):
 
 #排序單元編號
 def parse_unit_code(unit_code):
-  parts = unit_code.split("-")
-  nums = []
-  for p in parts:
-    match = re.match(r"(\d+)", p) #只取開頭數字
-    if match:
-      nums.append(int(match.group(1)))
-    else:
-        nums.append(0)
-  return nums #回傳一個數字列表，例如 "1-1-1" → [1,1,1]
+    parts = unit_code.split("-")
+    nums = []
+    for p in parts[:2]:  # 只取前兩項：章節與單元
+        match = re.match(r"(\d+)", p)
+        if match:
+            nums.append(int(match.group(1)))
+        else:
+            nums.append(0)
+    return nums  #回傳一個數字列表，例如 "1-1-1" → [1,1]
 
 #依據章節與單元號碼，輸出該單元的教材內容字串
 def get_unit(chapter, unit):
@@ -116,26 +127,24 @@ def get_unit(chapter, unit):
     text = doc.page_content.strip()
     meta = doc.metadata
 
-    chapter_title = meta.get("章節", "")
     unit_title = meta.get("單元", "")
+    paragraph = meta.get("段落", "")
+    if unit_title:
+        unit_num = re.match(r"(\d+-\d+)", unit_title).group(0)  # 抓單元開頭數字
 
-    unit_code = ""
-    if chapter_title and unit_title:
-      chap_num = re.match(r"(\d+)", chapter_title).group(1) if chapter_title else "" #章節開頭數字
-      unit_num = re.match(r"(\d+(-\d+)*)", unit_title).group(1) if unit_title else "" #單元開頭數字
-      unit_code = f"{chap_num}-{unit_num}" #組合成 "章節-單元"
+        if unit_num not in docs_dict:
+            docs_dict[unit_num] = []
 
-      if unit_code not in docs_dict:
-          docs_dict[unit_code] = []
-      docs_dict[unit_code].append(text)
+        # 在內容中保留段落資訊
+        docs_dict[unit_num].append(f"[{paragraph}] - {text}")
 
   target_code = f"{chapter}-{unit}" #組合成目標單元編號
 
   combined = []
   for key in sorted(docs_dict.keys(), key=parse_unit_code):
-    if key == target_code or key.startswith(target_code + "-"):
-        combined.append(f"=== {key} ===")
-        combined.extend(docs_dict[key])
+    if key == target_code:
+      combined.append(f"=== {key} ===")
+      combined.extend(docs_dict[key])
 
   if combined:
     return "\n".join(combined)
@@ -144,7 +153,7 @@ def get_unit(chapter, unit):
 
 """測試"""
 
-print(get_unit(1,1))
+print(get_unit(3,2))
 
 """**Chroma + BM25 混合搜尋**"""
 
