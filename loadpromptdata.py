@@ -17,7 +17,7 @@ import pandas as pd
 import ast
 
 # === 全域變數 ===
-promptExpA = []
+PromptExpA = []
 
 def create_list(csv_path: str):
   """
@@ -54,12 +54,12 @@ def load_experiment_data():
   '''
   data_path_A：操弄檢核：確認系統能穩定產生High / Low 兩種預期回覆（語氣、結尾型態、術語層級等）
   '''
-  global promptExpA
+  global PromptExpA
   data_path_A = "/content/drive/MyDrive/專題/程式碼專區/ProgressPal/prompt實驗資料/題庫/linear_data_structure_questions_detailed.csv"
-  promptExpA = create_list(data_path_A)
+  PromptExpA = create_list(data_path_A)
 
 if __name__ == "__main__":
   load_experiment_data()
-  print(f"載入 {len(promptExpA)} 筆資料")
+  print(f"載入 {len(PromptExpA)} 筆資料")
   print("第一筆範例：")
-  print(promptExpA[0])
+  print(PromptExpA[0])
