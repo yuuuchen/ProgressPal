@@ -8,11 +8,10 @@ Original file is located at
 
 實驗資料
 """
-
-from google.colab import drive
-drive.mount('/content/drive')
-
-# loadPromptData.py
+"""
+loadPromptData.py
+從 GitHub Repo 載入 CSV 並轉換為 list
+"""
 import pandas as pd
 import ast
 
@@ -53,9 +52,10 @@ def create_list(csv_path: str):
 def load_experiment_data():
   '''
   data_path_A：操弄檢核：確認系統能穩定產生High / Low 兩種預期回覆（語氣、結尾型態、術語層級等）
+  從 GitHub Raw URL 載入資料
   '''
   global PromptExpA
-  data_path_A = "/content/drive/MyDrive/專題/程式碼專區/ProgressPal/prompt實驗資料/題庫/linear_data_structure_questions_detailed.csv"
+  data_path_A = "https://raw.githubusercontent.com/yuuuchen/ProgressPal/main/testData/linear_data_structure_questions_detailed.csv"
   PromptExpA = create_list(data_path_A)
 
 if __name__ == "__main__":
