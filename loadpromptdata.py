@@ -33,16 +33,16 @@ def create_list(csv_path: str):
   exp_list = []
 
   for _, row in df.iterrows():
-      raw_materials = row["教材 list"]
+      raw_materials = row["materials"]
       try:
           materials = ast.literal_eval("[" + raw_materials + "]")
       except Exception:
           materials = [m.strip().strip('"') for m in raw_materials.split(",")]
 
       entry = {
-          "question": row["學生提問"],
-          "engagement": row["參與度"],
-          "level": row["學習狀態"],
+          "question": row["question"],
+          "engagement": row["engagement"],
+          "stage": row["stage"],
           "materials": materials
       }
       exp_list.append(entry)
