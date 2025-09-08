@@ -19,53 +19,47 @@ import ast
 # === 全域變數 ===
 promptExpA = []
 
-def load_experiment_data(csv_path: str, exp_name):
-    """
-    從 CSV 載入實驗資料，轉換成 list 格式回傳 exp_name。
-    每筆格式為 dict：
-    {
-        "question": str,
-        "engagement": str,
-        "level": str,
-        "materials": list[str]
-    }
-    """
-    df = pd.read_csv(csv_path)
+def create_list(csv_path: str):
+  """
+  從 CSV 載入實驗資料，轉換成 list 格式回傳。
+  每筆格式為 dict：
+  {
+      "question": str,
+      "engagement": str,
+      "level": str,
+      "materials": list[str]
+  }
+  """
+  df = pd.read_csv(csv_path)
+  exp_list = []
 
-    exp_name = []  # reset
+  for _, row in df.iterrows():
+      raw_materials = row["教材 list"]
+      try:
+          materials = ast.literal_eval("[" + raw_materials + "]")
+      except Exception:
+          materials = [m.strip().strip('"') for m in raw_materials.split(",")]
 
-    for _, row in df.iterrows():
-        # CSV 裡的「教材 list」是字串，可能像：
-        # "教材1","教材2","教材3"
-        # 這裡轉換成 list[str]
-        raw_materials = row["教材 list"]
+      entry = {
+          "question": row["學生提問"],
+          "engagement": row["參與度"],
+          "level": row["學習狀態"],
+          "materials": materials
+      }
+      exp_list.append(entry)
 
-        # 確保字串能安全轉成 list
-        try:
-            # 統一加中括號再 eval，避免分隔問題
-            materials = ast.literal_eval("[" + raw_materials + "]")
-        except Exception:
-            # 如果解析失敗，就直接用逗號切
-            materials = [m.strip().strip('"') for m in raw_materials.split(",")]
+  return exp_list
 
-        entry = {
-            "question": row["學生提問"],
-            "engagement": row["參與度"],
-            "level": row["學習狀態"],
-            "materials": materials
-        }
-        exp_name.append(entry)
+def load_experiment_data():
+  '''
+  data_path_A：操弄檢核：確認系統能穩定產生High / Low 兩種預期回覆（語氣、結尾型態、術語層級等）
+  '''
+  global promptExpA
+  data_path_A = "/content/drive/MyDrive/專題/程式碼專區/ProgressPal/prompt實驗資料/題庫/linear_data_structure_questions_detailed.csv"
+  promptExpA = create_list(data_path_A)
 
-    return exp_name
-
-
-# === 測試用 ===
-'''
-data_path_A：操弄檢核：確認系統能穩定產生High / Low 兩種預期回覆（語氣、結尾型態、術語層級等）
-'''
-data_path_A = "/content/drive/MyDrive/專題/程式碼專區/ProgressPal/prompt實驗資料/題庫/linear_data_structure_questions_detailed.csv"
-promptExpA = load_experiment_data(data_path_A, promptExpA)
-
-print(f"載入 {len(promptExpA)} 筆資料")
-print("第一筆範例：")
-print(promptExpA[0])
+if __name__ == "__main__":
+  load_experiment_data()
+  print(f"載入 {len(promptExpA)} 筆資料")
+  print("第一筆範例：")
+  print(promptExpA[0])
