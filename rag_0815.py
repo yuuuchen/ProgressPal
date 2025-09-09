@@ -7,6 +7,17 @@ Original file is located at
     https://colab.research.google.com/drive/14jAxpxWKDhlFS2xe0hTOhfQiZ7txP5-P
 """
 
+from google.colab import drive
+drive.mount('/content/drive')
+
+!pip install -U langchain-community langchain-openai langchain-chroma langchain-qdrant langchain-google-vertexai -q
+
+!pip install pypdf -q
+
+!pip install -U sentence-transformers -q
+
+!pip install rank_bm25 -q
+
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.document_loaders import TextLoader
@@ -54,25 +65,19 @@ for file in md_files:
     #MarkdownHeaderTextSplitter分段
     md_header_splits = markdown_splitter.split_text(d.page_content)
 
-    #RecursiveCharacterTextSplitter分段
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=350,
-        chunk_overlap=50,
-        separators=["\n\n", "\n", "。", " "]
-    )
-
     for doc in md_header_splits:
-      sub_docs = text_splitter.split_text(doc.page_content)
-      for sub_doc in sub_docs:
-        all_docs.append(
-            Document(
-                page_content=sub_doc,
-                metadata={
-                    **doc.metadata,   # 保留章節、小節資訊
-                    "source": file    # 加上檔名來源
-                }
-            )
+      header = doc.metadata.get("段落", "")
+      content_with_header = f"{header}\n{doc.page_content}" if header else doc.page_content
+
+      all_docs.append(
+        Document(
+          page_content=content_with_header,
+          metadata={
+              **doc.metadata,   # 保留章節、小節資訊
+              "source": file    # 加上檔名來源
+          }
         )
+      )
 
 print(f"總共有 {len(all_docs)} 個段落，來自 {len(md_files)} 個 Markdown 檔案")
 
@@ -142,7 +147,7 @@ def get_unit(chapter, unit):
 
 """測試"""
 
-print(get_unit(3,2))
+print(get_unit(4,3))
 
 """**Chroma + BM25 混合搜尋**"""
 
@@ -154,9 +159,6 @@ def retrieve_docs(query, top_k=5, weight_bm25=0.7, weight_vector=0.3):
       embedding_function=embeddings
   )
 
-  #取得關鍵字
-  query_text = " ".join(query.get("keywords", []))
-
   #取得所有段落文字
   all_texts = [doc.page_content for doc in all_docs]
 
@@ -164,39 +166,52 @@ def retrieve_docs(query, top_k=5, weight_bm25=0.7, weight_vector=0.3):
   tokenized_corpus = [doc.split() for doc in all_texts]
   bm25 = BM25Okapi(tokenized_corpus)
 
-  #BM25排序，取前20筆作為候選
-  bm25_scores = bm25.get_scores(query_text.split())
-  bm25_ranked = sorted(zip(bm25_scores, all_texts), key=lambda x: x[0], reverse=True)
-  candidate_docs = [doc for _, doc in bm25_ranked[:20]]
+  #取得關鍵字
+  keywords = query.get("keywords", [])
+  results = []
 
-  #向量檢索
-  query_emb = embeddings.embed_query(query_text)
-  vector_results = []
-  for doc in candidate_docs:
-      doc_emb = embeddings.embed_documents([doc])[0]
-      score = np.dot(query_emb, doc_emb) / (np.linalg.norm(query_emb) * np.linalg.norm(doc_emb))
-      vector_results.append((doc, score))
+  #每個關鍵字單獨檢索
+  for keyword in keywords:
+    query_text = keyword
 
-  #標準化並融合分數
-  bm25_scores_candidates = np.array([score for score, _ in bm25_ranked[:20]])
-  vector_scores = np.array([score for _, score in vector_results])
-  scaler = MinMaxScaler()
-  bm25_scores_norm = scaler.fit_transform(bm25_scores_candidates.reshape(-1,1)).flatten()
-  vector_scores_norm = scaler.fit_transform(vector_scores.reshape(-1,1)).flatten()
+    #BM25排序，取前20筆作為候選
+    bm25_scores = bm25.get_scores(query_text.split())
+    bm25_ranked = sorted(zip(bm25_scores, all_texts), key=lambda x: x[0], reverse=True)
+    candidate_docs = [doc for _, doc in bm25_ranked[:20]]
 
-  final_scores = weight_bm25 * bm25_scores_norm + weight_vector * vector_scores_norm
+    #向量檢索
+    query_emb = embeddings.embed_query(query_text)
+    vector_results = []
+    for doc in candidate_docs:
+        doc_emb = embeddings.embed_documents([doc])[0]
+        score = np.dot(query_emb, doc_emb) / (np.linalg.norm(query_emb) * np.linalg.norm(doc_emb))
+        vector_results.append((doc, score))
 
-  #排序回傳
-  sorted_pairs = sorted(zip(final_scores, candidate_docs), key=lambda x: x[0], reverse=True)
-  sorted_results = [text for _, text in sorted_pairs]
+    #標準化並融合分數
+    bm25_scores_candidates = np.array([score for score, _ in bm25_ranked[:20]])
+    vector_scores = np.array([score for _, score in vector_results])
+    scaler = MinMaxScaler()
+    bm25_scores_norm = scaler.fit_transform(bm25_scores_candidates.reshape(-1,1)).flatten()
+    vector_scores_norm = scaler.fit_transform(vector_scores.reshape(-1,1)).flatten()
+
+    final_scores = weight_bm25 * bm25_scores_norm + weight_vector * vector_scores_norm
+
+    #排序回傳
+    sorted_pairs = sorted(zip(final_scores, candidate_docs), key=lambda x: x[0], reverse=True)
+    sorted_results = [text for _, text in sorted_pairs]
+
+    #去除重複段落
+    sorted_results = list(dict.fromkeys(sorted_results))
+
+    results.extend(sorted_results[:top_k])
 
   #去除重複段落
-  sorted_results = list(dict.fromkeys(sorted_results))
+  results = list(dict.fromkeys(results))
 
-  return sorted_results[:top_k]
+  return results
 
-query = {"keywords": ["陣列"]}
-related_docs = retrieve_docs(query,top_k=5)
+query = {"keywords": ["鏈結串列","陣列","堆疊"]}
+related_docs = retrieve_docs(query,5)
 
 print("找到的相關教材段落：")
 for i, doc in enumerate(related_docs, 1):
