@@ -7,51 +7,81 @@ Original file is located at
     https://colab.research.google.com/drive/1TsDnfRhwf5-8P_tDtmLitknvEriELDJ3
 """
 
-from typing import List, Tuple, Optional
-
 #六種學習情緒對應參與度分數
 EMOTION_TO_ENGAGEMENT = {
-    "喜悅": 1.0,
-    "投入": 1.0,
-    "驚訝": 1.0,
-    "無聊": 0.0,
-    "困惑": 0.5,
-    "挫折": 0.0,
+  "喜悅": 1.0,
+  "投入": 1.0,
+  "驚訝": 1.0,
+  "無聊": 0.0,
+  "挫折": 0.0,
 }
 
-FALLBACK_ENGAGEMENT = 0.5  #未知情緒
+#正面/負向情緒
+POSITIVE = {"喜悅", "投入", "驚訝"}
+NEGATIVE = {"無聊", "挫折"}
 
 #情緒字串轉成對應的參與度分數
 def map_emotion_to_score(emotion):
-    return EMOTION_TO_ENGAGEMENT.get(emotion.strip(), FALLBACK_ENGAGEMENT)
+  scores = []
+  n = len(emotion)
+  #遍歷每個情緒
+  for i, e in enumerate(emotion):
+    #困惑情緒處理
+    if e == "困惑":
+      if i + 1 < n: #有下一個情緒
+        next_e = emotion[i + 1]
+        if next_e in POSITIVE: #後續為正向
+          scores.append(1.0) #分數設為1.0
+        elif next_e in NEGATIVE: #後續為負向
+          scores.append(0.0) #分數設為0.0
+        else:
+          raise ValueError(f"未知情緒: {next_e}")
+      else: #最後一個為困惑
+        scores.append(0.5) #設為0.5
+    else:
+      if e not in EMOTION_TO_ENGAGEMENT:
+        raise ValueError(f"未知情緒: {e}")
+      scores.append(EMOTION_TO_ENGAGEMENT[e])
+  return scores
 
 #輸入情緒序列，回傳參與度分數
 def compute_engagement(emotions):
-    """
-    "ema" (指數平滑法)：即時追蹤學習狀態，快速反應「最近」的情緒
-    """
-    #空序列
-    if not emotions:
-        return FALLBACK_ENGAGEMENT
+  """
+  "ema" (指數平滑法)：即時追蹤學習狀態，快速反應「最近」的情緒
+  """
+  #空序列
+  if not emotions:
+    raise ValueError("情緒序列不可為空")
 
-    #情緒字串轉成數值分數
-    scores = [map_emotion_to_score(e) for e in emotions]
+  #情緒字串轉成數值分數
+  scores = map_emotion_to_score(emotions)
 
-    #if method == "mean":
-      #return sum(scores) / len(scores)
+  #平均分數法
+  #if method == "mean":
+    #return sum(scores) / len(scores)
 
-    alpha = 0.4  #越大越重視最近的情緒
-    ema = scores[0]
-    for x in scores[1:]:
-        ema = alpha * x + (1 - alpha) * ema
+  #指數平滑法
+  alpha = 0.4  #越大越重視最近的情緒
+  ema = scores[0]
+  for x in scores[1:]:
+    ema = alpha * x + (1 - alpha) * ema
 
-    if ema >= 0.5:
-      return "high"
-    else:
-      return "low"
+  if ema >= 0.5:
+    return "high"
+  else:
+    return "low"
 
 """測試"""
 
-emotions_seq = ["喜悅", "困惑", "投入", "喜悅", "挫折", "無聊"]
+# 測試
+seq1 = ["困惑", "喜悅"]
+seq2 = ["困惑", "挫折"]
+seq3 = ["困惑"]
+seq4 = ["驚訝", "困惑", "投入"]
+seq5 = ["投入", "無聊", "挫折"]
 
-print("參與度：", compute_engagement(emotions_seq))
+print(compute_engagement(seq1))
+print(compute_engagement(seq2))
+print(compute_engagement(seq3))
+print(compute_engagement(seq4))
+print(compute_engagement(seq5))
