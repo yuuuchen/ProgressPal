@@ -64,6 +64,7 @@ SYSTEM_PROMPT = """
 4. 全文需使用繁體中文。
 5. 請依照教材內容進行回應
 6. 範例使用語言標籤 (例如 ```python)
+7. 以學生需求為主，學習參與度調整為輔
 """
 def map_identity_to_strategy(identity):
   mapping = {
