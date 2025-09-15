@@ -18,35 +18,43 @@ PROMPT_TEMPLATES = {
     # 行為 1：問答（簡短自然語言）
     "qa": """
 任務：QA
-- 回答字數總計不得超過 200 字
+- **回答問題**字數總計不得超過 200 字
 - 根據學生參與度調整語氣與解釋深度
-回應風格:{style}
-學生的參與度：{engagement}
-學習階段：{stage}
-問題：{question}
-教材：{materials}
+- 輸出需依照以下結構：
+  - 「### 回答問題」：針對學生問題進行解答
+  - 「### 引導提問」：{extended_question}
+
+### 回答風格設定
+回應風格: {style}
+學生的參與度: {engagement}
+學習階段: {stage}
+問題: {question}
+教材: {materials}
 """,
 
     # 行為 2：教學（教材結構化）
-    "tutoring": """
+"tutoring": """
 任務：教學
 輸出需依照以下結構：
   - 「### 教學重點」：解釋核心概念，理性陳述單元內容與重點。
-  - 「### 範例」：提供簡單範例或python程式碼示例，並使用指定教學策略。
+  - 「### 範例」：提供簡單範例或 python 程式碼示例，並使用指定教學策略。
   - 「### 總結」：總結重點回顧，簡潔明瞭。
-回應風格:{style}
-學生的參與度：{engagement}
-學習階段：{stage}
-教材：{materials}
+  - 「### 引導提問」：{extended_question}
+
+### 回答風格設定
+回應風格: {style}
+學生的參與度: {engagement}
+學習階段: {stage}
+教材: {materials}
 """
+
 }
 
-### 系統指令 System Prompt
+### 系統指令 System Prompt 包含變數identity
 
-### 系統指令 System Prompt
 SYSTEM_PROMPT = """
 你是一位智慧助教，專精於資料結構教學。
-教學對象：資訊管理系學士學生
+教學對象：{identity},{strategy}
 你需要根據學生的「學習參與度」調整語氣、解釋深度與互動方式。
 
 ### 規則
@@ -57,6 +65,20 @@ SYSTEM_PROMPT = """
 5. 請依照教材內容進行回應
 6. 範例使用語言標籤 (例如 ```python)
 """
+def map_identity_to_strategy(identity):
+  mapping = {
+    '資訊管理系大學生':'''請以專業術語講解，提供程式碼範例。''',
+    '非資訊領域大學生':'''請循序漸進，不要一次丟太多資訊。避免使用專業術語。'''}
+  return mapping.get(identity, "請根據學生程度調整教學方式。")
+def set_system_prompt(identity='資訊管理系大學生'):
+  '''
+  input: identity
+  return: new Systemprompt
+  '''
+  strategy = map_identity_to_strategy(identity)
+  return SYSTEM_PROMPT.format(identity=identity, strategy=strategy)
+
+print(set_system_prompt())
 
 '''
 # 映射方法：情緒 → 語氣 + 教學策略
@@ -73,26 +95,46 @@ def map_emotion_to_profile(emotion):
 
 # 映射方法：參與度 → 語氣 + 教學策略
 '''
-def map_engagement_to_profile(engagement):
-  mapping = {
-    "high": '''- 語氣：積極且肯定
-    - 教學風格：引導延伸思考，促使挑戰性學習
-    - 回覆時：提供更深入的概念解釋，並在結尾附帶延伸思考問題，鼓勵學生反思，例如「你覺得在什麼場景下使用 Linked List 的插入刪除優勢最明顯？」'''
-    ,
-    "low": '''- 語氣：溫和且耐心
-    - 教學風格：降低學習困難度，舉例對照、比喻解釋
-    - 回覆時：用簡單清楚的方式解釋概念，加入生活化例子，結尾加入正向鼓勵，例如「你已經掌握基礎概念了，下一步可以試著操作一下程式碼，看看效果如何。」
-    - **禁止在結尾使用任何提問或挑戰性問題**'''
-  }
-  return mapping.get(engagement, '提供直接的解釋，避免額外挑戰或比喻')
+def map_engagement_to_profile(engagement: str) -> dict:
+    """
+    根據學生參與度返回教學風格與引導提問設定。
+    engagement: 'high' 或 'low'
+    回傳 dict 內含:
+      - style: 教學回覆風格描述
+      - extended_question: 引導提問策略
+    """
+    mapping = {
+      "high": {
+        "style": '''- 語氣：積極且肯定
+- 教學風格：引導延伸思考，促使挑戰性學習
+- 回覆時：提供更深入的概念解釋''',
+        "extended_question": '提出與學生問題相關的延伸思考問題或學習的下一步建議'
+      },
+      "low": {
+        "style": '''- 語氣：溫和且耐心
+- 教學風格：降低學習困難度，舉例對照、比喻解釋
+- 回覆時：用簡單清楚的方式解釋概念，加入生活化例子，結尾加入正向鼓勵。''',
+        "extended_question": '提出學生可能產生問題的原因，避免挑戰性問題或額外延伸'
+      }
+    }
+
+    # 若傳入的 engagement 不在 mapping，提供預設安全回覆
+    return mapping.get(engagement, {
+        "style": "提供直接的解釋，避免額外挑戰或比喻",
+        "extended_question": "提供學習的下一步建議"
+    })
+
+
 
 
 # 主方法：回答學生提問。使用學習參與度
 def generate_prompt(engagement, question, materials, stage='初學'):
   materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
   template = PROMPT_TEMPLATES["qa"]
+  mapping=map_engagement_to_profile(engagement),
   prompt_text = template.format(
-      style=map_engagement_to_profile(engagement),
+      style=mapping["style"],
+      extended_question=mapping["extended_question"],
       engagement=engagement,
       question=question,
       stage=stage,
@@ -105,47 +147,129 @@ def generate_prompt(engagement, question, materials, stage='初學'):
 def generate_materials(engagement ,materials ,stage="初學"):
   materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
   template = PROMPT_TEMPLATES["tutoring"]
+  mapping=map_engagement_to_profile(engagement),
   prompt_text = template.format(
-      style=map_engagement_to_profile(engagement),
+      style=mapping["style"],
       engagement=engagement,
       materials=materials_text,
-      stage=stage
+      stage=stage,
+      extended_question=mapping["extended_question"]
   )
   return prompt_text
 
 """格式整理工具"""
 
-import re
+def clean_text_tutoring(raw_text: str) -> dict:
+  import re
+  """
+  將 Markdown 格式 (含 ### 教學重點、範例、總結、引導提問) 轉成 dict
+  """
+  sections = {
+      "teaching": "",
+      "example": "",
+      "summary": "",
+      "extended_question": ""
+  }
 
-def clean_text(raw_text: str) -> dict:
-    """
-    將 Markdown 格式 (含 ### 教學重點、範例、總結) 轉成 dict
-    """
-    sections = {"teaching": "", "example": "", "summary": ""}
+  # 確保最後有換行，避免最後一段抓不到
+  raw_text = raw_text.strip() + "\n"
 
-    # 確保最後有換行，避免最後一段抓不到
-    raw_text = raw_text.strip() + "\n"
+  # 改良正則，多行匹配
+  pattern = r"###\s*(教學重點|範例|總結|引導提問)\s*([\s\S]*?)(?=\n###|\Z)"
+  matches = re.findall(pattern, raw_text)
 
-    # 改良正則，多行匹配
-    pattern = r"###\s*(教學重點|範例|總結)\s*([\s\S]*?)(?=\n###|\Z)"
-    matches = re.findall(pattern, raw_text)
+  for title, content in matches:
+    content = content.strip()
+    if title == "教學重點":
+        sections["teaching"] = content
+    elif title == "範例":
+        sections["example"] = content
+    elif title == "總結":
+        sections["summary"] = content
+    elif title == "引導提問":
+        sections["extended_question"] = content
 
-    for title, content in matches:
-        content = content.strip()
-        if title == "教學重點":
-            sections["teaching"] = content
-        elif title == "範例":
-            sections["example"] = content
-        elif title == "總結":
-            sections["summary"] = content
-
-    if not sections["summary"]:
-      sections["summary"] = "（模型未輸出）"
+  if not sections["summary"]:
+    sections["summary"] = "（模型未輸出）"
+  if not sections["extended_question"]:
+    sections["extended_question"] = "模型未輸出問題"
 
 
-    return sections
+  return sections
+
+
+
+def clean_text_qa(raw_text: str) -> dict:
+  import re
+  """
+  將 QA 模式回應解析成 dict
+  {
+      "answer": "回答內容",
+      "extended_question": "引導提問"
+  }
+  """
+  sections = {"answer": "", "extended_question": ""}
+
+  # 確保最後有換行，避免最後一段抓不到
+  raw_text = raw_text.strip() + "\n"
+
+  # 匹配兩個區塊
+  pattern = r"###\s*(回答問題|引導提問)\s*([\s\S]*?)(?=\n###|\Z)"
+  matches = re.findall(pattern, raw_text)
+
+  for title, content in matches:
+      content = content.strip()
+      if title == "回答問題":
+          sections["answer"] = content
+      elif title == "引導提問":
+          sections["extended_question"] = content
+
+  if not sections["answer"]:
+      sections["answer"] = "（模型未輸出回答）"
+  if not sections["extended_question"]:
+      sections["extended_question"] = "（模型未輸出回答）"
+
+  return sections
 
 """測資："""
+
+test_clean_text_tutoring = '''
+### 教學重點
+鏈結串列是一種線性資料結構。
+
+### 範例
+```python
+class Node:
+    def __init__(self, data):
+        self.data = data
+        self.next = None
+````
+
+### 總結
+
+鏈結串列允許動態調整大小，適合頻繁插入刪除的場景。
+
+### 引導提問
+
+為什麼需要鏈結串列？
+'''
+test_clean_text_cleaned = clean_text_tutoring(test_clean_text_tutoring)
+print("教學重點:\n", test_clean_text_cleaned["teaching"])
+print("範例:\n", test_clean_text_cleaned["example"])
+print("總結:\n", test_clean_text_cleaned["summary"])
+print("引導提問:\n", test_clean_text_cleaned["extended_question"])
+
+test_clean_text_qa = '''
+### 回答問題
+鏈結串列是一種線性資料結構。
+
+### 引導提問
+為什麼需要鏈結串列？
+'''
+test_clean_text_qa_cleaned = clean_text_qa(test_clean_text_qa)
+print("【QA測試】")
+print("回答問題:\n", test_clean_text_qa_cleaned["answer"])
+print("引導提問:\n", test_clean_text_qa_cleaned["extended_question"])
 
 test_high = {
   "參與度": "high",
