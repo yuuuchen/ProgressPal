@@ -76,10 +76,7 @@ def set_system_prompt(identity='資訊管理系大學生'):
   input: identity
   return: new Systemprompt
   '''
-  global SYSTEM_PROMPT
   strategy = map_identity_to_strategy(identity)
-
-  SYSTEM_PROMPT = SYSTEM_PROMPT.format(identity=identity, strategy=strategy)
   return SYSTEM_PROMPT.format(identity=identity, strategy=strategy)
 
 print(set_system_prompt())
