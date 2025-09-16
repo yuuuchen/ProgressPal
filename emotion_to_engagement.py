@@ -34,8 +34,8 @@ def map_emotion_to_score(emotion):
           scores.append(1.0) #分數設為1.0
         elif next_e in NEGATIVE: #後續為負向
           scores.append(0.0) #分數設為0.0
-        else:
-          raise ValueError(f"未知情緒: {next_e}")
+        else: #後續為困惑
+          scores.append(0.5) #分數設為0.5
       else: #最後一個為困惑
         scores.append(0.5) #設為0.5
     else:
@@ -78,7 +78,7 @@ def compute_engagement(emotions):
 """測試"""
 
 # 測試
-seq1 = ["困惑", "喜悅"]
+seq1 = ["困惑", "困惑","困惑"]
 seq2 = ["困惑", "挫折"]
 seq3 = ["None"]
 seq4 = ["驚訝", "困惑", "投入"]
