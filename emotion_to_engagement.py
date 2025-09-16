@@ -50,7 +50,7 @@ def compute_engagement(emotions):
   "ema" (指數平滑法)：即時追蹤學習狀態，快速反應「最近」的情緒
   """
   #一開始進入系統
-  if emotions == "None":
+  if emotions == ["None"]:
     return "high"
 
   #空序列
@@ -80,7 +80,7 @@ def compute_engagement(emotions):
 # 測試
 seq1 = ["困惑", "喜悅"]
 seq2 = ["困惑", "挫折"]
-seq3 = "None"
+seq3 = ["None"]
 seq4 = ["驚訝", "困惑", "投入"]
 seq5 = ["投入", "無聊", "挫折"]
 
