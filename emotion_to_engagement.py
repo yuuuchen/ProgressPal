@@ -14,6 +14,7 @@ EMOTION_TO_ENGAGEMENT = {
   "驚訝": 1.0,
   "無聊": 0.0,
   "挫折": 0.0,
+  "None": 1.0
 }
 
 #正面/負向情緒
@@ -76,7 +77,7 @@ def compute_engagement(emotions):
 # 測試
 seq1 = ["困惑", "喜悅"]
 seq2 = ["困惑", "挫折"]
-seq3 = ["困惑"]
+seq3 = ["None"]
 seq4 = ["驚訝", "困惑", "投入"]
 seq5 = ["投入", "無聊", "挫折"]
 
