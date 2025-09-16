@@ -132,7 +132,7 @@ def map_engagement_to_profile(engagement: str) -> dict:
 def generate_prompt(engagement, question, materials, stage='初學'):
   materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
   template = PROMPT_TEMPLATES["qa"]
-  mapping=map_engagement_to_profile(engagement),
+  mapping=map_engagement_to_profile(engagement)
   prompt_text = template.format(
       style=mapping["style"],
       extended_question=mapping["extended_question"],
@@ -148,7 +148,7 @@ def generate_prompt(engagement, question, materials, stage='初學'):
 def generate_materials(engagement ,materials ,stage="初學"):
   materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
   template = PROMPT_TEMPLATES["tutoring"]
-  mapping=map_engagement_to_profile(engagement),
+  mapping=map_engagement_to_profile(engagement)
   prompt_text = template.format(
       style=mapping["style"],
       engagement=engagement,
