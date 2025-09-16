@@ -14,7 +14,6 @@ EMOTION_TO_ENGAGEMENT = {
   "驚訝": 1.0,
   "無聊": 0.0,
   "挫折": 0.0,
-  "None": 1.0
 }
 
 #正面/負向情緒
@@ -50,6 +49,10 @@ def compute_engagement(emotions):
   """
   "ema" (指數平滑法)：即時追蹤學習狀態，快速反應「最近」的情緒
   """
+  #一開始進入系統
+  if emotions == None:
+    return "high"
+
   #空序列
   if not emotions:
     raise ValueError("情緒序列不可為空")
@@ -77,7 +80,7 @@ def compute_engagement(emotions):
 # 測試
 seq1 = ["困惑", "喜悅"]
 seq2 = ["困惑", "挫折"]
-seq3 = ["None"]
+seq3 = None
 seq4 = ["驚訝", "困惑", "投入"]
 seq5 = ["投入", "無聊", "挫折"]
 
