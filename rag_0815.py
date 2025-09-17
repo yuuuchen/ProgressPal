@@ -10,14 +10,6 @@ Original file is located at
 from google.colab import drive
 drive.mount('/content/drive')
 
-!pip install -U langchain-community langchain-openai langchain-chroma langchain-qdrant langchain-google-vertexai -q
-
-!pip install pypdf -q
-
-!pip install -U sentence-transformers -q
-
-!pip install rank_bm25 -q
-
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.document_loaders import TextLoader
