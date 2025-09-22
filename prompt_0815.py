@@ -15,7 +15,7 @@ Prompt 模板庫（Template Library）
 '''
 
 PROMPT_TEMPLATES = {
-    # 行為 1：問答（簡短自然語言）
+    # 行為 1：問答
     "qa": """
 任務：QA
 - **回答問題**字數總計不得超過 200 字
@@ -46,6 +46,22 @@ PROMPT_TEMPLATES = {
 學生的參與度: {engagement}
 學習階段: {stage}
 教材: {materials}
+""",
+"extended_answer": """
+任務：回應學生對於題目的回答
+- **回答字數**總計不得超過 200 字
+- 根據學生參與度調整語氣與解釋深度
+- 輸出需依照以下結構：
+  - 「### 回答問題」：針對學生的回答進行回饋與補充說明
+  - 「### 引導提問」：提出 3 個與該題相關的延伸思考問題，逐條列出
+
+### 回答風格設定
+回應風格: {style}
+學生的參與度: {engagement}
+學習階段: {stage}
+題目: {topic}
+學生回答: {answer}
+教材: {materials}
 """
 
 }
@@ -62,7 +78,7 @@ SYSTEM_PROMPT = """
 2. 語氣需「溫暖、易於理解」。
 3. 直接回應問題，不要打招呼。
 4. 全文需使用繁體中文。
-5. 請依照教材內容進行回應
+5. 請依照教材內容進行回應，請勿回應教材外的答案。
 6. 範例使用語言標籤 (例如 ```python)
 7. 以學生需求為主，學習參與度調整為輔
 """
@@ -77,6 +93,7 @@ def set_system_prompt(identity='資訊管理系大學生'):
   strategy = mapping.get(identity, "請根據學生程度調整教學方式。")
   return SYSTEM_PROMPT.format(identity=identity, strategy=strategy)
 
+#print(set_system_prompt("非資訊領域大學生"))
 
 '''
 # 映射方法：情緒 → 語氣 + 教學策略
@@ -127,6 +144,12 @@ def map_engagement_to_profile(engagement: str) -> dict:
 
 # 主方法：回答學生提問。使用學習參與度
 def generate_prompt(engagement, question, materials, stage='初學'):
+  '''
+  engagement=high/low
+  question=str(學生提問)
+  materials=list(教材內容)
+  stage='初學'
+  '''
   materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
   template = PROMPT_TEMPLATES["qa"]
   mapping=map_engagement_to_profile(engagement)
@@ -143,6 +166,11 @@ def generate_prompt(engagement, question, materials, stage='初學'):
 
 # 根據教材進行教學
 def generate_materials(engagement ,materials ,stage="初學"):
+  '''
+  engagement=high/low
+  materials=list(教材內容)
+  stage='初學'
+  '''
   materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
   template = PROMPT_TEMPLATES["tutoring"]
   mapping=map_engagement_to_profile(engagement)
@@ -154,6 +182,33 @@ def generate_materials(engagement ,materials ,stage="初學"):
       extended_question=mapping["extended_question"]
   )
   return prompt_text
+
+# 主方法：回答學生提問。使用學習參與度
+def generate_prompt_extended(engagement, answer, materials,
+topic, stage='初學'):
+  '''
+  engagement=high/low
+  answer=str(學生回應)
+  materials=list(教材內容)
+  topic=str(題目)
+  stage='初學'
+  '''
+  materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
+  template = PROMPT_TEMPLATES["extended_answer"]
+  mapping=map_engagement_to_profile(engagement)
+  prompt_text = template.format(
+      style=mapping["style"],
+      extended_question=mapping["extended_question"],
+      engagement=engagement,
+      topic=topic,
+      answer=answer,
+      stage=stage,
+      materials=materials_text
+  )
+  return prompt_text
+
+test_generate_prompt_extended = generate_prompt_extended("high",'像是瀏覽紀錄嗎?',['堆疊：後進先出'],'請舉例堆疊的應用')
+print(test_generate_prompt_extended)
 
 """格式整理工具"""
 
