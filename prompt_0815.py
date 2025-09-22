@@ -184,8 +184,7 @@ def generate_materials(engagement ,materials ,stage="初學"):
   return prompt_text
 
 # 進行題目回應。使用學習參與度
-def generate_prompt_extended(engagement, answer, materials,
-topic, stage='初學'):
+def generate_prompt_extended(engagement, answer, materials,topic, stage='初學'):
   '''
   engagement=high/low
   answer=str(學生回應)
