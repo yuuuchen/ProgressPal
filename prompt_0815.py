@@ -183,7 +183,7 @@ def generate_materials(engagement ,materials ,stage="初學"):
   )
   return prompt_text
 
-# 主方法：回答學生提問。使用學習參與度
+# 進行題目回應。使用學習參與度
 def generate_prompt_extended(engagement, answer, materials,
 topic, stage='初學'):
   '''
