@@ -7,6 +7,17 @@ Original file is located at
     https://colab.research.google.com/drive/14jAxpxWKDhlFS2xe0hTOhfQiZ7txP5-P
 """
 
+from google.colab import drive
+drive.mount('/content/drive')
+
+!pip install -U langchain-community langchain-openai langchain-chroma langchain-qdrant langchain-google-vertexai -q
+
+!pip install pypdf -q
+
+!pip install -U sentence-transformers -q
+
+!pip install rank_bm25 -q
+
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.document_loaders import TextLoader
@@ -232,7 +243,7 @@ def retrieve_docs(query, top_k=5, weight_bm25=0.7, weight_vector=0.3):
       if doc not in results:
         results.append(doc)
 
-  return results  #回傳結果list
+  return results if results else None  #回傳結果list，[]為空則回傳None
 
 query = {"keywords": ["鏈結串列","索引值"]}
 related_docs = retrieve_docs(query,5)
