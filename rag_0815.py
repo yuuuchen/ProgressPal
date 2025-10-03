@@ -7,6 +7,17 @@ Original file is located at
     https://colab.research.google.com/drive/14jAxpxWKDhlFS2xe0hTOhfQiZ7txP5-P
 """
 
+from google.colab import drive
+drive.mount('/content/drive')
+
+!pip install -U langchain-community langchain-openai langchain-chroma langchain-qdrant langchain-google-vertexai -q
+
+!pip install pypdf -q
+
+!pip install -U sentence-transformers -q
+
+!pip install rank_bm25 -q
+
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.document_loaders import TextLoader
@@ -141,9 +152,41 @@ def get_unit(chapter, unit):
   else:
     return None
 
+#依據章節，輸出該單元的教材內容字串
+def get_chapter(chapter):
+  docs_dict = {}
+
+  for doc in all_docs:
+      text = doc.page_content.strip()
+      meta = doc.metadata
+
+      unit_title = meta.get("單元", "")
+      if unit_title:
+          unit_num = re.match(r"(\d+-\d+)", unit_title).group(0)  # 抓單元編號
+
+          if unit_num not in docs_dict:
+              docs_dict[unit_num] = []
+
+          # 在內容中保留原文
+          docs_dict[unit_num].append(text)
+
+  # 找出所有屬於該章節的單元
+  combined = []
+  for key in sorted(docs_dict.keys(), key=parse_unit_code):
+      if key.startswith(f"{chapter}-"):  # 判斷章節開頭
+          combined.append(f"=== {key} ===")
+          combined.extend(docs_dict[key])
+
+  if combined:
+      return "\n".join(combined)
+  else:
+      return None
+
 """測試"""
 
 print(get_unit(1,3))
+
+print(get_chapter(4))
 
 """**Chroma + BM25 混合搜尋**"""
 
