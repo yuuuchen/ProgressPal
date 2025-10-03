@@ -125,7 +125,7 @@ def map_engagement_to_profile(engagement: str) -> dict:
         "style": '''- 語氣：積極且肯定
 - 教學風格：引導延伸思考，促使挑戰性學習
 - 回覆時：提供更深入的概念解釋''',
-        "extended_question": '提出與學生問題相關的延伸思考問題或學習的下一步建議'
+        "extended_question": '根據教材，提出與學生問題相關的延伸思考問題或學習的下一步建議'
       },
       "low": {
         "style": '''- 語氣：溫和且耐心
