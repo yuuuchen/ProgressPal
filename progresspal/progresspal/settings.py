@@ -12,6 +12,22 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+from pathlib import Path
+
+# 專案根路徑
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# 載入 .env
+load_dotenv(os.path.join(BASE_DIR, '.env'))
+
+# 從環境變數讀取設定
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
+# Debug 模式
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
