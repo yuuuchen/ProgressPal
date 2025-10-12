@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}{{unit}}{{unit_name}}{% endblock %}
+{% block content %}
+
+<div class="container-fluid px-4 py-3">
+    <div class="row g-4"> 
+        <!--左側課程列表-->
+        <nav class="col-lg-2 col-md-2">
+            <div class="card h-100">
+                <div class="card-header fw-bold">
+                    {{ chapter }} 課程列表
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for u in units %}
+                        <a href="#" class="list-group-item list-group-item-action">{{u}}{{u.name}}</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!--中間教材區-->
+        <div class="col-lg-5 col-md-5">
+            <div class="card h-100">
+                <div class="card-body p-4">
+                    <h1 class="card-title">{{ chapter }}</h1>
+                    <hr>
+                    <h3 class="h4 mt-4">{{ unit }}{{unit_name}}</h2>
+                    <p class="card-text">{{ teaching_content }}</p>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!--右側Emotion&對話框-->
+         <div class="col-lg-5">
+            <!-- Emotion區塊 -->
+            <div id="emotion-display" class="card mb-4">
+                <div class="card-body d-flex align-items-center p-2">
+                    
+                </div>
+            </div>
+            
+            <!-- 對話框區塊 -->
+            <div id="chat-container" class="card d-flex flex-column" style="height: 75vh;">
+                <div class="card-header text-center fw-bold">
+                    【Chat】提問區域
+                </div>
+                
+                <div id="chat-history" class="card-body p-2" style="overflow-y: auto;">
+                    <!-- JavaScript 會把對話訊息動態插入到這裡 -->
+                </div>
+                
+                <!-- 輸入區塊放在 Card footer -->S
+                <div class="card-footer p-2">
+                    <!-- 快捷操作按鈕 -->
+                    <div class="d-grid gap-2 mb-2">
+                        <button class="btn btn-sm btn-outline-secondary">提問</button>
+                        <button class="btn btn-sm btn-outline-secondary">回應延伸題目</button>
+                    </div>
+                    <!-- 文字輸入區 -->
+                    <div class="input-group">
+                        <textarea id="chat-input" class="form-control" placeholder="輸入問題..." rows="2"></textarea>
+                        <button id="send-btn" class="btn btn-primary">送出</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+{% endblock %}
+{% block scripts %}
+    <script src="{% static 'js/chat.js' %}"></script>
+    <script src="{% static 'js/camera.js' %}"></script>
+{% endblock %}
