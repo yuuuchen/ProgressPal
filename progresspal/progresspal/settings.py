@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'rag',
     'learning',
     'emotion',
+    'captcha',
 ]
 
 MIDDLEWARE = [
