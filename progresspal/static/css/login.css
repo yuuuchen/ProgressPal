@@ -1,0 +1,105 @@
+body {
+    background-color: #FFFFFF;
+    color: #000000;
+    font-family: "Noto Sans TC", "微軟正黑體", sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.login-container {
+    width: 360px;
+    padding: 40px;
+    border-radius: 12px;
+    background-color: #F9F9F9;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+
+
+h2 {
+    margin-bottom: 24px;
+    font-weight: 600;
+}
+
+.form-group {
+    margin-bottom: 16px;
+    text-align: left;
+}
+
+label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 6px;
+}
+
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #CCCCCC;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: #FFF;
+    color: #000;
+}
+
+.remember {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.btn-login {
+    background-color: #000000;
+    color: #FFFFFF;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    width: 100%;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-login:hover {
+    background-color: #333333;
+}
+
+.messages {
+    margin-bottom: 16px;
+}
+
+.message {
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.message.success {
+    background-color: #E6FFED;
+    border: 1px solid #00A35C;
+    color: #006B3C;
+}
+
+.message.warning {
+    background-color: #FFF5E5;
+    border: 1px solid #FFA500;
+    color: #A35B00;
+}
+
+.register-link {
+    margin-top: 16px;
+    font-size: 14px;
+}
+
+.register-link a {
+    color: #000000;
+    text-decoration: underline;
+}
+
+.register-link a:hover {
+    text-decoration: none;
+}
