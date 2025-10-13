@@ -1,0 +1,67 @@
+#六種學習情緒對應參與度分數
+EMOTION_TO_ENGAGEMENT = {
+  "喜悅": 1.0,
+  "投入": 1.0,
+  "驚訝": 1.0,
+  "無聊": 0.0,
+  "挫折": 0.0,
+}
+
+#正面/負向情緒
+POSITIVE = {"喜悅", "投入", "驚訝"}
+NEGATIVE = {"無聊", "挫折"}
+
+#情緒字串轉成對應的參與度分數
+def map_emotion_to_score(emotion):
+  scores = []
+  n = len(emotion)
+  #遍歷每個情緒
+  for i, e in enumerate(emotion):
+    #困惑情緒處理
+    if e == "困惑":
+      if i + 1 < n: #有下一個情緒
+        next_e = emotion[i + 1]
+        if next_e in POSITIVE: #後續為正向
+          scores.append(1.0) #分數設為1.0
+        elif next_e in NEGATIVE: #後續為負向
+          scores.append(0.0) #分數設為0.0
+        else: #後續為困惑
+          scores.append(0.5) #分數設為0.5
+      else: #最後一個為困惑
+        scores.append(0.5) #設為0.5
+    else:
+      if e not in EMOTION_TO_ENGAGEMENT:
+        raise ValueError(f"未知情緒: {e}")
+      scores.append(EMOTION_TO_ENGAGEMENT[e])
+  return scores
+
+#輸入情緒序列，回傳參與度分數
+def compute_engagement(emotions):
+  """
+  "ema" (指數平滑法)：即時追蹤學習狀態，快速反應「最近」的情緒
+  """
+  #一開始進入系統
+  if emotions == ["None"]:
+    return "high"
+
+  #空序列
+  if not emotions:
+    raise ValueError("情緒序列不可為空")
+
+  #情緒字串轉成數值分數
+  scores = map_emotion_to_score(emotions)
+
+  #平均分數法
+  #if method == "mean":
+    #return sum(scores) / len(scores)
+
+  #指數平滑法
+  alpha = 0.4  #越大越重視最近的情緒
+  ema = scores[0]
+  for x in scores[1:]:
+    ema = alpha * x + (1 - alpha) * ema
+
+  if ema >= 0.5:
+    return "high"
+  else:
+    return "low"
