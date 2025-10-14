@@ -1,0 +1,24 @@
+/*navbar*/
+.navbar-brand {
+    color: #ffffff; /* 設定你想要的顏色，這裡用的是深灰色 */
+    text-decoration: none; /* 移除底線 */
+}
+
+/* 設定滑鼠移上去時的樣式 */
+.navbar-brand:hover {
+    color: rgba(255, 255, 255, 0.85); /* 白色稍微變淡一點 */
+    text-decoration: none; /* 滑鼠移上去時底線也不會跑出來 */
+}
+
+/*教材*/
+
+/*情緒*/
+
+
+/*聊天室*/
+/* 讓按鈕在按下時，變成實心灰色 */
+#chat-container .btn-outline-secondary:active {
+    background-color: #6c757d; /* Bootstrap 的 secondary grey color */
+    border-color: #6c757d;
+    color: #fff; /* 按下時文字變白色才能看清楚 */
+}
