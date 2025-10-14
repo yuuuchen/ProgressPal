@@ -1,7 +1,7 @@
 # learning/views.py
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
-from emotion.utils import compute_engagement
+from emotion.services.utils import compute_engagement
 from .services import main
 
 # 儲存延伸問題紀錄
