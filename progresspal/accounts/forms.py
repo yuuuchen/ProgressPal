@@ -2,7 +2,6 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
-from captcha.fields import CaptchaField
 
 User = get_user_model()
 
@@ -41,7 +40,6 @@ class RegisterForm(UserCreationForm):
         required=False,
         widget=forms.TextInput(attrs={'placeholder': '例：大一、大二、大三'}),
     )
-    captcha = CaptchaField(label='驗證碼')
 
     class Meta:
         model = User
@@ -52,7 +50,6 @@ class RegisterForm(UserCreationForm):
         for field_name, field in self.fields.items():
             if not isinstance(field.widget, forms.Select):
                 field.widget.attrs.update({'class': 'form-control'})
-        self.fields['captcha'].widget.attrs.update({'class': 'form-control'})
 
 # 登入表單
 class LoginForm(forms.Form):

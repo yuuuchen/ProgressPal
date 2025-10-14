@@ -1,6 +1,8 @@
 Django==3.2.25
 
 python-dotenv==1.1.1
+markdown==3.9
+google-genai==1.32.0
 
 langchain-community==0.3.30
 langchain-chroma==0.2.6

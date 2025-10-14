@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 # utils.py
+import textwrap,markdown
+
 """格式整理工具"""
 
 def clean_text_tutoring(raw_text: str) -> dict:
@@ -73,3 +75,7 @@ def clean_text_qa(raw_text: str) -> dict:
       sections["extended_question"] = "（模型未輸出回答）"
 
   return sections
+
+def to_markdown(text):
+  text = text.replace('•', '  *')
+  return markdown(textwrap.indent(text, '> ', predicate=lambda _: True))
