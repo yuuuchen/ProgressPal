@@ -117,11 +117,12 @@ def answer_relevant_question(question, engagement):
     prompt = generate_prompt(engagement, question, docs)
     return respond_to_question(prompt, engagement)
 
-def answer_demand_question(question, engagement):
+def answer_demand_question(question, engagement, unit_id):
     analysis = classify_question(question)
     if analysis["category"] != "demand":
         return {"error": "這不是學習需求類問題"}
-    prompt = f"學生的學習需求問題如下：{question}\n請提供建議或延伸方向。"
+    docs = get_unit(unit_id)
+    prompt =  generate_prompt(engagement, question, docs)
     return respond_to_question(prompt, engagement)
 
 def respond_to_question(prompt, engagement):
