@@ -72,14 +72,30 @@ class LoginForm(forms.Form):
 class ProfileUpdateForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['nickname', 'email', 'grade']
+        fields = ['nickname', 'email','role', 'grade']
         widgets = {
             'nickname': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'role': forms.Select(attrs={'class': 'form-select'}),
             'grade': forms.TextInput(attrs={'class': 'form-control'}),
         }
         labels = {
             'nickname': '暱稱',
             'email': '電子郵件',
+            'role': '身分別',
             'grade': '年級',
         }
+
+class CustomPasswordChangeForm(PasswordChangeForm):
+    old_password = forms.CharField(
+        label="舊密碼",
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+    new_password1 = forms.CharField(
+        label="新密碼",
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+    new_password2 = forms.CharField(
+        label="確認新密碼",
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )

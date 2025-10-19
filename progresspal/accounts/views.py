@@ -18,7 +18,7 @@ def register(request):
             user = form.save()
             login(request, user)
             messages.success(request, '註冊成功，已自動登入！')
-            return redirect('index')
+            return redirect('lesson/')
     else:
         form = RegisterForm()
     return render(request, 'accounts/register.html', {'form': form})
@@ -112,7 +112,7 @@ def delete_account(request):
         logout(request)
         user.delete()
         messages.success(request, "帳號已成功刪除，再見了！")
-        return redirect('index')  # 或導向登入頁/login
+        return redirect('/user/login')  # 或導向登入頁/login
     else:
         return redirect('/user/profile')
     
@@ -130,4 +130,4 @@ def learning_portfolio(request):
         'question_logs': question_logs,
         'quiz_results': quiz_results,
     }
-    return render(request, 'accounts/learning_history.html', context)
+    return render(request, 'accounts/learning-ortfolio.html', context)
