@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from emotion.services.utils import compute_engagement
 from .services import main
 from django.utils import timezone
+# from .models import Unit, Chapter
 
 from emotion.services.utils import compute_engagement
 from .services import main
@@ -12,6 +13,11 @@ from accounts.models import QuestionLog
 
 # 暫存延伸問題
 extended_q_history = {}
+
+def homepage(request):
+    # chapters = Chapter.objects.all()
+    # units = Unit.objects.all()
+    return render(request, "learning/lesson.html",locals())
 
 @csrf_exempt
 def study_view(request):

@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
 
@@ -86,7 +86,7 @@ class ProfileUpdateForm(forms.ModelForm):
             'grade': '年級',
         }
 
-class CustomPasswordChangeForm(PasswordChangeForm):
+class PasswordChangeForm(PasswordChangeForm):
     old_password = forms.CharField(
         label="舊密碼",
         widget=forms.PasswordInput(attrs={'class': 'form-control'})

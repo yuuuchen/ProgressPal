@@ -18,7 +18,7 @@ def register(request):
             user = form.save()
             login(request, user)
             messages.success(request, '註冊成功，已自動登入！')
-            return redirect('lesson/')
+            return redirect('lessons/')
     else:
         form = RegisterForm()
     return render(request, 'accounts/register.html', {'form': form})
@@ -57,7 +57,7 @@ def login_view(request):
                     request.session.set_expiry(0)
 
                 messages.success(request, '登入成功，歡迎回來！')
-                return redirect('/')
+                return redirect('/lessons')
             else:
                 messages.warning(request, '帳號/Email 或密碼錯誤，請再試一次。')
         else:

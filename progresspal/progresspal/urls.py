@@ -20,8 +20,10 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.conf.urls import url
 import accounts.views as accounts
+import learning.views as learning
 
 urlpatterns = [
+    path('/', learning.homepage, name='homepage'),
     path('admin/', admin.site.urls),
     # 使用者相關
     path('user/register/', accounts.register, name='register'),# 註冊頁面
@@ -30,6 +32,7 @@ urlpatterns = [
     path('user/profile/', accounts.profile, name='profile'),  # 會員中心（需登入）
     path('user/delete/', accounts.delete_account, name='delete_account'),  # 刪除帳號（需登入）
     path('user/study/learning-ortfolio/', accounts.learning_portfolio, name='delete_account'),  # 學習歷程頁面
+    # 學習相關
     
 
 ]

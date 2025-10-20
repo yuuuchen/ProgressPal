@@ -16,7 +16,7 @@ import os
 """
 
 #讀取資料夾裡的所有.md檔案
-md_files = [f for f in os.listdir("C:\Users\lulu\Desktop\ProgressPal\progresspal\教材") if f.endswith(".md")]
+md_files = [f for f in os.listdir(r"C:\Users\lulu\Desktop\ProgressPal\progresspal\教材") if f.endswith(".md")]
 
 all_docs = []
 
