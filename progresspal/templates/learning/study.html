@@ -22,7 +22,7 @@
                 <div class="card-body">
                     <div class="list-group">
                         {% for u in units %}
-                        <a href="#" class="list-group-item list-group-item-action">{{u}}{{u.name}}</a>
+                        <a href="#" class="list-group-item list-group-item-action">{{u}}{{u.title}}</a>
                     </div>
                 </div>
             </div>
@@ -32,7 +32,7 @@
         <div class="col-lg-5 col-md-5">
             <div class="card h-100">
                 <div class="card-body p-4">
-                    <h2 class="card-title">{{ chapter }}{{ chapter_name }}</h2>
+                    <h2 class="card-title">{{ chapter }}{{ chapter_title }}</h2>
                     <hr>
                     <h3 class="h4 mt-4">{{ unit }}{{ unit_name }}</h2>
                     <p class="card-text">{{ teaching_content }}</p>

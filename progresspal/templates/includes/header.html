@@ -1,10 +1,59 @@
 <!-- templates/includes/header.html -->
 {% load static %}
-<div class="navbar">
-        <div class="container">
-            <a href="/" class="">學習系統</a>
-            <nav class="navbar-nav">
-                <a href=""></a>
-            </nav>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{% staic 'css/study.css' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-wEmeIV1mKuiNpC+IOBjI7aAzPcEZeedi5yW5f2yOq55WWLwNGmvvx4Um1vskeMj0" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+    <div class="container">
+        <a href="/lesson",class="navbar-brand">學習系統</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="mainNavbar"></div>
+            {% if user.is_authenticated %}
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="/lesson">課程列表</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="/user/study" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                       學生中心
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                        <li><a class="dropdown-item" href="#">學習歷程</a></li> 
+                        <li><hr class="dropdown-divider"></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/user/profile">個人資料</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/user/logout">登出</a>
+                </li>
+            </ul>
+            {% else %}
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="/lesson">課程列表</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/user/login">登入</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/user/register">註冊</a>
+                </li>
+            </ul>
+            {% endif %}
         </div>
     </div>
+</nav>
+</body>
+</html>
