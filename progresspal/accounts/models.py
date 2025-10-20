@@ -53,7 +53,6 @@ class QuestionLog(models.Model):
     unit_code = models.CharField(max_length=50, blank=True, null=True)
     question = models.TextField() # 學生提問
     answer = models.TextField(blank=True, null=True) # 系統回覆
-    emotion = models.CharField(max_length=20, blank=True, null=True)     # 學習情緒：無聊、喜悅
     engagement = models.CharField(max_length=20, blank=True, null=True)  # 參與度，例如：high、low
     created_at = models.DateTimeField(auto_now_add=True)
 

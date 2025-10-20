@@ -32,7 +32,7 @@ urlpatterns = [
     path('user/logout/', accounts.logout_view, name='logout'), # 登出動作
     path('user/profile/', accounts.profile, name='profile'),  # 會員中心（需登入）
     path('user/delete/', accounts.delete_account, name='delete_account'),  # 刪除帳號（需登入）
-    path('user/study/learning-ortfolio/', accounts.learning_portfolio, name='delete_account'),  # 學習歷程頁面
+    path('user/study/', accounts.learning_portfolio, name='learning-portfolio'),  # 學習歷程頁面
     # 學習相關
     path('lesson/<int:chapter_code>/<int:unit_code>/study/', learning.study_view, name='learning'),  #學習頁面
 

@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}學習歷程 | ProgressPal{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4 text-center">📘 學習歷程總覽</h2>
+
+    <!-- 各章節學習時間 -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title text-primary">各章節累積學習時間（分鐘）</h5>
+            <canvas id="chapterChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 各單元學習時間 -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title text-success">各單元累積學習時間（分鐘）</h5>
+            <canvas id="unitChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 提問紀錄 -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title text-warning">💬 提問紀錄</h5>
+            {% if question_logs %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>章節</th>
+                            <th>單元</th>
+                            <th>問題</th>
+                            <th>系統回覆</th>
+                            <th>提問時間</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for q in question_logs %}
+                        <tr>
+                            <td>{{ q.chapter_code }}</td>
+                            <td>{{ q.unit_code }}</td>
+                            <td>{{ q.question }}</td>
+                            <td>{{ q.answer|default:"（尚無回覆）" }}</td>
+                            <td>{{ q.created_at|date:"Y-m-d H:i" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">目前尚無提問紀錄。</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const chapterCtx = document.getElementById('chapterChart');
+    const unitCtx = document.getElementById('unitChart');
+
+    const chapterLabels = JSON.parse('{{ chapter_labels|escapejs }}');
+    const chapterValues = JSON.parse('{{ chapter_values|escapejs }}');
+    const unitLabels = JSON.parse('{{ unit_labels|escapejs }}');
+    const unitValues = JSON.parse('{{ unit_values|escapejs }}');
+
+    new Chart(chapterCtx, {
+        type: 'bar',
+        data: {
+            labels: chapterLabels,
+            datasets: [{
+                label: '學習時間（分鐘）',
+                data: chapterValues,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: '分鐘' } }
+            }
+        }
+    });
+
+    new Chart(unitCtx, {
+        type: 'bar',
+        data: {
+            labels: unitLabels,
+            datasets: [{
+                label: '學習時間（分鐘）',
+                data: unitValues,
+                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: '分鐘' } }
+            }
+        }
+    });
+</script>
+{% endblock %}
