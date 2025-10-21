@@ -15,8 +15,6 @@ from learning.services.utils import clean_text_tutoring, clean_text_qa,to_markdo
 from rag.services.rag import retrieve_docs
 from emotion.services.utils import compute_engagement
 
-# 載入 .env 檔案
-load_dotenv()
 # 從環境變數中取得 API key
 API_KEY = os.getenv("GOOGLE_API_KEY")
 if not API_KEY:

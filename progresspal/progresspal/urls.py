@@ -23,7 +23,7 @@ import accounts.views as accounts
 import learning.views as learning
 
 urlpatterns = [
-    path('/', learning.homepage, name='homepage'),
+    path('', learning.homepage, name='homepage'),
     path('admin/', admin.site.urls),
     # 使用者相關
     path('user/register/', accounts.register, name='register'),# 註冊頁面
