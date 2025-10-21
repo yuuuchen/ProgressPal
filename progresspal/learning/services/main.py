@@ -84,7 +84,7 @@ def display_materials(chapter_id, unit_id, engagement):
         "teaching": result["teaching"],
         "example": result["example"],
         "summary": result["summary"],
-        "extended_question": result["extended_question"]
+        "extended_questions": result["extended_question"]  
     }
 
 # 問答回應
@@ -104,9 +104,17 @@ def answer_question(mode, question, engagement, chapter_id=None, unit_id=None, e
     else:
         return {"error": "Invalid mode"}
 
-def answer_extended_question(question, engagement, chapter_id, unit_id, extended_q_history):
-    docs = get_chapter(chapter_id)
-    prompt = generate_prompt_extended(engagement, question, docs, extended_q_history.get((chapter_id, unit_id), ""), stage="初學")
+def answer_extended_question(selected_index, user_input, engagement, chapter_id, unit_id, extended_q_history):
+    """
+    selected_index: 使用者選擇的延伸題索引
+    user_input: 使用者輸入的提問或答案
+    """
+    questions = extended_q_history.get((chapter_id, unit_id), [])
+    if not questions or selected_index >= len(questions):
+        return {"answer": "選擇的延伸問題不存在", "extended_question": None}
+    selected_question = questions[selected_index]
+    # 將選擇的延伸問題 + 使用者輸入一起生成 prompt
+    prompt = generate_prompt_extended(engagement, user_input, [selected_question], "", stage="初學")
     return respond_to_question(prompt, engagement)
 
 def answer_relevant_question(question, engagement):
@@ -137,6 +145,7 @@ def respond_to_question(prompt, engagement):
         "answer": result["answer"],
         "extended_question": result["extended_question"]
     }
+
 
 
 

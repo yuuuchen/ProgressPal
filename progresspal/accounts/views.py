@@ -1,12 +1,14 @@
 # accounts/views.py
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout, get_user_model, update_session_auth_hash
-from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .forms import RegisterForm, LoginForm, ProfileUpdateForm
+from django.db.models import Sum, F, ExpressionWrapper, DurationField
 from django.contrib.auth.decorators import login_required
 from .models import LearningRecord, QuestionLog, QuizResult
+from datetime import timedelta
+from .forms import RegisterForm, LoginForm, ProfileUpdateForm, PasswordChangeForm
+import json
 
 User = get_user_model()
 
@@ -18,7 +20,7 @@ def register(request):
             user = form.save()
             login(request, user)
             messages.success(request, '註冊成功，已自動登入！')
-            return redirect('lesson/')
+            return redirect('lessons/')
     else:
         form = RegisterForm()
     return render(request, 'accounts/register.html', {'form': form})
@@ -57,7 +59,7 @@ def login_view(request):
                     request.session.set_expiry(0)
 
                 messages.success(request, '登入成功，歡迎回來！')
-                return redirect('/')
+                return redirect('/lessons')
             else:
                 messages.warning(request, '帳號/Email 或密碼錯誤，請再試一次。')
         else:
@@ -120,14 +122,40 @@ def delete_account(request):
 @login_required(login_url='login')
 def learning_portfolio(request):
     user = request.user
-    # 取得該使用者的紀錄(list)
-    learning_records = LearningRecord.objects.filter(user=user).order_by('-start_time')
+    # 計算每筆紀錄的學習時間（秒）
+    learning_records = LearningRecord.objects.filter(user=user)
+    valid_records = learning_records.exclude(end_time__isnull=True)
+
+    # === 各章節累積花費時間 ===
+    chapter_stats = (
+        valid_records
+        .values('chapter_code')
+        .annotate(total_seconds=Sum(ExpressionWrapper(F('end_time') - F('start_time'), output_field=DurationField())))
+        .order_by('chapter_code')
+    )
+
+    # === 各單元累積花費時間 ===
+    unit_stats = (
+        valid_records
+        .values('unit_code')
+        .annotate(total_seconds=Sum(ExpressionWrapper(F('end_time') - F('start_time'), output_field=DurationField())))
+        .order_by('unit_code')
+    )
+
+    # 轉成 Chart.js 可用格式
+    chapter_labels = [c['chapter_code'] for c in chapter_stats]
+    chapter_values = [round(c['total_seconds'].total_seconds() / 60, 1) for c in chapter_stats]
+
+    unit_labels = [u['unit_code'] for u in unit_stats]
+    unit_values = [round(u['total_seconds'].total_seconds() / 60, 1) for u in unit_stats]
+
+    # 提問紀錄
     question_logs = QuestionLog.objects.filter(user=user).order_by('-created_at')
-    quiz_results = QuizResult.objects.filter(user=user).order_by('-created_at')
 
     context = {
-        'learning_records': learning_records,
-        'question_logs': question_logs,
-        'quiz_results': quiz_results,
-    }
-    return render(request, 'accounts/learning-ortfolio.html', context)
+    'chapter_labels': json.dumps(chapter_labels),
+    'chapter_values': json.dumps(chapter_values),
+    'unit_labels': json.dumps(unit_labels),
+    'unit_values': json.dumps(unit_values),
+}
+    return render(request, 'accounts/learning-portfolio.html', context)
