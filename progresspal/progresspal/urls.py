@@ -33,6 +33,6 @@ urlpatterns = [
     path('user/delete/', accounts.delete_account, name='delete_account'),  # 刪除帳號（需登入）
     path('user/study/', accounts.learning_portfolio, name='learning-portfolio'),  # 學習歷程頁面
     # 學習相關
-    path('lesson/<int:chapter_code>/<int:unit_code>/study/', learning.study_view, name='learning'),  #學習頁面
+    # path('lesson/<int:chapter_code>/<int:unit_code>/study/', learning.study_view, name='learning'),  #學習頁面
 
 ]

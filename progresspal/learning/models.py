@@ -6,7 +6,7 @@ class Chapter(models.Model):
     title = models.CharField(max_length=50, verbose_name="章節標題")
 
     class Meta:
-        ordering = ('chapter_number') #依照章節數字排序
+        ordering = ['chapter_number'] #依照章節數字排序
 
     def __str__(self):
         return f"{self.chapter_number}. {self.title}"
@@ -18,7 +18,7 @@ class Unit(models.Model):
 
     class Meta:
         unique_together = ('chapter', 'unit_number') #確保在同一個章節內的單元編號是唯一的
-        ordering = ('unit_number') #依照單元數字排序
+        ordering = ['unit_number'] #依照單元數字排序
 
     def __str__(self):
         return f"{self.unit_number} {self.title}"

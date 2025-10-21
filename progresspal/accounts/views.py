@@ -71,7 +71,7 @@ def login_view(request):
 # 登出動作
 def logout_view(request):
     logout(request)
-    return redirect('/')
+    return redirect('homepage')
 
 # @login_required 是 Django 提供的裝飾器，用來限制該視圖（view）只能由已登入的使用者訪問。
 @login_required(login_url='login')

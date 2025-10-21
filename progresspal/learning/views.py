@@ -12,7 +12,6 @@ from accounts.models import QuestionLog
 extended_q_history = {}
 
 
-@login_required
 def homepage(request):
     """學習首頁"""
     return render(request, "learning/lesson.html")

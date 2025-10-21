@@ -20,8 +20,8 @@ class LearningRecordAdmin(admin.ModelAdmin):
 # 提問紀錄管理
 @admin.register(QuestionLog)
 class QuestionLogAdmin(admin.ModelAdmin):
-    list_display = ('user', 'chapter_code', 'unit_code', 'emotion', 'engagement', 'created_at')
-    list_filter = ('emotion', 'engagement', 'chapter_code')
+    list_display = ('user', 'chapter_code', 'unit_code', 'engagement', 'created_at')
+    list_filter = ('engagement', 'chapter_code')
     search_fields = ('user__username', 'question', 'answer')
     readonly_fields = ('created_at',)
 
