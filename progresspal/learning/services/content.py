@@ -7,6 +7,7 @@ from langchain.schema import Document
 import re
 import numpy as np
 import os
+from django.conf import settings
 
 """
 
@@ -16,7 +17,7 @@ import os
 """
 
 #讀取資料夾裡的所有.md檔案
-md_files = [f for f in os.listdir(r"C:\Users\lulu\Desktop\ProgressPal\progresspal\教材") if f.endswith(".md")]
+md_files = [f for f in os.listdir(settings.TEACHING_MATERIAL_DIR) if f.endswith(".md")]
 
 all_docs = []
 
@@ -36,7 +37,7 @@ text_splitter = RecursiveCharacterTextSplitter(
 )
 
 for file in md_files:
-  file_path = os.path.join("C:\Users\lulu\Desktop\ProgressPal\progresspal\教材", file)
+  file_path = os.path.join(settings.TEACHING_MATERIAL_DIR, file)
 
   #讀取檔案
   loader = TextLoader(file_path, encoding="utf-8")
@@ -68,7 +69,7 @@ embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 vectorstore = Chroma.from_documents(
     documents=all_docs,
     embedding=embeddings,
-    persist_directory="C:\Users\lulu\Desktop\ProgressPal\progresspal\教材\teaching_material"
+    persist_directory=os.path.join(settings.TEACHING_MATERIAL_DIR, 'material'),
 )
 
 vectorstore.persist()

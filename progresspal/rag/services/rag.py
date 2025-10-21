@@ -9,6 +9,7 @@ from sklearn.preprocessing import MinMaxScaler
 import os
 import jieba
 from learning.services.content import all_docs
+from django.conf import settings
 
 
 """**Chroma + BM25 混合搜尋**"""
@@ -17,7 +18,7 @@ def retrieve_docs(query, top_k=5, weight_bm25=0.7, weight_vector=0.3):
   # 載入Embeddings和Chroma
   embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
   vectorstore = Chroma(
-      persist_directory="C:\Users\lulu\Desktop\ProgressPal\progresspal\教材\teaching_material",
+      persist_directory=os.path.join(settings.TEACHING_MATERIAL_DIR, 'material'),
       embedding_function=embeddings
   )
 

@@ -45,38 +45,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`HTTP 錯誤! 狀態: ${response.status}`);
             }
 
-            // 4. 處理串流回應
+            // 處理串流回應
             const reader = response.body.getReader();
             const decoder = new TextDecoder(); // 用來將接收到的 Uint8Array 轉成文字
 
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) {
-                    // 串流結束
                     break;
                 }
-                // 將收到的每一小段文字，即時附加到 AI 訊息框中
+                // 將收到的每一小段文字即時附加到訊息框中
                 const chunk = decoder.decode(value);
                 assistantMessageElement.textContent += chunk;
-                // 持續捲動畫面
+                // 捲動畫面
                 chatHistory.scrollTop = chatHistory.scrollHeight;
             }
 
         } catch (error) {
             console.error('串流請求失敗:', error);
             assistantMessageElement.textContent = '抱歉，連線時發生錯誤。';
-            assistantMessageElement.classList.add('error'); // 可以加上錯誤樣式
+            assistantMessageElement.classList.add('error'); 
         }
     }
 
-    // 輔助函式：建立訊息元素
+    // 建立訊息元素
     function createMessageElement(sender) {
         const messageWrapper = document.createElement('div');
         messageWrapper.classList.add('message', `${sender}-message`);
         return messageWrapper;
     }
     
-    // 輔助函式：將完成的訊息附加到歷史紀錄
+    // 將完成的訊息附加到歷史紀錄
     function appendMessage(text, sender) {
         const messageElement = createMessageElement(sender);
         messageElement.textContent = text;
@@ -84,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chatHistory.scrollTop = chatHistory.scrollHeight;
     }
 
-    // 輔助函式：取得 Django 的 CSRF token
+    // 取得 Django 的 CSRF token
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {

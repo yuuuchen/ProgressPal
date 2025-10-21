@@ -31,6 +31,8 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+#教材路徑
+TEACHING_MATERIAL_DIR = os.path.join(BASE_DIR, 'teaching_material')
 
 
 # Quick-start development settings - unsuitable for production
