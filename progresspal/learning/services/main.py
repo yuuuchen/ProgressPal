@@ -11,9 +11,7 @@ from learning.services.prompt import (
 )
 from learning.services.content import get_unit, get_chapter
 from learning.services.utils import clean_text_tutoring, clean_text_qa,to_markdown
-
 from rag.services.rag import retrieve_docs
-from emotion.services.utils import compute_engagement
 
 # 載入 .env 檔案
 load_dotenv()
