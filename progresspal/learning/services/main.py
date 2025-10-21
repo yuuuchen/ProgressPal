@@ -11,9 +11,7 @@ from learning.services.prompt import (
 )
 from learning.services.content import get_unit, get_chapter
 from learning.services.utils import clean_text_tutoring, clean_text_qa,to_markdown
-
 from rag.services.rag import retrieve_docs
-from emotion.services.utils import compute_engagement
 
 # 從環境變數中取得 API key
 API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -102,17 +100,9 @@ def answer_question(mode, question, engagement, chapter_id=None, unit_id=None, e
     else:
         return {"error": "Invalid mode"}
 
-def answer_extended_question(selected_index, user_input, engagement, chapter_id, unit_id, extended_q_history):
-    """
-    selected_index: 使用者選擇的延伸題索引
-    user_input: 使用者輸入的提問或答案
-    """
-    questions = extended_q_history.get((chapter_id, unit_id), [])
-    if not questions or selected_index >= len(questions):
-        return {"answer": "選擇的延伸問題不存在", "extended_question": None}
-    selected_question = questions[selected_index]
-    # 將選擇的延伸問題 + 使用者輸入一起生成 prompt
-    prompt = generate_prompt_extended(engagement, user_input, [selected_question], "", stage="初學")
+def answer_extended_question(question, engagement, chapter_id, unit_id, extended_q_history):
+    docs = get_chapter(chapter_id)
+    prompt = generate_prompt_extended(engagement, question, docs, extended_q_history.get((chapter_id, unit_id), ""), stage="初學")
     return respond_to_question(prompt, engagement)
 
 def answer_relevant_question(question, engagement):

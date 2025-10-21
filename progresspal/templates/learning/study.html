@@ -17,12 +17,12 @@
         <nav class="col-lg-2 col-md-2">
             <div class="card h-100">
                 <div class="card-header fw-bold">
-                    {{ chapter }} 課程列表
+                    CH{{ chapter.chapter_number }} 課程列表
                 </div>
                 <div class="card-body">
                     <div class="list-group">
                         {% for u in units %}
-                        <a href="#" class="list-group-item list-group-item-action">{{u}}{{u.title}}</a>
+                        <a href="#" class="list-group-item list-group-item-action">{{u.unit_number}}{{u.title}}</a>
                     </div>
                 </div>
             </div>
@@ -32,9 +32,9 @@
         <div class="col-lg-5 col-md-5">
             <div class="card h-100">
                 <div class="card-body p-4">
-                    <h2 class="card-title">{{ chapter }}{{ chapter_title }}</h2>
+                    <h2 class="card-title">CH{{ chapter.chapter_number }}{{ chapter.title }}</h2>
                     <hr>
-                    <h3 class="h4 mt-4">{{ unit }}{{ unit_name }}</h2>
+                    <h3 class="h4 mt-4">{{ chapter.chapter_number }}-{{ unit.unit_number }}{{ unit.title }}</h2>
                     <p class="card-text">{{ teaching_content }}</p>
                     </ul>
                 </div>
@@ -46,7 +46,7 @@
             <!-- Emotion區塊 -->
             <div id="emotion-display" class="card mb-4">
                 <div class="card-body d-flex align-items-center p-2">
-                    
+                    情緒：
                 </div>
             </div>
             
