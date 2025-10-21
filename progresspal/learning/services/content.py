@@ -69,7 +69,7 @@ embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 vectorstore = Chroma.from_documents(
     documents=all_docs,
     embedding=embeddings,
-    persist_directory=os.path.join(settings.TEACHING_MATERIAL_DIR),
+    persist_directory=os.path.join(settings.TEACHING_MATERIAL_DIR, 'material'),
 )
 
 vectorstore.persist()
