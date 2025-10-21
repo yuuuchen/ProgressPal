@@ -21,7 +21,6 @@ from django.conf.urls.static import static
 from django.conf.urls import url
 import accounts.views as accounts
 import learning.views as learning
-import learning.views as learning
 
 urlpatterns = [
     path('/', learning.homepage, name='homepage'),
