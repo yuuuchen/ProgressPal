@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from langchain.vectorstores import Chroma
-from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.schema import Document
 import re
 from rank_bm25 import BM25Okapi
