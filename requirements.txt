@@ -4,8 +4,11 @@ python-dotenv==1.1.1
 markdown==3.9
 google-genai==1.32.0
 
+langchain==0.3.27
 langchain-community==0.3.30
 langchain-chroma==0.2.6
+langchain-huggingface==0.0.3
 sentence-transformers==5.1.1
 rank_bm25==0.2.2
 jieba==0.42.1
+numpy==1.26.4
