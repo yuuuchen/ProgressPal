@@ -10,6 +10,9 @@ class Chapter(models.Model):
 
     def __str__(self):
         return f"{self.chapter_number}. {self.title}"
+    def get_units(self):
+        """取得該章節所有單元"""
+        return self.units.all().order_by('unit_number')
     
 class Unit(models.Model):
     chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name='units', verbose_name="所屬章節")

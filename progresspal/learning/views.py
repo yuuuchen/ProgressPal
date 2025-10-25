@@ -7,6 +7,7 @@ from emotion.services.utils import compute_engagement
 from .services import main
 from .forms import StudyForm
 from accounts.models import QuestionLog
+from .models import Chapter, Unit
 
 # 延伸提問暫存結構：{(chapter_code, unit_code): [q1, q2, q3, ...]}
 extended_q_history = {}
@@ -14,8 +15,12 @@ extended_q_history = {}
 
 def homepage(request):
     """學習首頁"""
-    return render(request, "learning/lesson.html")
+    chapters = Chapter.objects.prefetch_related('units').all()
+    return render(request, "learning/lesson.html", {'chapters': chapters})
 
+def lessons(request):
+    chapters = Chapter.objects.prefetch_related('units').all()
+    return render(request, 'learning/lessons.html', {'chapters': chapters})
 
 @csrf_exempt
 @login_required
