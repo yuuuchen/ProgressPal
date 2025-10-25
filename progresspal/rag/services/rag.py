@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from langchain.vectorstores import Chroma
-from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.schema import Document
 import re
 from rank_bm25 import BM25Okapi
@@ -11,17 +11,25 @@ import jieba
 from learning.services.content import all_docs
 from django.conf import settings
 
+PERSIST_DIR = os.path.join(settings.TEACHING_MATERIAL_DIR, 'material_db')
+
+try:
+  embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+  vectorstore = Chroma(
+      persist_directory=PERSIST_DIR, 
+      embedding_function=embeddings
+  )
+except Exception as e:
+  print(f"載入向量資料庫失敗。")
+  vectorstore = None 
 
 """**Chroma + BM25 混合搜尋**"""
 
 def retrieve_docs(query, top_k=5, weight_bm25=0.7, weight_vector=0.3):
-  # 載入Embeddings和Chroma
-  embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-  vectorstore = Chroma(
-      persist_directory=os.path.join(settings.TEACHING_MATERIAL_DIR, 'material'),
-      embedding_function=embeddings
-  )
-
+  if not vectorstore:
+    print("向量資料庫未載入")
+    return [] # 回傳空列表
+  
   #取得關鍵字
   keywords = query.get("keywords", [])
   results = []  # 最終結果
