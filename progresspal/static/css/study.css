@@ -17,8 +17,47 @@
 
 /*聊天室*/
 /* 讓按鈕在按下時，變成實心灰色 */
-#chat-container .btn-outline-secondary:active {
-    background-color: #6c757d; /* Bootstrap 的 secondary grey color */
-    border-color: #6c757d;
-    color: #fff; /* 按下時文字變白色才能看清楚 */
+#chat-container .card-footer .btn-outline-secondary.active {
+    background-color: #6c757d; /* 變成實心灰色 */
+    color: white;             /* 文字變成白色 */
+    border-color: #6c757d;    /* 邊框也變灰色 */
+    /* (可選) 加上一點陰影，讓它更突出 */
+    box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.5); 
+}
+
+/* 所有對話框的基礎樣式*/
+.message {
+    padding: 0.5rem 1rem; /* 上下 8px, 左右 16px 的內邊距 */
+    border-radius: 1.25rem; /* 圓潤的邊角 (20px) */
+    margin-bottom: 0.5rem; /* 和下一則訊息的間距 (8px) */
+    max-width: 85%; /* 最大寬度不超過聊天室寬度的 85% */
+    word-wrap: break-word; /* 長單字或網址自動換行 */
+    width: fit-content; /* 寬度自動根據內容調整 */
+}
+
+/* 使用者的訊息樣式 */
+.user-message {
+    background-color: #265294; /* 背景色 */
+    color: white;             /* 白色文字 */
+    align-self: flex-end;     /* 在 Flex 容器中靠右對齊 */
+    border-bottom-right-radius: 0.3rem; /* 右下角稍微變方一點 */
+    margin-left: auto;        /* 確保在 flex 容器中靠右 */
+}
+
+/* 回應訊息樣式 */
+.assistant-message {
+    background-color: #cdd6e0; /* 背景色 */
+    color: #000000; /* 黑色文字 */
+    align-self: flex-start; /* 在 Flex 容器中靠左對齊 */
+    border-bottom-left-radius: 0.25rem; /* 左下角稍微變方一點 (4px)，增加視覺變化 */
+    margin-right: auto; /* 在 Flex 容器中，確保內容寬度不足時，元素仍靠左 */
+}
+
+/* 錯誤訊息樣式 */
+.error-message {
+    background-color: #cdd6e0; /* 背景色 */
+    color: #524f4f;             /* 灰色文字*/
+    align-self: flex-start; /* 靠左對齊 */
+    border-bottom-left-radius: 0.3rem;
+    margin-right: auto;
 }

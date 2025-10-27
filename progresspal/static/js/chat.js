@@ -4,78 +4,123 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatHistory = document.getElementById('chat-history');
     const chatInput = document.getElementById('chat-input');
     const sendBtn = document.getElementById('send-btn');
+    // 連接兩個問題類型按鈕
+    const directQuestionBtn = document.getElementById('direct-question-btn');
+    const extendQuestionBtn = document.getElementById('extend-question-btn');
 
-    // 點擊送出按鈕執行 sendMessage
-    sendBtn.addEventListener('click', sendMessage);
-    // 按下 Enter 鍵送出訊息
-    chatInput.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault(); // 防止換行
-            sendMessage();
+    // 儲存最新情緒序列的變數 
+    let EmotionSequence = []; 
+    // 監聽來自 camera.js 的情緒序列更新事件
+    window.addEventListener('emotionSequenceUpdate', (event) => {
+        if (event.detail && Array.isArray(event.detail.sequence)) {
+            EmotionSequence = event.detail.sequence;
         }
     });
 
+    // 儲存使用者選擇的問題類型
+    let selectedQuestionType = null;
+
+    // 問題類型：直接提問
+    directQuestionBtn.addEventListener('click', () => {
+        selectedQuestionType = 'direct'; 
+        // (可選) 提供視覺回饋，例如改變按鈕樣式
+        directQuestionBtn.classList.add('active'); 
+        extendQuestionBtn.classList.remove('active');
+    });
+
+    // 問題類型：延伸提問
+    extendQuestionBtn.addEventListener('click', () => {
+        selectedQuestionType = 'extend'; 
+        extendQuestionBtn.classList.add('active');
+        directQuestionBtn.classList.remove('active');
+    });
+
+    // 送出按鈕
+    sendBtn.addEventListener('click', handleSendAttempt);
+    chatInput.addEventListener('keydown', (event) => {
+        // 只按enter也可以送出
+        if (event.key === 'Enter' && !event.shiftKey) { 
+            event.preventDefault();
+            handleSendAttempt(); // 呼叫處理送出嘗試函式
+        }
+    });
+
+    // 處理送出嘗試函式
+    function handleSendAttempt() {
+        const messageText = chatInput.value.trim();
+
+        // 檢查問題類型是否選擇
+        if (!selectedQuestionType) {
+            return; 
+        }
+        // 檢查問題內容是否輸入
+        if (!messageText) {
+            return; 
+        }
+
+        // 如果檢查都輸入才真正呼叫 sendMessage
+        sendMessage(messageText, selectedQuestionType);
+
+        // 送出成功後的操作
+        chatInput.value = ''; // 清空輸入框
+        selectedQuestionType = null; 
+        // 移除按鈕的 active 狀態
+        directQuestionBtn.classList.remove('active');
+        extendQuestionBtn.classList.remove('active');
+    }
+
     // 送出訊息sendMessage
-    async function sendMessage() {
-        const messageText = chatInput.value.trim(); //取得輸入的文字
-        if (messageText === '') return;
-
-        // 在畫面上顯示使用者自己的訊息
+    async function sendMessage(messageText, questionType) {
+        // 送出訊息
         appendMessage(messageText, 'user');
-        chatInput.value = ''; //清空輸入框
+        const loadingElement = createMessageElement('assistant');
+        loadingElement.textContent = '回應中...';
+        chatHistory.appendChild(loadingElement);
+        chatHistory.scrollTop = chatHistory.scrollHeight; // 捲動到底部
 
-        // 建立一個空的 AI 回覆訊息框接收串流內容
-        const assistantMessageElement = createMessageElement('assistant');
-        chatHistory.appendChild(assistantMessageElement);
-        // 確保畫面捲動到最下方
-        chatHistory.scrollTop = chatHistory.scrollHeight;
 
         try {
-            // 發送 Fetch 請求到後端的串流 API
-            const response = await fetch('/learning/api/chat/stream/', { // 注意 URL 不同
+            // form
+            const formData = new FormData();
+            formData.append('question_choice', questionType); // 傳入 questionType
+            formData.append('user_question', messageText);    // 傳入 messageText
+            formData.append('emotion_sequence', JSON.stringify(EmotionSequence || [])); //轉換成純文字
+
+            // fetch API發送請求
+            const response = await fetch('/learning/api/chat/', { 
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'),
-                },
-                body: JSON.stringify({ message: messageText }),
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                body: formData
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP 錯誤! 狀態: ${response.status}`);
+            // 收到回應
+            chatHistory.removeChild(loadingElement); //移除回應中
+            if (!response.ok) throw new Error(`伺服器錯誤! 狀態碼: ${response.status}`);
+            // Json解析為 JavaScript 物件
+            const data = await response.json();
+            if (data.success && data.reply) {
+                appendMessage(data.reply, 'assistant');
+            } else {
+                 throw new Error(data.error || '從伺服器收到無效的回應');
             }
 
-            // 處理串流回應
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder(); // 用來將接收到的 Uint8Array 轉成文字
-
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) {
-                    break;
-                }
-                // 將收到的每一小段文字即時附加到訊息框中
-                const chunk = decoder.decode(value);
-                assistantMessageElement.textContent += chunk;
-                // 捲動畫面
-                chatHistory.scrollTop = chatHistory.scrollHeight;
+        } catch (error) { // 捕捉錯誤
+            console.error('聊天請求失敗:', error);
+            if (loadingElement && loadingElement.parentNode === chatHistory) {
+                chatHistory.removeChild(loadingElement);
             }
-
-        } catch (error) {
-            console.error('串流請求失敗:', error);
-            assistantMessageElement.textContent = '抱歉，連線時發生錯誤。';
-            assistantMessageElement.classList.add('error'); 
+            appendMessage(`抱歉，發生錯誤: ${error.message}`, 'error');
         }
     }
 
-    // 建立訊息元素
+    // 建立空的訊息元素(sender:user/assistant/error)
     function createMessageElement(sender) {
         const messageWrapper = document.createElement('div');
         messageWrapper.classList.add('message', `${sender}-message`);
         return messageWrapper;
     }
     
-    // 將完成的訊息附加到歷史紀錄
+    // 將完成的訊息加到歷史紀錄(sender:user/assistant/error)
     function appendMessage(text, sender) {
         const messageElement = createMessageElement(sender);
         messageElement.textContent = text;
