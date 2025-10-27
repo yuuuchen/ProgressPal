@@ -137,6 +137,4 @@ def answer_question_view(request, chapter_code, unit_code):
             "engagement": engagement,
             "extended_questions": extended_q_history.get((chapter_code, unit_code), [])
         })
-
-    # 非 POST 時仍可回傳頁面（第一次載入）
-    return render(request, "learning/answer.html", {"form": StudyForm()})
+    return JsonResponse({"error": "Invalid request"}, status=400)
