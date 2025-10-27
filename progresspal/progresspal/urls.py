@@ -34,6 +34,6 @@ urlpatterns = [
     path('user/study/', accounts.learning_portfolio, name='learning-portfolio'),  # 學習歷程頁面
     # 學習相關
     path('lesson/', learning.lesson, name='lesson'),  # 學習章節列表頁面
-    path('lesson/<int:chapter_code>/<int:unit_code>/study/', learning.study_view, name='learning'),  #學習頁面
+    path('lesson/<int:chapter_code>/<int:unit_code>/study/', learning.generate_materials_view, name='learning'),  #學習頁面
 
 ]
