@@ -19,7 +19,7 @@ def homepage(request):
     chapters = Chapter.objects.prefetch_related('units').all()
     return render(request, "learning/lesson.html", {'chapters': chapters})
 
-def lessons(request):
+def lesson(request):
     chapters = Chapter.objects.prefetch_related('units').all()
     return render(request, 'learning/lessons.html', {'chapters': chapters})
 
