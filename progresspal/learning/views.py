@@ -3,11 +3,13 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
 from emotion.services.utils import compute_engagement
 from .services import main
 from .forms import StudyForm
 from accounts.models import QuestionLog
 from .models import Chapter, Unit
+import json
 
 # 延伸提問暫存結構：{(chapter_code, unit_code): [q1, q2, q3, ...]}
 extended_q_history = {}
@@ -71,67 +73,70 @@ def generate_materials_view(request, chapter_code, unit_code):
 @login_required
 def answer_question_view(request, chapter_code, unit_code):
     """
-    教材問答頁面
+    教材問答 - 改成 AJAX JSON 回傳版本
     """
     if request.method == "POST":
-        form = StudyForm(request.POST)
-        if form.is_valid():
-            question_choice = form.cleaned_data["question_choice"]
-            question = form.cleaned_data["user_question"]
-            emotions = request.POST.getlist("emotions", [])
-            engagement = compute_engagement(emotions)
-            user = request.user
-            role = user.role
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-            # 決定 mode
-            if question_choice == "extended":
-                mode = 1
-                extended_qs = extended_q_history.get((chapter_code, unit_code), [])
-                last_five_qs = extended_qs[-5:] if len(extended_qs) > 5 else extended_qs
-            else:
-                mode = 2
-                last_five_qs = []
+        question_choice = data.get("question_choice", "direct")
+        question = data.get("user_question", "")
+        emotions = data.get("emotions", [])
+        engagement = compute_engagement(emotions)
+        user = request.user
+        role = user.role
 
-            # 呼叫回答邏輯
-            result = main.answer_question(
-                mode=mode,
-                question=question,
-                engagement=engagement,
-                chapter_id=chapter_code,
-                unit_id=unit_code,
-                role=role,
-                extended_q_history={(chapter_code, unit_code): last_five_qs}
-            )
+        # 決定 mode
+        if question_choice == "extended":
+            mode = 1
+            extended_qs = extended_q_history.get((chapter_code, unit_code), [])
+            last_five_qs = extended_qs[-5:] if len(extended_qs) > 5 else extended_qs
+        else:
+            mode = 2
+            last_five_qs = []
 
-            answer = result.get("answer", "系統暫時無法回答，請稍後再試。")
+        # 呼叫回答邏輯
+        result = main.answer_question(
+            mode=mode,
+            question=question,
+            engagement=engagement,
+            chapter_id=chapter_code,
+            unit_id=unit_code,
+            role=role,
+            extended_q_history={(chapter_code, unit_code): last_five_qs}
+        )
 
-            # 若系統有生成新延伸提問，追加進暫存
-            new_q = result.get("extended_question")
-            if new_q:
-                if (chapter_code, unit_code) not in extended_q_history:
-                    extended_q_history[(chapter_code, unit_code)] = []
-                extended_q_history[(chapter_code, unit_code)].append(new_q)
+        answer = result.get("answer", "系統暫時無法回答，請稍後再試。")
 
-            # 儲存提問紀錄
-            QuestionLog.objects.create(
-                user=request.user,
-                chapter_code=chapter_code,
-                unit_code=unit_code,
-                question=question,
-                answer=answer,
-                engagement=engagement,
-                created_at=timezone.now(),
-            )
+        # 若系統有生成新延伸提問，追加進暫存
+        new_q = result.get("extended_question")
+        if new_q:
+            if (chapter_code, unit_code) not in extended_q_history:
+                extended_q_history[(chapter_code, unit_code)] = []
+            extended_q_history[(chapter_code, unit_code)].append(new_q)
 
-            context = {
-                "chapter": chapter_code,
-                "unit": unit_code,
-                "question": question,
-                "answer": answer,
-                "engagement": engagement,
-                "form": StudyForm(),
-                "extended_questions": extended_q_history.get((chapter_code, unit_code), []),
-            }
-            return render(request, "learning/answer.html", context)
+        # 儲存提問紀錄
+        QuestionLog.objects.create(
+            user=request.user,
+            chapter_code=chapter_code,
+            unit_code=unit_code,
+            question=question,
+            answer=answer,
+            engagement=engagement,
+            created_at=timezone.now(),
+        )
 
+        # 用 JSON 回傳結果（前端 AJAX 更新用）
+        return JsonResponse({
+            "chapter": chapter_code,
+            "unit": unit_code,
+            "question": question,
+            "answer": answer,
+            "engagement": engagement,
+            "extended_questions": extended_q_history.get((chapter_code, unit_code), [])
+        })
+
+    # 非 POST 時仍可回傳頁面（第一次載入）
     return render(request, "learning/answer.html", {"form": StudyForm()})
