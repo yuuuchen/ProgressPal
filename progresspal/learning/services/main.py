@@ -1,3 +1,4 @@
+# learning/services/main.py
 import os, re, textwrap, time, json
 from dotenv import load_dotenv
 from google import genai
@@ -59,17 +60,17 @@ def classify_question(question: str) -> dict:
     return json.loads(json_str)
 
 # 參數與系統設定
-def get_gen_config(engagement):
+def get_gen_config(engagement,role):
     """依照學生參與度設定 temperature"""
     temperature = 0.3 if engagement != "low" else 0.5
-    SYSTEM_PROMPT = set_system_prompt("資訊管理系大學生")
+    SYSTEM_PROMPT = set_system_prompt(role)
     return types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT, temperature=temperature)
 
 # 教材顯示
-def display_materials(chapter_id, unit_id, engagement):
+def display_materials(chapter_id, unit_id, engagement, role):
     unit = get_unit(chapter_id, unit_id)
     prompt = generate_materials(engagement, unit, stage="初學")
-    gen_config = get_gen_config(engagement)
+    gen_config = get_gen_config(engagement, role)
     resp = client.models.generate_content(
         model=model,
         config=gen_config,
@@ -77,14 +78,14 @@ def display_materials(chapter_id, unit_id, engagement):
     )
     result = clean_text_tutoring(resp.text)
     return {
-        "teaching": result["teaching"],
-        "example": result["example"],
-        "summary": result["summary"],
-        "extended_questions": result["extended_question"]  
+        "teaching": result.get("teaching"),
+        "example": result.get("example"),
+        "summary": result.get("summary"),
+        "extended_questions": result.get("extended_question")
     }
 
 # 問答回應
-def answer_question(mode, question, engagement, chapter_id=None, unit_id=None, extended_q_history=None):
+def answer_question(mode, question, engagement, role, chapter_id=None, unit_id=None, extended_q_history=None):
     """
     mode:
       1: 回應延伸問題
@@ -92,37 +93,41 @@ def answer_question(mode, question, engagement, chapter_id=None, unit_id=None, e
       3: 直接提問(學習需求相關)
     """
     if mode == 1:
-        return answer_extended_question(question, engagement, chapter_id, unit_id, extended_q_history)
+        return answer_extended_question(question, engagement, chapter_id, unit_id, extended_q_history, role)
     elif mode == 2:
-        return answer_relevant_question(question, engagement)
+        return answer_relevant_question(question, engagement, role)
     elif mode == 3:
-        return answer_demand_question(question, engagement)
+        return answer_demand_question(question, engagement, unit_id, role)
     else:
         return {"error": "Invalid mode"}
 
-def answer_extended_question(question, engagement, chapter_id, unit_id, extended_q_history):
+def answer_extended_question(question, engagement, chapter_id, unit_id, extended_q_history, role):
     docs = get_chapter(chapter_id)
-    prompt = generate_prompt_extended(engagement, question, docs, extended_q_history.get((chapter_id, unit_id), ""), stage="初學")
-    return respond_to_question(prompt, engagement)
+    prompt = generate_prompt_extended(
+        engagement, question, docs,
+        extended_q_history.get((chapter_id, unit_id), ""),
+        stage="初學"
+    )
+    return respond_to_question(prompt, engagement, role)
 
-def answer_relevant_question(question, engagement):
+def answer_relevant_question(question, engagement, role):
     analysis = classify_question(question)
     if analysis["category"] != "relevant":
         return {"error": "這個問題與教材無關"}
     docs = retrieve_docs(analysis, top_k=5)
     prompt = generate_prompt(engagement, question, docs)
-    return respond_to_question(prompt, engagement)
+    return respond_to_question(prompt, engagement, role)
 
-def answer_demand_question(question, engagement, unit_id):
+def answer_demand_question(question, engagement, unit_id, role):
     analysis = classify_question(question)
     if analysis["category"] != "demand":
         return {"error": "這不是學習需求類問題"}
     docs = get_unit(unit_id)
-    prompt =  generate_prompt(engagement, question, docs)
-    return respond_to_question(prompt, engagement)
+    prompt = generate_prompt(engagement, question, docs)
+    return respond_to_question(prompt, engagement, role)
 
-def respond_to_question(prompt, engagement):
-    gen_config = get_gen_config(engagement)
+def respond_to_question(prompt, engagement, role):
+    gen_config = get_gen_config(engagement, role)
     resp = client.models.generate_content(
         model=model,
         config=gen_config,
@@ -130,8 +135,8 @@ def respond_to_question(prompt, engagement):
     )
     result = clean_text_qa(resp.text)
     return {
-        "answer": result["answer"],
-        "extended_question": result["extended_question"]
+        "answer": result.get("answer"),
+        "extended_question": result.get("extended_question")
     }
 
 
