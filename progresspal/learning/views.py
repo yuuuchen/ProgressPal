@@ -15,11 +15,13 @@ import json
 extended_q_history = {}
 
 def homepage(request):
-    """學習首頁"""
+    """學習首頁 歡迎光臨"""
     chapters = Chapter.objects.prefetch_related('units').all()
     return render(request, "learning/lesson.html", {'chapters': chapters})
 
+@login_required
 def lesson(request):
+    """課程總覽頁面"""
     chapters = Chapter.objects.prefetch_related('units').all()
     return render(request, 'learning/lessons.html', {'chapters': chapters})
 
