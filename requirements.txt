@@ -4,9 +4,9 @@ python-dotenv==1.1.1
 markdown==3.9
 google-genai==1.32.0
 
-langchain==0.3.27
-langchain-community==0.3.30
-langchain-chroma==0.1.2
+langchain>=0.3.0,<0.4.0
+langchain-community>=0.3.0,<0.4.0
+langchain-chroma>=0.1.0,<0.2.0
 langchain-huggingface==0.0.3
 sentence-transformers==5.1.1
 rank_bm25==0.2.2
