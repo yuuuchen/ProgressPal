@@ -35,5 +35,5 @@ urlpatterns = [
     # 學習相關
     path('lesson/', learning.lesson, name='lesson'),  # 學習章節列表頁面
     path('lesson/<int:chapter_code>/<int:unit_code>/study/', learning.generate_materials_view, name='learning'),  #學習頁面
-
+    path('lesson/<int:chapter_code>/<int:unit_code>/study/api/chat/', learning.answer_question_view, name='chat-api') #提問區域
 ]

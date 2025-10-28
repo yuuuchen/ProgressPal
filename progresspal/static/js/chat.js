@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 連接兩個問題類型按鈕
     const directQuestionBtn = document.getElementById('direct-question-btn');
     const extendQuestionBtn = document.getElementById('extend-question-btn');
+    //HTML元素
+    const chatWrapper = document.getElementById('chat-wrapper'); 
 
     // 儲存最新情緒序列的變數 
     let EmotionSequence = []; 
@@ -16,6 +18,16 @@ document.addEventListener('DOMContentLoaded', () => {
             EmotionSequence = event.detail.sequence;
         }
     });
+
+    // 讀取章節和單元
+    let chapterCode = 0; 
+    let unitCode = 0;      
+    if (chatWrapper) {
+        chapterCode = chatWrapper.dataset.chapterCode || chapterCode; // 從 data 屬性讀取，若無則用預設
+        unitCode = chatWrapper.dataset.unitCode || unitCode;       // 從 data 屬性讀取，若無則用預設
+    } else {
+        console.error("無法讀取章節/單元");
+    }
 
     // 儲存使用者選擇的問題類型
     let selectedQuestionType = null;
@@ -30,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 問題類型：延伸提問
     extendQuestionBtn.addEventListener('click', () => {
-        selectedQuestionType = 'extend'; 
+        selectedQuestionType = 'extended'; 
         extendQuestionBtn.classList.add('active');
         directQuestionBtn.classList.remove('active');
     });
@@ -78,19 +90,22 @@ document.addEventListener('DOMContentLoaded', () => {
         chatHistory.appendChild(loadingElement);
         chatHistory.scrollTop = chatHistory.scrollHeight; // 捲動到底部
 
-
         try {
-            // form
-            const formData = new FormData();
-            formData.append('question_choice', questionType); // 傳入 questionType
-            formData.append('user_question', messageText);    // 傳入 messageText
-            formData.append('emotion_sequence', JSON.stringify(EmotionSequence || [])); //轉換成純文字
+            // 傳送給後端的資料
+            const payload = {
+                question_choice: questionType, // direct/extended
+                user_question: messageText,
+                emotions: emotionSequence || [] // 直接傳送陣列
+            };
 
             // fetch API發送請求
-            const response = await fetch('/learning/api/chat/', { 
+            const response = await fetch(`/lesson/${chaptercode}/${unitcode}/study/api/chat/`, { 
                 method: 'POST',
-                headers: { 'X-CSRFToken': getCookie('csrftoken') },
-                body: formData
+                headers: { 
+                    'Content-Type': 'application/json', // 指定內容類型為 JSON
+                    'X-CSRFToken': getCookie('csrftoken') 
+                },
+                body: JSON.stringify(payload)
             });
 
             // 收到回應
