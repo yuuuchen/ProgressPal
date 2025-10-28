@@ -20,11 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 讀取章節和單元
-    let chapterCode = 0; 
-    let unitCode = 0;      
+    let chaptercode = 0; 
+    let unitcode = 0;      
     if (chatWrapper) {
-        chapterCode = chatWrapper.dataset.chapterCode || chapterCode; // 從 data 屬性讀取，若無則用預設
-        unitCode = chatWrapper.dataset.unitCode || unitCode;       // 從 data 屬性讀取，若無則用預設
+        chaptercode = chatWrapper.dataset.chaptercode || chaptercode; // 從 data 屬性讀取，若無則用預設
+        unitcode = chatWrapper.dataset.unitcode || unitcode;       // 從 data 屬性讀取，若無則用預設
     } else {
         console.error("無法讀取章節/單元");
     }
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 送出訊息sendMessage
-    async function sendMessage(messageText, questionType) {
+    async function sendMessage(messageText, QuestionType) {
         // 送出訊息
         appendMessage(messageText, 'user');
         const loadingElement = createMessageElement('assistant');
@@ -93,9 +93,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // 傳送給後端的資料
             const payload = {
-                question_choice: questionType, // direct/extended
+                question_choice: QuestionType, // direct/extended
                 user_question: messageText,
-                emotions: emotionSequence || [] // 直接傳送陣列
+                emotions: EmotionSequence || [] // 直接傳送陣列
             };
 
             // fetch API發送請求
