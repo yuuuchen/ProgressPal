@@ -10,13 +10,11 @@ import os
 from django.conf import settings
 
 """
-
-# **教材向量庫**
-
-建立向量庫
+建立教材向量庫
 """
 #定義共用路徑
 PERSIST_DIR = os.path.join(settings.TEACHING_MATERIAL_DIR, 'material_db')
+db_path = os.path.join(PERSIST_DIR, "chroma.sqlite3")
 
 #讀取資料夾裡的所有.md檔案
 md_files = [f for f in os.listdir(settings.TEACHING_MATERIAL_DIR) if f.endswith(".md")]
@@ -57,24 +55,25 @@ for file in md_files:
       )
 
 #檢查資料庫是否已存在
-if not os.path.exists(PERSIST_DIR):
-  if not all_docs:
-    print("找不到任何 .md 檔案可供建立資料庫。")
-  else:
-    #將文本轉為向量
-    print("正在載入 embeddings 模型...")
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+if not os.path.exists(db_path):
+    if not all_docs:
+        print("找不到任何 .md 檔案可供建立資料庫。")
+    else:
+        #將文本轉為向量
+        print("正在載入 embeddings 模型...")
+        embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
-    #存入 Chroma 向量資料庫
-    print("正在建立 Chroma 向量資料庫並儲存...")
-    vectorstore = Chroma.from_documents(
-        documents=all_docs,
-        embedding=embeddings,
-        persist_directory=PERSIST_DIR,
-    )
-    vectorstore.persist()
-    print(f"資料庫已成功建立")
-
+        #存入 Chroma 向量資料庫
+        print("正在建立 Chroma 向量資料庫並儲存...")
+        vectorstore = Chroma.from_documents(
+            documents=all_docs,
+            embedding=embeddings,
+            persist_directory=PERSIST_DIR,
+        )
+        vectorstore.persist()
+        print(f"資料庫已成功建立")
+else:
+  print("已建立向量資料庫，略過重建")
 
 """**回傳教材內容**"""
 

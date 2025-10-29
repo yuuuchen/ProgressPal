@@ -7,8 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 連接兩個問題類型按鈕
     const directQuestionBtn = document.getElementById('direct-question-btn');
     const extendQuestionBtn = document.getElementById('extend-question-btn');
-    //HTML元素
-    const chatWrapper = document.getElementById('chat-wrapper'); 
 
     // 儲存最新情緒序列的變數 
     let EmotionSequence = []; 
@@ -18,16 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
             EmotionSequence = event.detail.sequence;
         }
     });
-
-    // 讀取章節和單元
-    let chaptercode = 0; 
-    let unitcode = 0;      
-    if (chatWrapper) {
-        chaptercode = chatWrapper.dataset.chaptercode || chaptercode; // 從 data 屬性讀取，若無則用預設
-        unitcode = chatWrapper.dataset.unitcode || unitcode;       // 從 data 屬性讀取，若無則用預設
-    } else {
-        console.error("無法讀取章節/單元");
-    }
 
     // 儲存使用者選擇的問題類型
     let selectedQuestionType = null;
@@ -99,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             // fetch API發送請求
-            const response = await fetch(`/lesson/${chaptercode}/${unitcode}/study/api/chat/`, { 
+            const response = await fetch(`api/chat/`, { 
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json', // 指定內容類型為 JSON

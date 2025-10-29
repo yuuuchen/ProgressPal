@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.schema import Document
 import re
@@ -12,20 +12,37 @@ from learning.services.content import all_docs
 from django.conf import settings
 
 PERSIST_DIR = os.path.join(settings.TEACHING_MATERIAL_DIR, 'material_db')
+db_path = os.path.join(PERSIST_DIR, "chroma.sqlite3")
+_vectorstore = None 
+_embeddings = None 
 
-try:
-  embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-  vectorstore = Chroma(
-      persist_directory=PERSIST_DIR, 
-      embedding_function=embeddings
-  )
-except Exception as e:
-  print(f"載入向量資料庫失敗。")
-  vectorstore = None 
+"""
+延遲載入，避免 reload 時重建 DB
+"""
+def get_vectorstore():
+    global _vectorstore, _embeddings
+
+    if _vectorstore is not None:
+        return _vectorstore
+
+    if not os.path.exists(db_path):
+        print("請先執行建立資料庫。")
+        return None
+
+    print("載入 HuggingFaceEmbeddings")
+    _embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+
+    print("載入現有 Chroma 資料庫")
+    _vectorstore = Chroma(
+        persist_directory=PERSIST_DIR,
+        embedding_function=_embeddings
+    )
+    return _vectorstore
 
 """**Chroma + BM25 混合搜尋**"""
 
 def retrieve_docs(query, top_k=5, weight_bm25=0.7, weight_vector=0.3):
+  vectorstore = get_vectorstore()
   if not vectorstore:
     print("向量資料庫未載入")
     return [] # 回傳空列表
@@ -71,10 +88,10 @@ def retrieve_docs(query, top_k=5, weight_bm25=0.7, weight_vector=0.3):
     bm25_scores_candidates = np.array([score for score, _ in candidate_pairs])
 
     #向量檢索
-    query_emb = embeddings.embed_query(keyword)
+    query_emb = _embeddings.embed_query(keyword)
     vector_scores = []
     for doc in candidate_docs:
-        doc_emb = embeddings.embed_documents([doc])[0]
+        doc_emb = _embeddings.embed_documents([doc])[0]
         score = np.dot(query_emb, doc_emb) / (
             np.linalg.norm(query_emb) * np.linalg.norm(doc_emb)
         )
