@@ -19,7 +19,6 @@ PROMPT_TEMPLATES = {
 ### 回答風格設定
 回應風格: {style}
 學生的參與度: {engagement}
-學習階段: {stage}
 問題: {question}
 教材: {materials}
 """,
@@ -36,7 +35,6 @@ PROMPT_TEMPLATES = {
 ### 回答風格設定
 回應風格: {style}
 學生的參與度: {engagement}
-學習階段: {stage}
 教材: {materials}
 """,
     # 行為 3:回應學生對於題目的回答
@@ -52,7 +50,6 @@ PROMPT_TEMPLATES = {
 ### 回答風格設定
 回應風格: {style}
 學生的參與度: {engagement}
-學習階段: {stage}
 題目: {topic}
 學生回答: {answer}
 教材: {materials}
@@ -136,12 +133,11 @@ def map_engagement_to_profile(engagement: str) -> dict:
 
 
 # 主方法：回答學生提問。使用學習參與度
-def generate_prompt(engagement, question, materials, stage='初學'):
+def generate_prompt(engagement, question, materials):
   '''
   engagement=high/low
   question=str(學生提問)
   materials=list(教材內容)
-  stage='初學'
   '''
   materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
   template = PROMPT_TEMPLATES["qa"]
@@ -151,18 +147,16 @@ def generate_prompt(engagement, question, materials, stage='初學'):
       extended_question=mapping["extended_question"],
       engagement=engagement,
       question=question,
-      stage=stage,
       materials=materials_text
   )
   return prompt_text
 
 
 # 根據教材進行教學
-def generate_materials(engagement ,materials ,stage="初學"):
+def generate_materials(engagement ,materials):
   '''
   engagement=high/low
   materials=list(教材內容)
-  stage='初學'
   '''
   materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
   template = PROMPT_TEMPLATES["tutoring"]
@@ -171,19 +165,17 @@ def generate_materials(engagement ,materials ,stage="初學"):
       style=mapping["style"],
       engagement=engagement,
       materials=materials_text,
-      stage=stage,
       extended_question=mapping["extended_question"]
   )
   return prompt_text
 
 # 進行題目回應。使用學習參與度
-def generate_prompt_extended(engagement, answer, materials,topic, stage='初學'):
+def generate_prompt_extended(engagement, answer, materials,topic):
   '''
   engagement=high/low
   answer=str(學生回應)
   materials=list(教材內容)
   topic=str(題目)
-  stage='初學'
   '''
   materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
   template = PROMPT_TEMPLATES["extended_answer"]
@@ -194,7 +186,6 @@ def generate_prompt_extended(engagement, answer, materials,topic, stage='初學'
       engagement=engagement,
       topic=topic,
       answer=answer,
-      stage=stage,
       materials=materials_text
   )
   return prompt_text

@@ -69,7 +69,7 @@ def get_gen_config(engagement,role):
 # 教材顯示
 def display_materials(chapter_id, unit_id, engagement, role):
     unit = get_unit(chapter_id, unit_id)
-    prompt = generate_materials(engagement, unit, stage="初學")
+    prompt = generate_materials(engagement, unit)
     gen_config = get_gen_config(engagement, role)
     resp = client.models.generate_content(
         model=model,
@@ -106,7 +106,6 @@ def answer_extended_question(question, engagement, chapter_id, unit_id, extended
     prompt = generate_prompt_extended(
         engagement, question, docs,
         extended_q_history.get((chapter_id, unit_id), ""),
-        stage="初學"
     )
     return respond_to_question(prompt, engagement, role)
 
