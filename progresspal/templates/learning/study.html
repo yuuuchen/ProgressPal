@@ -1,16 +1,9 @@
 {% extends 'base.html' %}
-{% block title %}{{unit}}{{unit_name}}{% endblock %}
+{% load static %}
+{% block title %}
+{{chapter.chapter_number}}-{{unit.unit_number}} {{unit.unit_name}}
+{% endblock %}
 {% block content %}
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>{% block title %}{% endblock %}</title>
-    <link rel="stylesheet" href="{% staic 'css/study.css' %}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-wEmeIV1mKuiNpC+IOBjI7aAzPcEZeedi5yW5f2yOq55WWLwNGmvvx4Um1vskeMj0" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
-</head>
-<body>
 <div class="container-fluid px-4 py-3">
     <div class="row g-4"> 
         <!--左側課程列表-->
@@ -22,7 +15,11 @@
                 <div class="card-body">
                     <div class="list-group">
                         {% for u in units %}
-                        <a href="#" class="list-group-item list-group-item-action">{{u.unit_number}}{{u.title}}</a>
+                        <a href="{% url 'learning' chapter_code=u.chapter.chapter_number unit_code=u.unit_number %}" 
+                        class="list-group-item list-group-item-action">
+                            {{u.unit_number}}{{u.title}}
+                        </a>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -59,14 +56,15 @@
                 <!-- 歷史對話 -->
                 <div id="chat-history" class="card-body p-2" style="overflow-y: auto;">
                     <!-- JavaScript 會把對話訊息動態插入到這裡 -->
+                    <div class="message assistant-message">你好！有什麼我可以協助你的嗎？請先選擇問題類型，再輸入問題。</div>
                 </div>
                 
                 <!-- 輸入區塊 -->
                 <div class="card-footer p-2">
                     <!-- 快捷操作按鈕 -->
                     <div class="d-grid gap-2 mb-2">
-                        <button class="btn btn-sm btn-outline-secondary">提問</button>
-                        <button class="btn btn-sm btn-outline-secondary">回應延伸題目</button>
+                        <button id="direct-question-btn" class="btn btn-sm btn-outline-secondary">提問</button>
+                        <button id="extend-question-btn" class="btn btn-sm btn-outline-secondary">回應延伸題目</button>
                     </div>
                     <!-- 文字輸入區 -->
                     <div class="input-group">
@@ -80,18 +78,24 @@
 
     <!--切換單元-->
     <div class="d-flex justify-content-center gap-3 my-4">
-        <a href="#" class="btn btn-secondary">
-            &larr; 上一單元
-        </a>
-        <a href="#" class="btn btn-secondary">
-            下一單元 &rarr;
-        </a>
+        {% if previous_unit %}
+            <a href="{% url 'learning' chapter_code=previous_unit.chapter.chapter_number unit_code=previous_unit.unit_number %}"
+            class="btn btn-secondary">
+                &larr; 上一單元
+            </a>
+        {% endif %}
+
+        {% if next_unit %}
+            <a href="{% url 'learning' chapter_code=next_unit.chapter.chapter_number unit_code=next_unit.unit_number %}"
+            class="btn btn-secondary"> 
+                下一單元 &rarr;
+            </a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
 {% block scripts %}
     <script src="{% static 'js/chat.js' %}"></script>
     <script src="{% static 'js/camera.js' %}"></script>
+    <script src="{% static 'js/emotion.js' %}"></script>
 {% endblock %}
-</body>
-</html>

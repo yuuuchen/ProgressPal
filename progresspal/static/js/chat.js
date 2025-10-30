@@ -8,15 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const directQuestionBtn = document.getElementById('direct-question-btn');
     const extendQuestionBtn = document.getElementById('extend-question-btn');
 
-    // 儲存最新情緒序列的變數 
-    let EmotionSequence = []; 
-    // 監聽來自 camera.js 的情緒序列更新事件
-    window.addEventListener('emotionSequenceUpdate', (event) => {
-        if (event.detail && Array.isArray(event.detail.sequence)) {
-            EmotionSequence = event.detail.sequence;
-        }
-    });
-
     // 儲存使用者選擇的問題類型
     let selectedQuestionType = null;
 
@@ -83,7 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const payload = {
                 question_choice: QuestionType, // direct/extended
                 user_question: messageText,
-                emotions: EmotionSequence || [] // 直接傳送陣列
             };
 
             // fetch API發送請求
@@ -101,10 +91,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error(`伺服器錯誤! 狀態碼: ${response.status}`);
             // Json解析為 JavaScript 物件
             const data = await response.json();
-            if (data.success && data.reply) {
+            if (data.reply) {
                 appendMessage(data.reply, 'assistant');
             } else {
-                 throw new Error(data.error || '從伺服器收到無效的回應');
+                 throw new Error('從伺服器收到無效的回應');
             }
 
         } catch (error) { // 捕捉錯誤

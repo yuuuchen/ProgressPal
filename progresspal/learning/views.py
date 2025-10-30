@@ -23,7 +23,7 @@ def homepage(request):
 def lesson(request):
     """課程總覽頁面"""
     chapters = Chapter.objects.prefetch_related('units').all()
-    return render(request, 'learning/lessons.html', {'chapters': chapters})
+    return render(request, 'learning/lesson.html', {'chapters': chapters})
 
 @csrf_exempt
 @login_required
@@ -65,10 +65,10 @@ def generate_materials_view(request, chapter_code, unit_code):
             "extended_questions": extended_q_history[(chapter_code, unit_code)],
             "form": StudyForm(),
         }
-        return render(request, "learning/materials.html", context)
+        return render(request, "learning/study.html", context)
 
     # GET：初始載入
-    return render(request, "learning/materials.html", {"form": StudyForm()})
+    return render(request, "learning/study.html", {"form": StudyForm()})
 
 
 @csrf_exempt
