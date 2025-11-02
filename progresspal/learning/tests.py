@@ -1,6 +1,4 @@
 # learning/test.py
-
-# from django.test import TestCase
 import os
 import sys
 import django

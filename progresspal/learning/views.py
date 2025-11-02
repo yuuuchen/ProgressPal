@@ -14,10 +14,12 @@ import json
 # 延伸提問暫存結構：{(chapter_code, unit_code): [q1, q2, q3, ...]}
 extended_q_history = {}
 
+@login_required
 def homepage(request):
-    """學習首頁 歡迎光臨"""
+    """學習首頁"""
     chapters = Chapter.objects.prefetch_related('units').all()
-    return render(request, "learning/lesson.html", {'chapters': chapters})
+    return render(request, "learning/index.html", {'chapters': chapters})
+
 
 @login_required
 def lesson(request):
@@ -25,57 +27,54 @@ def lesson(request):
     chapters = Chapter.objects.prefetch_related('units').all()
     return render(request, 'learning/lesson.html', {'chapters': chapters})
 
+
 @csrf_exempt
 @login_required
 def generate_materials_view(request, chapter_code, unit_code):
     """
     生成教材內容頁面
     """
-    if request.method == "POST":
-        emotions = request.POST.getlist("emotions", [])
-        engagement = compute_engagement(emotions)
-        chapter = Chapter.objects.get(chapter_number=chapter_code)
-        unit = Unit.objects.get(unit_number=unit_code)
-        user = request.user
-        role = user.role
+    chapter = Chapter.objects.get(chapter_number=chapter_code)
+    unit = Unit.objects.get(unit_number=unit_code)
+    user = request.user
+    role = user.role
 
-        # 呼叫教材生成
-        result = main.display_materials(chapter_code, unit_code, engagement, role)
+    # 取得情緒序列並計算 engagement
+    emotions = user.emotions  # 從 CostomUser 獲取情緒序列
+    engagement = compute_engagement(emotions)
 
-        # 初始化延伸問題暫存
-        if (chapter_code, unit_code) not in extended_q_history:
-            extended_q_history[(chapter_code, unit_code)] = []
+    # 呼叫教材生成
+    result = main.display_materials(chapter_code, unit_code, engagement, role)
 
-        # 若有生成延伸問題則追加
-        new_qs = result.get("extended_questions")
-        if new_qs:
-            if isinstance(new_qs, list):
-                extended_q_history[(chapter_code, unit_code)].extend(new_qs)
-            else:
-                extended_q_history[(chapter_code, unit_code)].append(new_qs)
+    # 初始化延伸問題暫存
+    if (chapter_code, unit_code) not in extended_q_history:
+        extended_q_history[(chapter_code, unit_code)] = []
 
-        context = {
-            "chapter": chapter,
-            "unit": unit,
-            "role": role,
-            "engagement": engagement,
-            "teaching": result.get("teaching"),
-            "example": result.get("example"),
-            "summary": result.get("summary"),
-            "extended_questions": extended_q_history[(chapter_code, unit_code)],
-            "form": StudyForm(),
-        }
-        return render(request, "learning/study.html", context)
+    # 若有生成延伸問題則追加
+    new_qs = result.get("extended_questions")
+    if new_qs:
+        if isinstance(new_qs, list):
+            extended_q_history[(chapter_code, unit_code)].extend(new_qs)
+        else:
+            extended_q_history[(chapter_code, unit_code)].append(new_qs)
 
-    # GET：初始載入
-    return render(request, "learning/study.html", {"form": StudyForm()})
+    context = {
+        "chapter": chapter,
+        "unit": unit,
+        "teaching": result.get("teaching"),
+        "example": result.get("example"),
+        "summary": result.get("summary"),
+        "extended_questions": extended_q_history[(chapter_code, unit_code)],
+        "form": StudyForm(),
+    }
+    return render(request, "learning/study.html", context)
 
 
 @csrf_exempt
 @login_required
 def answer_question_view(request, chapter_code, unit_code):
     """
-    教材問答 - 改成 AJAX JSON 回傳版本
+    教材問答 - AJAX JSON 回傳版本
     """
     if request.method == "POST":
         try:
@@ -85,10 +84,13 @@ def answer_question_view(request, chapter_code, unit_code):
 
         question_choice = data.get("question_choice", "direct")
         question = data.get("user_question", "")
-        emotions = data.get("emotions", [])
-        engagement = compute_engagement(emotions)
+
         user = request.user
         role = user.role
+
+        # 取得情緒序列並計算 engagement
+        emotions = user.emotions  # 從 CostomUser 獲取情緒序列
+        engagement = compute_engagement(emotions)
 
         # 決定 mode
         if question_choice == "extended":
@@ -130,13 +132,10 @@ def answer_question_view(request, chapter_code, unit_code):
             created_at=timezone.now(),
         )
 
-        # 用 JSON 回傳結果（前端 AJAX 更新用）
+        # JSON 回傳僅系統生成結果
         return JsonResponse({
-            "chapter": chapter_code,
-            "unit": unit_code,
-            "question": question,
             "answer": answer,
-            "engagement": engagement,
             "extended_questions": extended_q_history.get((chapter_code, unit_code), [])
         })
+
     return JsonResponse({"error": "Invalid request"}, status=400)
