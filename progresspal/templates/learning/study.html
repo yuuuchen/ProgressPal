@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block title %}
-{{chapter.chapter_number}}-{{unit.unit_number}} {{unit.unit_name}}
+{{chapter.chapter_number}}-{{unit.unit_number}} {{unit.title}}
 {% endblock %}
 {% block content %}
 <div class="container-fluid px-4 py-3">
@@ -33,7 +33,6 @@
                     <hr>
                     <h3 class="h4 mt-4">{{ chapter.chapter_number }}-{{ unit.unit_number }}{{ unit.title }}</h2>
                     <p class="card-text">{{ teaching_content }}</p>
-                    </ul>
                 </div>
             </div>
         </div>
@@ -56,7 +55,7 @@
                 <!-- 歷史對話 -->
                 <div id="chat-history" class="card-body p-2" style="overflow-y: auto;">
                     <!-- JavaScript 會把對話訊息動態插入到這裡 -->
-                    <div class="message assistant-message">你好！有什麼我可以協助你的嗎？請先選擇問題類型，再輸入問題。</div>
+                    <div class="message assistant-message">你好！請先選擇問題類型，再輸入問題。</div>
                 </div>
                 
                 <!-- 輸入區塊 -->

@@ -18,7 +18,7 @@ extended_q_history = {}
 def homepage(request):
     """學習首頁"""
     chapters = Chapter.objects.prefetch_related('units').all()
-    return render(request, "learning/index.html", {'chapters': chapters})
+    return render(request, "index.html", {'chapters': chapters})
 
 
 @login_required

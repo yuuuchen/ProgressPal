@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // (可選) 提供視覺回饋，例如改變按鈕樣式
         directQuestionBtn.classList.add('active'); 
         extendQuestionBtn.classList.remove('active');
+        clearError();
     });
 
     // 問題類型：延伸提問
@@ -24,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedQuestionType = 'extended'; 
         extendQuestionBtn.classList.add('active');
         directQuestionBtn.classList.remove('active');
+        clearError();
     });
 
     // 送出按鈕
@@ -40,12 +42,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleSendAttempt() {
         const messageText = chatInput.value.trim();
 
+        // 清除舊的錯誤提示
+        clearError();
+
         // 檢查問題類型是否選擇
         if (!selectedQuestionType) {
+            showError("請先點選『提問』或『回應延伸題目』按鈕");
             return; 
         }
         // 檢查問題內容是否輸入
         if (!messageText) {
+            showError("請在下方輸入框輸入您的問題");
             return; 
         }
 
@@ -61,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 送出訊息sendMessage
-    async function sendMessage(messageText, QuestionType) {
+    async function sendMessage(messageText, questionType) {
         // 送出訊息
         appendMessage(messageText, 'user');
         const loadingElement = createMessageElement('assistant');
@@ -102,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (loadingElement && loadingElement.parentNode === chatHistory) {
                 chatHistory.removeChild(loadingElement);
             }
-            appendMessage(`抱歉，發生錯誤: ${error.message}`, 'error');
+            showError(`抱歉，發生錯誤: ${error.message}`);
         }
     }
 
@@ -135,5 +142,38 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         return cookieValue;
+    }
+
+    // 顯示會錯誤訊息
+    function showError(message) {
+        // 建立錯誤元素
+        const errorElement = createMessageElement('error');
+        errorElement.textContent = message;
+        
+        // 附加到聊天記錄
+        chatHistory.appendChild(errorElement);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+
+        // 設定 5 秒後自動移除
+        setTimeout(() => {
+            if (errorElement.parentNode === chatHistory) {
+                // (可選) 加上淡出效果
+                errorElement.style.transition = 'opacity 0.5s ease';
+                errorElement.style.opacity = '0';
+                setTimeout(() => {
+                    if (errorElement.parentNode === chatHistory) {
+                        chatHistory.removeChild(errorElement);
+                    }
+                }, 500); // 等淡出動畫 0.5 秒
+            }
+        }, 5000); // 5000 毫秒 = 5 秒
+    }
+
+    // 立即清除所有現存的錯誤訊息
+    function clearError() {
+        const existingErrors = chatHistory.querySelectorAll('.error-message');
+        existingErrors.forEach(errorEl => {
+            chatHistory.removeChild(errorEl);
+        });
     }
 });
