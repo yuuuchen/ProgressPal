@@ -139,10 +139,11 @@ def answer_question_view(request, chapter_code, unit_code):
             created_at=timezone.now(),
         )
 
+        extended_questions = utils.to_markdown(result.get("extended_questions"))
         # JSON 回傳僅系統生成結果
         return JsonResponse({
             "answer": answer,
-            "extended_questions": result.get("extended_question")
+            "extended_questions": result.get("extended_questions")
         })
 
     return JsonResponse({"error": "Invalid request"}, status=400)
