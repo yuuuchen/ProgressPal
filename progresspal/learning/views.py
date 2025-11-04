@@ -142,7 +142,7 @@ def answer_question_view(request, chapter_code, unit_code):
         # JSON 回傳僅系統生成結果
         return JsonResponse({
             "answer": answer,
-            "extended_questions": extended_q_history.get((chapter_code, unit_code), [])
+            "extended_questions": result.get("extended_question")
         })
 
     return JsonResponse({"error": "Invalid request"}, status=400)
