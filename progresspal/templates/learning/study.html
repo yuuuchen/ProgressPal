@@ -17,7 +17,7 @@
                         {% for u in units %}
                         <a href="{% url 'learning' chapter_code=u.chapter.chapter_number unit_code=u.unit_number %}" 
                         class="list-group-item list-group-item-action">
-                            {{u.unit_number}}{{u.title}}
+                            {{ chapter.chapter_number }}-{{u.unit_number}} {{u.title}}
                         </a>
                         {% endfor %}
                     </div>
@@ -27,14 +27,15 @@
 
         <!--中間教材區-->
         <div class="col-lg-5 col-md-5">
-            <div id="material-card" class="card h-100">
+            <div id="material-card" class="card h-100 d-flex flex-column">
                 <div class="card-body p-4">
                     <h2 class="card-title">CH{{ chapter.chapter_number }}{{ chapter.title }}</h2>
                     <hr>
-                    <h3 class="h4 mt-4">{{ chapter.chapter_number }}-{{ unit.unit_number }}{{ unit.title }}</h2>
-                    <div class="card-text">{{ teaching_html | safe }}</div>
+                    <h3 class="h4 mt-4">{{ chapter.chapter_number }}-{{ unit.unit_number }} {{ unit.title }}</h2>
+                    <div class="card-text">{{ teaching | safe }}</div>
                     <div class="card-text">{{ example | safe }}</div>
                     <div class="card-text">{{ summary | safe }}</div>
+                    <div class="card-text"></div>
                 </div>
                 </div>
             </div>
@@ -58,7 +59,7 @@
                 <!-- 歷史對話 -->
                 <div id="chat-history" class="card-body p-2" style="overflow-y: auto;">
                     <!-- JavaScript 會把對話訊息動態插入到這裡 -->
-                    <div class="message assistant-message">你好！請先選擇問題類型，再輸入問題。</div>
+                    <div class="message assistant-message">{{ extended_questions | safe }}</div>
                 </div>
                 
                 <!-- 輸入區塊 -->

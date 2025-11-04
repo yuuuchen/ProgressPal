@@ -40,7 +40,7 @@ def generate_materials_view(request, chapter_code, unit_code):
     role = user.role
 
     # 從 emotion app 後端取得情緒序列並計算 engagement
-    emotions = ["喜悅","投入","無聊","挫折","投入","投入"]  
+    emotions = ["喜悅","投入","無聊","挫折","投入","投入"]   #寫死
     engagement = compute_engagement(emotions)
 
     # 呼叫教材生成
@@ -96,7 +96,7 @@ def answer_question_view(request, chapter_code, unit_code):
         role = user.role
 
         # 從 emotion app 後端取得情緒序列並計算 engagement
-        emotions = []  
+        emotions = ["喜悅","投入","無聊","挫折","投入","投入"]  #寫死  
         engagement = compute_engagement(emotions)
 
         # 決定 mode
@@ -142,7 +142,7 @@ def answer_question_view(request, chapter_code, unit_code):
         # JSON 回傳僅系統生成結果
         return JsonResponse({
             "answer": answer,
-            "extended_questions": result.get("extended_question")
+            "extended_questions": result.get("extended_questions")
         })
 
     return JsonResponse({"error": "Invalid request"}, status=400)
