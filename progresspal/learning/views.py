@@ -14,7 +14,6 @@ import json
 # 延伸提問暫存結構：{(chapter_code, unit_code): [q1, q2, q3, ...]}
 extended_q_history = {}
 
-@login_required
 def homepage(request):
     """學習首頁"""
     chapters = Chapter.objects.prefetch_related('units').all()
