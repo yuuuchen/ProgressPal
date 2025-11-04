@@ -20,7 +20,6 @@ def homepage(request):
     return render(request, "index.html")
 
 
-
 def lesson(request):
     """課程總覽頁面"""
     chapters = Chapter.objects.prefetch_related('units').all()
