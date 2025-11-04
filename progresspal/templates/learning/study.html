@@ -27,7 +27,7 @@
 
         <!--中間教材區-->
         <div class="col-lg-5 col-md-5">
-            <div class="card h-100">
+            <div id="material-card" class="card h-100">
                 <div class="card-body p-4">
                     <h2 class="card-title">CH{{ chapter.chapter_number }}{{ chapter.title }}</h2>
                     <hr>
@@ -94,6 +94,7 @@
 </div>
 {% endblock %}
 {% block scripts %}
+    <script src="{% static 'js/material.js' %}"></script>
     <script src="{% static 'js/chat.js' %}"></script>
     <script src="{% static 'js/camera.js' %}"></script>
     <script src="{% static 'js/emotion.js' %}"></script>

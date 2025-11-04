@@ -11,6 +11,24 @@
 }
 
 /*教材*/
+/*教材淡入*/
+#material-card {
+    opacity: 0;
+    /* (可選) 讓它從下面一點點滑上來 */
+    transform: translateY(15px);
+    
+    /* 2. 設定過場動畫：
+     * - 0.7 秒完成 opacity (不透明度) 變化
+     * - 0.5 秒完成 transform (位置) 變化
+     */
+    transition: opacity 0.7s ease-out, transform 0.5s ease-out;
+}
+
+/* 當卡片被加上 .visible class 時，讓它顯示 */
+#material-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
 
 /*情緒*/
 
