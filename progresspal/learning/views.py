@@ -20,7 +20,6 @@ def homepage(request):
     return render(request, "index.html")
 
 
-
 def lesson(request):
     """課程總覽頁面"""
     chapters = Chapter.objects.prefetch_related('units').all()
@@ -40,7 +39,7 @@ def generate_materials_view(request, chapter_code, unit_code):
     role = user.role
 
     # 從 emotion app 後端取得情緒序列並計算 engagement
-    emotions = ["喜悅","投入","無聊","挫折","投入","投入"]  
+    emotions = ["喜悅","投入","無聊","挫折","投入","投入"]   #寫死
     engagement = compute_engagement(emotions)
 
     # 呼叫教材生成
@@ -96,7 +95,7 @@ def answer_question_view(request, chapter_code, unit_code):
         role = user.role
 
         # 從 emotion app 後端取得情緒序列並計算 engagement
-        emotions = []  
+        emotions = ["喜悅","投入","無聊","挫折","投入","投入"]  #寫死  
         engagement = compute_engagement(emotions)
 
         # 決定 mode

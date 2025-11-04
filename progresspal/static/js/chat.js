@@ -94,11 +94,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 收到回應
             chatHistory.removeChild(loadingElement); //移除回應中
-            if (!response.ok) throw new Error(`伺服器錯誤! 狀態碼: ${response.status}`);
             // Json解析為 JavaScript 物件
             const data = await response.json();
-            if (data.reply) {
-                appendMessage(data.reply, 'assistant');
+            if (data.answer) {
+                appendMessage(data.answer, 'assistant');
+                appendMessage(data.extended_questions, 'assistant');
+
+                if (data.extended_questions) {
+                    appendMessage(data.extended_questions, 'assistant');
+                }
             } else {
                  throw new Error('從伺服器收到無效的回應');
             }

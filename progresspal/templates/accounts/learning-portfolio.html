@@ -5,28 +5,55 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="mb-4 text-center">學生中心</h2>
+  <h2 class="mb-4 text-center">
+    {{ target_user.username }} 的學習歷程
+    {% if target_user == request.user %}
+      <span class="text-muted">【自己】</span>
+    {% else %}
+      <span class="text-danger">【由管理員檢視】</span>
+    {% endif %}
+  </h2>
 
+  <div class="row">
     <!-- 各章節學習時間 -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-            <h5 class="card-title text-primary">各章節累積學習時間（分鐘）</h5>
-            <canvas id="chapterChart"></canvas>
-        </div>
+    <div class="col-md-6 mb-4">
+      <h5>各章節學習時間</h5>
+      <canvas id="timeChart"></canvas>
     </div>
 
-    <!-- 各單元學習時間 -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-            <h5 class="card-title text-success">各單元累積學習時間（分鐘）</h5>
-            <canvas id="unitChart"></canvas>
-        </div>
+    <!-- 提問情緒比例 -->
+    <div class="col-md-6 mb-4">
+      <h5>提問情緒比例</h5>
+      <canvas id="emotionChart"></canvas>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- 提問參與度趨勢 -->
+    <div class="col-md-6 mb-4">
+      <h5>提問參與度趨勢</h5>
+      <canvas id="engagementChart"></canvas>
     </div>
 
-    <!-- 提問紀錄 -->
+    <!-- 參與度 vs 學習時間 -->
+    <div class="col-md-6 mb-4">
+      <h5>參與度 vs 學習時間</h5>
+      <canvas id="scatterChart"></canvas>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- 測驗成績趨勢 -->
+    <div class="col-md-12 mb-4">
+      <h5>測驗成績趨勢</h5>
+      <canvas id="quizChart"></canvas>
+    </div>
+  </div>
+
+  <!-- 提問紀錄 -->
     <div class="card mb-4 shadow-sm">
         <div class="card-body">
-            <h5 class="card-title text-warning">💬 提問紀錄</h5>
+            <h5 class="card-title text-warning">提問紀錄</h5>
             {% if question_logs %}
             <div class="table-responsive">
                 <table class="table table-bordered table-striped align-middle">
@@ -57,55 +84,110 @@
             {% endif %}
         </div>
     </div>
+
 </div>
 
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const chapterCtx = document.getElementById('chapterChart');
-    const unitCtx = document.getElementById('unitChart');
+  // 將 Django 傳入資料安全轉為 JS 物件
+  const chapterLabels = JSON.parse('{{ chapter_labels|escapejs }}');
+  const chapterTimes = JSON.parse('{{ chapter_times|escapejs }}');
+  const emotionLabels = JSON.parse('{{ emotion_labels|escapejs }}');
+  const emotionValues = JSON.parse('{{ emotion_values|escapejs }}');
+  const engagementLabels = JSON.parse('{{ engagement_labels|escapejs }}');
+  const engagementValues = JSON.parse('{{ engagement_values|escapejs }}');
+  const scatterData = JSON.parse('{{ scatter_data|escapejs }}');
+  const quizLabels = JSON.parse('{{ quiz_labels|escapejs }}');
+  const quizScores = JSON.parse('{{ quiz_scores|escapejs }}');
 
-    const chapterLabels = JSON.parse('{{ chapter_labels|escapejs }}');
-    const chapterValues = JSON.parse('{{ chapter_values|escapejs }}');
-    const unitLabels = JSON.parse('{{ unit_labels|escapejs }}');
-    const unitValues = JSON.parse('{{ unit_values|escapejs }}');
+  // === 各章節學習時間 ===
+  new Chart(document.getElementById('timeChart'), {
+    type: 'bar',
+    data: {
+      labels: chapterLabels,
+      datasets: [{
+        label: '學習時間 (分鐘)',
+        data: chapterTimes,
+        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: '分鐘' } }
+      }
+    }
+  });
 
-    new Chart(chapterCtx, {
-        type: 'bar',
-        data: {
-            labels: chapterLabels,
-            datasets: [{
-                label: '學習時間（分鐘）',
-                data: chapterValues,
-                backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: {
-                y: { beginAtZero: true, title: { display: true, text: '分鐘' } }
-            }
-        }
-    });
+  // === 提問情緒比例 ===
+  new Chart(document.getElementById('emotionChart'), {
+    type: 'doughnut',
+    data: {
+      labels: emotionLabels,
+      datasets: [{
+        data: emotionValues,
+        backgroundColor: ['#4CAF50', '#FFC107', '#F44336']
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
 
-    new Chart(unitCtx, {
-        type: 'bar',
-        data: {
-            labels: unitLabels,
-            datasets: [{
-                label: '學習時間（分鐘）',
-                data: unitValues,
-                backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: {
-                y: { beginAtZero: true, title: { display: true, text: '分鐘' } }
-            }
-        }
-    });
+  // === 提問參與度趨勢 ===
+  new Chart(document.getElementById('engagementChart'), {
+    type: 'line',
+    data: {
+      labels: engagementLabels,
+      datasets: [{
+        label: '平均參與度',
+        data: engagementValues,
+        fill: false,
+        borderColor: '#42A5F5',
+        tension: 0.2
+      }]
+    },
+    options: { responsive: true, scales: { y: { beginAtZero: true } } }
+  });
+
+  // === 參與度 vs 學習時間 ===
+  new Chart(document.getElementById('scatterChart'), {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: '章節參與度與學習時間',
+        data: scatterData,
+        backgroundColor: '#FF6384'
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { title: { display: true, text: '學習時間 (分鐘)' }, beginAtZero: true },
+        y: { title: { display: true, text: '平均參與度' }, beginAtZero: true }
+      }
+    }
+  });
+
+  // === 測驗成績趨勢 ===
+  new Chart(document.getElementById('quizChart'), {
+    type: 'line',
+    data: {
+      labels: quizLabels,
+      datasets: [{
+        label: '平均成績',
+        data: quizScores,
+        fill: false,
+        borderColor: '#8E24AA',
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true, title: { display: true, text: '分數' } } }
+    }
+  });
 </script>
 {% endblock %}

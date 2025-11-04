@@ -1,13 +1,14 @@
 # accounts/views.py
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout, get_user_model, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
 from django.db.models import Sum, F, ExpressionWrapper, DurationField
-from django.contrib.auth.decorators import login_required
 from .models import LearningRecord, QuestionLog, QuizResult
-from datetime import timedelta
-from .forms import RegisterForm, LoginForm, ProfileUpdateForm, PasswordChangeForm
+from accounts.models import CustomUser
+from django.utils import timezone
+from .forms import RegisterForm, LoginForm, ProfileUpdateForm, PasswordChangeForm, AddMaterialForm
 import json
 
 User = get_user_model()
@@ -20,7 +21,7 @@ def register(request):
             user = form.save()
             login(request, user)
             messages.success(request, '註冊成功，已自動登入！')
-            return redirect('lesson/')
+            return redirect('/lesson/')
     else:
         form = RegisterForm()
     return render(request, 'accounts/register.html', {'form': form})
@@ -117,45 +118,89 @@ def delete_account(request):
         return redirect('/user/login')  # 或導向登入頁/login
     else:
         return redirect('/user/profile')
-    
-# 學習歷程
+
 @login_required(login_url='login')
-def learning_portfolio(request):
-    user = request.user
-    # 計算每筆紀錄的學習時間（秒）
-    learning_records = LearningRecord.objects.filter(user=user)
-    valid_records = learning_records.exclude(end_time__isnull=True)
+def learning_portfolio(request, username=None):
+    """
+    學習歷程頁面：
+    - 若未傳入 username → 顯示自己的學習歷程。
+    - 若傳入 username → 僅 superuser 可查看他人。
+    """
+    # 判斷目標使用者
+    if username:
+        # 若不是 superuser 則拒絕存取他人資料
+        if not request.user.is_superuser:
+            messages.error(request, "您沒有權限查看其他使用者的學習歷程。")
+            return redirect('learning-portfolio-self')
+        target_user = get_object_or_404(CustomUser, username=username)
+    else:
+        target_user = request.user
 
-    # === 各章節累積花費時間 ===
-    chapter_stats = (
-        valid_records
-        .values('chapter_code')
-        .annotate(total_seconds=Sum(ExpressionWrapper(F('end_time') - F('start_time'), output_field=DurationField())))
-        .order_by('chapter_code')
+    # 取得該使用者的紀錄
+    learning_records = LearningRecord.objects.filter(user=target_user).order_by('-start_time')
+    question_logs = QuestionLog.objects.filter(user=target_user).order_by('-created_at')
+    quiz_results = QuizResult.objects.filter(user=target_user).order_by('-created_at')
+
+    # 統計章節與單元學習時間
+    chapter_data = (
+        learning_records.values('chapter_code')
+        .annotate(total_time=Sum('end_time') - Sum('start_time'))
     )
-
-    # === 各單元累積花費時間 ===
-    unit_stats = (
-        valid_records
-        .values('unit_code')
-        .annotate(total_seconds=Sum(ExpressionWrapper(F('end_time') - F('start_time'), output_field=DurationField())))
-        .order_by('unit_code')
-    )
-
-    # 轉成 Chart.js 可用格式
-    chapter_labels = [c['chapter_code'] for c in chapter_stats]
-    chapter_values = [round(c['total_seconds'].total_seconds() / 60, 1) for c in chapter_stats]
-
-    unit_labels = [u['unit_code'] for u in unit_stats]
-    unit_values = [round(u['total_seconds'].total_seconds() / 60, 1) for u in unit_stats]
-
-    # 提問紀錄
-    question_logs = QuestionLog.objects.filter(user=user).order_by('-created_at')
 
     context = {
-    'chapter_labels': json.dumps(chapter_labels),
-    'chapter_values': json.dumps(chapter_values),
-    'unit_labels': json.dumps(unit_labels),
-    'unit_values': json.dumps(unit_values),
-}
+        'target_user': target_user,
+        'learning_records': learning_records,
+        'question_logs': question_logs,
+        'quiz_results': quiz_results,
+    }
+
     return render(request, 'accounts/learning-portfolio.html', context)
+
+
+# 新增假資料頁面（僅 superuser 可用）
+@user_passes_test(lambda u: u.is_superuser)
+def add_material(request):
+    """Superuser 新增假資料頁面"""
+    if request.method == 'POST':
+        form = AddMaterialForm(request.POST)
+        if form.is_valid():
+            data_type = form.cleaned_data['data_type']
+            user = form.cleaned_data['username']
+            chapter_code = form.cleaned_data['chapter_code']
+            unit_code = form.cleaned_data['unit_code']
+
+            if data_type == 'learning':
+                LearningRecord.objects.create(
+                    user=user,
+                    chapter_code=chapter_code,
+                    unit_code=unit_code,
+                    start_time=timezone.now(),
+                    end_time=timezone.now() + timezone.timedelta(minutes=30),
+                )
+                messages.success(request, f"成功新增學習紀錄給 {user.username}")
+
+            elif data_type == 'question':
+                QuestionLog.objects.create(
+                    user=user,
+                    chapter_code=chapter_code,
+                    unit_code=unit_code,
+                    question=form.cleaned_data['question'],
+                    answer=form.cleaned_data['answer'],
+                    engagement=form.cleaned_data['engagement'],
+                )
+                messages.success(request, f"成功新增提問紀錄給 {user.username}")
+
+            elif data_type == 'quiz':
+                QuizResult.objects.create(
+                    user=user,
+                    chapter_code=chapter_code,
+                    unit_code=unit_code,
+                    score=form.cleaned_data['score'],
+                )
+                messages.success(request, f"成功新增測驗結果給 {user.username}")
+
+            return redirect('add-material')
+    else:
+        form = AddMaterialForm()
+
+    return render(request, 'accounts/addMaterial.html', {'form': form})

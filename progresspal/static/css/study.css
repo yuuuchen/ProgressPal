@@ -14,7 +14,7 @@
 /*教材淡入*/
 #material-card {
     opacity: 0;
-    /* (可選) 讓它從下面一點點滑上來 */
+    /* 從下面滑上來 */
     transform: translateY(15px);
     
     /* 2. 設定過場動畫：
@@ -30,10 +30,46 @@
     transform: translateY(0);
 }
 
+/* 鎖定教材卡片的主體區域 */
+#material-card .card-body {
+    overflow-x: auto;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+/* 針對 Markdown 產生的 <pre> (程式碼區塊) */
+#material-card .card-body pre {
+    white-space: pre-wrap;  /* 允許程式碼在 pre 標籤內自動換行 */
+    word-break: break-all; /* 對於過長的單一字串強制斷詞 */
+}
+
+/* 針對 Markdown 產生的 <table> */
+#material-card .card-body table {
+    /* 讓表格在需要時可以水平捲動*/
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap; /* 讓表格內容盡量保持在同一行 */
+}
+
 /*情緒*/
 
 
-/*聊天室*/
+/*提問區*/
+#chat-container.card {
+    display: flex;
+    flex-direction: column;
+    /* 高度由 style="height: 75vh;" 或 h-100 控制 */
+}
+
+#chat-history {
+    flex-grow: 1; /* 佔據所有可用垂直空間 */
+    overflow-y: auto; /* 內容超出時顯示垂直捲軸 */
+    display: flex; 
+    flex-direction: column;
+    padding: 0.5rem;
+}
+
 /* 讓按鈕在按下時，變成實心灰色 */
 #chat-container .card-footer .btn-outline-secondary.active {
     background-color: #6c757d; /* 變成實心灰色 */
