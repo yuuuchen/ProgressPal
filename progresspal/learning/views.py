@@ -61,6 +61,7 @@ def generate_materials_view(request, chapter_code, unit_code):
     teaching = utils.to_markdown(result.get("teaching"))
     example = utils.to_markdown(result.get("example"))
     summary = utils.to_markdown(result.get("summary"))
+    extended_questions = utils.to_markdown(result.get("extended_questions"))
 
     context = {
         "chapter": chapter,
@@ -70,7 +71,7 @@ def generate_materials_view(request, chapter_code, unit_code):
         "teaching": teaching,
         "example": example,
         "summary": summary,
-        "extended_questions": extended_q_history[(chapter_code, unit_code)],
+        "extended_questions": extended_questions,
         "form": StudyForm(),
     }
     return render(request, "learning/study.html", context)
