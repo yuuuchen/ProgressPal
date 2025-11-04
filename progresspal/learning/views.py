@@ -17,10 +17,10 @@ extended_q_history = {}
 def homepage(request):
     """學習首頁"""
     chapters = Chapter.objects.prefetch_related('units').all()
-    return render(request, "learning/index.html")
+    return render(request, "index.html")
 
 
-@login_required
+
 def lesson(request):
     """課程總覽頁面"""
     chapters = Chapter.objects.prefetch_related('units').all()
@@ -28,7 +28,7 @@ def lesson(request):
 
 
 @csrf_exempt
-@login_required
+@login_required(login_url='login')
 def generate_materials_view(request, chapter_code, unit_code):
     """
     生成教材內容頁面
