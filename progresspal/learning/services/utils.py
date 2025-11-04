@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # utils.py
-import textwrap,markdown
+import textwrap
+from markdown import markdown
 
 """格式整理工具"""
 
@@ -78,4 +79,5 @@ def clean_text_qa(raw_text: str) -> dict:
 
 def to_markdown(text):
   text = text.replace('•', '  *')
-  return markdown(textwrap.indent(text, '> ', predicate=lambda _: True))
+  html_output = markdown(text, extensions=['fenced_code', 'nl2br', 'tables'])
+  return html_output

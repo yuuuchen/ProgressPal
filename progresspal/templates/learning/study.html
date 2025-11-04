@@ -32,7 +32,10 @@
                     <h2 class="card-title">CH{{ chapter.chapter_number }}{{ chapter.title }}</h2>
                     <hr>
                     <h3 class="h4 mt-4">{{ chapter.chapter_number }}-{{ unit.unit_number }}{{ unit.title }}</h2>
-                    <p class="card-text">{{ teaching_content }}</p>
+                    <div class="card-text">{{ teaching_html | safe }}</div>
+                    <div class="card-text">{{ example | safe }}</div>
+                    <div class="card-text">{{ summary | safe }}</div>
+                </div>
                 </div>
             </div>
         </div>

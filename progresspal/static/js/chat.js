@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 問題類型：直接提問
     directQuestionBtn.addEventListener('click', () => {
         selectedQuestionType = 'direct'; 
-        // (可選) 提供視覺回饋，例如改變按鈕樣式
         directQuestionBtn.classList.add('active'); 
         extendQuestionBtn.classList.remove('active');
         clearError();
@@ -79,8 +78,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // 傳送給後端的資料
             const payload = {
-                question_choice: QuestionType, // direct/extended
-                user_question: messageText,
+                question_choice: questionType, // direct/extended
+                question: messageText,
             };
 
             // fetch API發送請求

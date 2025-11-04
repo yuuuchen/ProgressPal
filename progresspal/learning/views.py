@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from emotion.services.utils import compute_engagement
-from .services import main
+from .services import main,utils
 from .forms import StudyForm
 from accounts.models import QuestionLog
 from .models import Chapter, Unit
@@ -35,11 +35,12 @@ def generate_materials_view(request, chapter_code, unit_code):
     """
     chapter = Chapter.objects.get(chapter_number=chapter_code)
     unit = Unit.objects.get(unit_number=unit_code)
+    units = chapter.get_units()
     user = request.user
     role = user.role
 
     # 從 emotion app 後端取得情緒序列並計算 engagement
-    emotions = []  
+    emotions = ["喜悅","投入","無聊","挫折","投入","投入"]  
     engagement = compute_engagement(emotions)
 
     # 呼叫教材生成
@@ -57,13 +58,18 @@ def generate_materials_view(request, chapter_code, unit_code):
         else:
             extended_q_history[(chapter_code, unit_code)].append(new_qs)
 
+    teaching = utils.to_markdown(result.get("teaching"))
+    example = utils.to_markdown(result.get("example"))
+    summary = utils.to_markdown(result.get("summary"))
+
     context = {
         "chapter": chapter,
         "unit": unit,
+        "units":units,
         "role": role,
-        "teaching": result.get("teaching"),
-        "example": result.get("example"),
-        "summary": result.get("summary"),
+        "teaching": teaching,
+        "example": example,
+        "summary": summary,
         "extended_questions": extended_q_history[(chapter_code, unit_code)],
         "form": StudyForm(),
     }
@@ -71,7 +77,7 @@ def generate_materials_view(request, chapter_code, unit_code):
 
 
 @csrf_exempt
-@login_required
+@login_required(login_url='login')
 def answer_question_view(request, chapter_code, unit_code):
     """
     教材問答 - AJAX JSON 回傳版本
