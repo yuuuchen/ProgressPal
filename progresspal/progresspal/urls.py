@@ -31,9 +31,15 @@ urlpatterns = [
     path('user/logout/', accounts.logout_view, name='logout'), # 登出動作
     path('user/profile/', accounts.profile, name='profile'),  # 會員中心（需登入）
     path('user/delete/', accounts.delete_account, name='delete_account'),  # 刪除帳號（需登入）
-    path('user/study/', accounts.learning_portfolio, name='learning-portfolio'),  # 學習歷程頁面
+    path('user/study/', accounts.learning_portfolio, name='learning-portfolio-self'),  # 學習歷程頁面(本人)
+    path('user/study/<str:username>', accounts.learning_portfolio, name='learning-portfolio'),  # 學習歷程頁面(管理)
+
     # 學習相關
     path('lesson/', learning.lesson, name='lesson'),  # 學習章節列表頁面
     path('lesson/<int:chapter_code>/<int:unit_code>/study/', learning.generate_materials_view, name='learning'),  #學習頁面
-    path('lesson/<int:chapter_code>/<int:unit_code>/study/api/chat/', learning.answer_question_view, name='chat-api') #提問區域
+    path('lesson/<int:chapter_code>/<int:unit_code>/study/api/chat/', learning.answer_question_view, name='chat-api'), #提問區域
+
+    # 測試用
+    path('user/add-material/', accounts.add_material, name='add-material'),
+
 ]

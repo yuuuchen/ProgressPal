@@ -71,4 +71,4 @@ class QuizResult(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.username} - {self.unit_name}: {self.score}分"
+        return f"{self.user.username} - {self.chapter_code}-{self.unit_code}: {self.score}分"

@@ -13,6 +13,7 @@ class CustomUserAdmin(admin.ModelAdmin):
 @admin.register(LearningRecord)
 class LearningRecordAdmin(admin.ModelAdmin):
     list_display = ('user', 'chapter_code', 'unit_code', 'start_time', 'end_time', 'duration_minutes')
+    fields = ('user', 'chapter_code', 'unit_code', 'start_time', 'end_time')
     list_filter = ('chapter_code', 'unit_code')
     search_fields = ('user__username',)
     readonly_fields = ('start_time', 'end_time')
