@@ -79,27 +79,17 @@ def set_system_prompt(identity='資訊領域大學生'):
   '''
   mapping = {
   '資訊領域大學生':'''請以專業術語講解，提供程式碼範例。''',
-  '非資訊領域大學生':'''請循序漸進，不要一次丟太多資訊。避免使用專業術語。'''}
+  '非資訊領域大學生':'''請循序漸進，不要一次丟太多資訊。避免使用專業術語。''',
+  'mis_student':'''請以專業術語講解，提供程式碼範例。''',
+  'normal_student':'''請循序漸進，不要一次丟太多資訊。避免使用專業術語。''',
+  }
   strategy = mapping.get(identity, "請根據學生程度調整教學方式。")
   return SYSTEM_PROMPT.format(identity=identity, strategy=strategy)
 
 #print(set_system_prompt("非資訊領域大學生"))
 
-'''
-# 映射方法：情緒 → 語氣 + 教學策略
-def map_emotion_to_profile(emotion):
-  mapping = {
-      "挫折": {"tone": "溫暖且安撫", "style": "循序漸進、拆解問題"},
-      "困惑": {"tone": "溫和且耐心", "style": "舉例對照、比喻解釋"},
-      "無聊": {"tone": "活潑且有趣", "style": "加入情境化案例、互動提問"},
-      "投入": {"tone": "積極且肯定", "style": "深入探討、引導延伸思考"},
-      "驚訝": {"tone": "熱情且鼓勵", "style": "延伸趣味點、引入新視角"},
-      "喜悅": {"tone": "輕鬆且正向", "style": "融入挑戰題、鼓勵自我探索"},
-  }
-  return mapping.get(emotion, {"tone": "中性", "style": "一般解釋"})
 
 # 映射方法：參與度 → 語氣 + 教學策略
-'''
 def map_engagement_to_profile(engagement: str) -> dict:
     """
     根據學生參與度返回教學風格與引導提問設定。

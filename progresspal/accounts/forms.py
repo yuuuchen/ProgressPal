@@ -138,7 +138,7 @@ class AddMaterialForm(forms.Form):
     )
 
     # 測驗紀錄欄位
-    score = forms.IntegerField(required=False, min_value=0, max_value=3, label="測驗分數 (0~3)")
+    score = forms.IntegerField(required=False, min_value=0, max_value=10, label="測驗分數 (0~10)")
 
     def clean(self):
         cleaned_data = super().clean()

@@ -8,15 +8,14 @@ class EmotionRecord(models.Model):
     單次影像辨識紀錄（對應一次 webcam snapshot）
     """
     EMOTION_CHOICES = [
-        ("happy", "快樂"),
-        ("neutral", "中立"),
-        ("sad", "悲傷"),
-        ("angry", "生氣"),
-        ("surprised", "驚訝"),
-        ("fear", "害怕"),
-        ("disgust", "厭惡"),
-        ("bored", "無聊"),  # optional
-    ]
+    ("frustrated", "挫折"),
+    ("confused", "困惑"),
+    ("bored", "無聊"),
+    ("engaged", "投入"),
+    ("surprised", "驚訝"),
+    ("happy", "喜悅"),
+]
+
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

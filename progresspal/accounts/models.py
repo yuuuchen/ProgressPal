@@ -21,6 +21,25 @@ class CustomUser(AbstractUser):
     def __str__(self):
         return f"{self.nickname} ({self.role})"
     
+EMOTION_MAP = {
+    "frustrated": "挫折",
+    "confused": "困惑",
+    "bored": "無聊",
+    "engaged": "投入",
+    "surprised": "驚訝",
+    "happy": "喜悅",
+}
+
+@property
+def recent_emotion_history(self):
+    """
+    取得最近 6 筆情緒（由遠→近）並回傳中文清單
+    """
+    records = self.emotion_records.order_by('-timestamp')[:6]  # 最新6筆
+    records = reversed(records)  # 由遠到近
+    return [self.EMOTION_MAP.get(rec.emotion, "未知") for rec in records]
+
+    
 # 學習紀錄
 class LearningRecord(models.Model):
     """
