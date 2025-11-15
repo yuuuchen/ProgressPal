@@ -20,36 +20,28 @@
       <h5>各章節學習時間</h5>
       <canvas id="timeChart"></canvas>
     </div>
-
-    <!-- 提問情緒比例 -->
-    <div class="col-md-6 mb-4">
-      <h5>提問情緒比例</h5>
-      <canvas id="emotionChart"></canvas>
-    </div>
-  </div>
-
-  <div class="row">
     <!-- 提問參與度趨勢 -->
     <div class="col-md-6 mb-4">
       <h5>提問參與度趨勢</h5>
       <canvas id="engagementChart"></canvas>
     </div>
+  </div>
 
+  <div class="row">
     <!-- 參與度 vs 學習時間 -->
     <div class="col-md-6 mb-4">
       <h5>參與度 vs 學習時間</h5>
       <canvas id="scatterChart"></canvas>
     </div>
-  </div>
-
-  <div class="row">
-    <!-- 測驗成績趨勢 -->
-    <div class="col-md-12 mb-4">
+  
+  <!-- 測驗成績趨勢 -->
+    <div class="col-md-6 mb-4">
       <h5>測驗成績趨勢</h5>
       <canvas id="quizChart"></canvas>
     </div>
   </div>
 
+  <div class="row">
   <!-- 提問紀錄 -->
     <div class="card mb-4 shadow-sm">
         <div class="card-body">
@@ -117,22 +109,6 @@
       scales: {
         y: { beginAtZero: true, title: { display: true, text: '分鐘' } }
       }
-    }
-  });
-
-  // === 提問情緒比例 ===
-  new Chart(document.getElementById('emotionChart'), {
-    type: 'doughnut',
-    data: {
-      labels: emotionLabels,
-      datasets: [{
-        data: emotionValues,
-        backgroundColor: ['#4CAF50', '#FFC107', '#F44336']
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { position: 'bottom' } }
     }
   });
 

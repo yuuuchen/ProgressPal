@@ -72,13 +72,13 @@ SYSTEM_PROMPT = """
 6. 範例使用語言標籤 (例如 ```python)
 7. 以學生需求為主，學習參與度調整為輔
 """
-def set_system_prompt(identity='資訊管理系大學生'):
+def set_system_prompt(identity='資訊領域大學生'):
   '''
   input: identity
   return: new Systemprompt
   '''
   mapping = {
-  '資訊管理系大學生':'''請以專業術語講解，提供程式碼範例。''',
+  '資訊領域大學生':'''請以專業術語講解，提供程式碼範例。''',
   '非資訊領域大學生':'''請循序漸進，不要一次丟太多資訊。避免使用專業術語。'''}
   strategy = mapping.get(identity, "請根據學生程度調整教學方式。")
   return SYSTEM_PROMPT.format(identity=identity, strategy=strategy)
