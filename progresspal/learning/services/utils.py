@@ -81,3 +81,24 @@ def to_markdown(text):
   text = text.replace('•', '  *')
   html_output = markdown(text, extensions=['fenced_code', 'nl2br', 'tables'])
   return html_output
+
+def split_extended_questions(text):
+    """
+    將 AI 回傳的一串延伸提問文字拆成陣列
+    """
+    if not text:
+        return []
+
+    lines = text.split("\n")
+
+    questions = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+
+        cleaned = re.sub(r"^(\d+\.|\d+\)|[-•])\s*", "", line)
+        if cleaned:
+            questions.append(cleaned)
+
+    return questions
