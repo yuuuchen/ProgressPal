@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # utils.py
 import textwrap
+import re
 from markdown import markdown
 
 """格式整理工具"""
@@ -42,8 +43,6 @@ def clean_text_tutoring(raw_text: str) -> dict:
 
 
   return sections
-
-
 
 def clean_text_qa(raw_text: str) -> dict:
   import re
