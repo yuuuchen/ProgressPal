@@ -124,7 +124,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             if (data.answer) {
                 appendMessage(data.answer, 'assistant');
-                appendMessage(data.extended_questions, 'assistant');
+                let extendedText = '延伸提問：\n';
+                data.extended_questions.forEach((question, index) => {
+                    extendedText += `${index + 1}. ${question}\n`;
+                });
+
+                appendMessage(extendedText, 'assistant');
 
             } else {
                  throw new Error('從伺服器收到無效的回應');
