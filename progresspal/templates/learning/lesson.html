@@ -7,10 +7,10 @@
         {% for chapter in chapters %}
         <div class="accordion-item">
             <h2 class="accordion-header" id="heading{{ chapter.id }}">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse"
                         data-bs-target="#collapse{{ chapter.id }}" aria-expanded="false"
                         aria-controls="collapse{{ chapter.id }}">
-                    {{ chapter.chapter_number }}. {{ chapter.title }}
+                    第{{ chapter.chapter_number }}章. {{ chapter.title }}
                 </button>
             </h2>
             <div id="collapse{{ chapter.id }}" class="accordion-collapse collapse"
@@ -21,8 +21,8 @@
                         {% for unit in chapter.get_units %}
                         <li class="list-group-item">
                             <a href="{% url 'learning' chapter.chapter_number unit.unit_number %}" 
-                            class="text-decoration-none">
-                                <strong>{{ unit.unit_number }}</strong> — {{ unit.title }}
+                            class="text-decoration-none text-dark">
+                                <strong>{{ chapter.chapter_number }}.{{ unit.unit_number }}</strong> — {{ unit.title }}
                             </a>
                         </li>
                     {% endfor %} 

@@ -12,9 +12,12 @@
 
 html, body {
     height: 100%; /*確保 <body> 至少有整個視窗的高度*/
+    overflow: hidden;
 }
 
 .main-content {
     display: flex;
     flex-direction: column;
+    overflow: hidden; /* 關鍵：確保內容被限制在這個區塊內 */
+    height: 100%;     /* 繼承父元素高度 */
 }

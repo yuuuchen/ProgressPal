@@ -12,12 +12,12 @@
     <link rel="stylesheet" href="{% static 'css/global.css' %}">
     {% block head %}{% endblock %}
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column vh-100 overflow-hidden">
     <!--header-->
     {% include "includes/header.html" %}
 
     <!--content-->
-    <div class="main-content flex-grow-1 d-flex flex-column">
+    <div class="main-content flex-grow-1 d-flex flex-column overflow-hidden">
         {% block content %}{% endblock %}
     </div>
 

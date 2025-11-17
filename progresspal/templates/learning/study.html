@@ -5,8 +5,8 @@
 {% endblock %}
 {% block head %}<link rel="stylesheet" href="{% static 'css/study.css' %}">{% endblock %}
 {% block content %}
-<div class="container-fluid px-4 py-3 min-vh-100 d-flex flex-column">
-    <div class="row g-4 flex-grow-1 h-100 align-items-stretch"> 
+<div class="container-fluid px-4 py-3 h-100 d-flex flex-column">
+    <div class="row g-4 flex-grow-1 overflow-hidden align-items-stretch pb-4"> 
         <!--左側課程列表-->
         <nav class="col-lg-2 col-md-2 d-flex flex-column h-100">
             <div class="card d-flex flex-column w-100 flex-grow-1">
@@ -83,7 +83,7 @@
     </div>
 
     <!--切換單元-->
-    <div class="d-flex justify-content-center gap-3 my-4">
+    <div class="d-flex justify-content-center gap-3 my-2 mt-3 ">
         {% if previous_unit %}
             <a href="{% url 'learning' chapter_code=previous_unit.chapter.chapter_number unit_code=previous_unit.unit_number %}"
             class="btn btn-secondary">
