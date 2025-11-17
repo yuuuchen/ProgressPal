@@ -81,6 +81,7 @@
     border-radius: 1.25rem; /* 圓潤的邊角 (20px) */
     margin-bottom: 0.5rem; /* 和下一則訊息的間距 (8px) */
     max-width: 85%; /* 最大寬度不超過聊天室寬度的 85% */
+    white-space: pre-wrap; /*  \n 可以變成換行 */
     word-wrap: break-word; /* 長單字或網址自動換行 */
     width: fit-content; /* 寬度自動根據內容調整 */
 }
