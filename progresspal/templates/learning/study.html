@@ -105,8 +105,19 @@
 </div>
 {% endblock %}
 {% block scripts %}
+
+     
+    <!-- 傳遞record_id給前端 -->
+    <!--
+    <script>
+    window.RECORD_ID = {{ record_id }};
+    window.END_URL = "{% url 'end-study' %}";
+    </script> -->
+
+
     <script src="{% static 'js/material.js' %}"></script>
     <script src="{% static 'js/chat.js' %}"></script>
+    <!-- <script src="{% static 'js/duration.js' %}"></script> -->
     <!--script src="{% static 'js/camera.js' %}"></script-->
     <!--script src="{% static 'js/emotion.js' %}"></script-->
 {% endblock %}

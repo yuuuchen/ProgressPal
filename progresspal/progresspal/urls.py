@@ -39,6 +39,9 @@ urlpatterns = [
     path('lesson/<int:chapter_code>/<int:unit_code>/study/', learning.generate_materials_view, name='learning'),  #學習頁面
     path('lesson/<int:chapter_code>/<int:unit_code>/study/api/chat/', learning.answer_question_view, name='chat-api'), #提問區域
 
+    # 結束學習並更新學習記錄
+    # path("lesson/end/", learning.end_study, name="end-study"),
+
     # 測試用
     path('user/add-material/', accounts.add_material, name='add-material'),
 
