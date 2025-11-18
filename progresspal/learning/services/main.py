@@ -85,7 +85,7 @@ def display_materials(chapter_id, unit_id, engagement, role):
     }
 
 # 問答回應
-def answer_question(mode, question, engagement, role, chapter_id=None, unit_id=None, extended_q_history=None):
+def answer_question(mode, question, engagement, role, chapter_id=None, unit_id=None, extended_question=None):
     """
     mode:
       1: 回應延伸問題
@@ -93,7 +93,7 @@ def answer_question(mode, question, engagement, role, chapter_id=None, unit_id=N
       3: 直接提問(學習需求相關)
     """
     if mode == 1:
-        return answer_extended_question(question, engagement, chapter_id, unit_id, extended_q_history, role)
+        return answer_extended_question(question, engagement, chapter_id, unit_id, extended_question, role)
     elif mode == 2:
         return answer_relevant_question(question, engagement, role)
     elif mode == 3:
@@ -101,11 +101,10 @@ def answer_question(mode, question, engagement, role, chapter_id=None, unit_id=N
     else:
         return {"error": "Invalid mode"}
 
-def answer_extended_question(question, engagement, chapter_id, unit_id, extended_q_history, role):
+def answer_extended_question(question, engagement, chapter_id, unit_id, extended_question, role):
     docs = get_chapter(chapter_id)
     prompt = generate_prompt_extended(
-        engagement, question, docs,
-        extended_q_history.get((chapter_id, unit_id), ""),
+        engagement, question, docs,extended_question,
     )
     return respond_to_question(prompt, engagement, role)
 
