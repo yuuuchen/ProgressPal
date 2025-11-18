@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from emotion.services.utils import compute_engagement
 from .services import main,utils
 from .forms import StudyForm
-from accounts.models import QuestionLog
+from accounts.models import QuestionLog, LearningRecord
 from .models import Chapter, Unit
 import json
 
@@ -65,6 +65,16 @@ def generate_materials_view(request, chapter_code, unit_code):
     example = utils.to_markdown(result.get("example"))
     summary = utils.to_markdown(result.get("summary"))
 
+    '''
+    # 建立學習記錄
+    record = LearningRecord.objects.create(
+        user=request.user,
+        chapter_code=chapter_code,
+        unit_code=unit_code
+    )
+    '''
+
+
     context = {
         "chapter": chapter,
         "unit": unit,
@@ -77,6 +87,7 @@ def generate_materials_view(request, chapter_code, unit_code):
         "summary": summary,
         "extended_questions": extended_questions,
         "form": StudyForm(),
+        #"record_id": record.id,   # 傳給前端用於關聯學習記錄
     }
     return render(request, "learning/study.html", context)
 
@@ -152,3 +163,19 @@ def answer_question_view(request, chapter_code, unit_code):
         "answer": answer,
         "extended_questions": extended_questions
     })
+
+# 結束學習並更新學習記錄
+def end_study(request):
+    if request.method == "POST":
+        data = json.loads(request.body.decode("utf-8"))
+        record_id = data.get("id")
+
+        try:
+            record = LearningRecord.objects.get(id=record_id)
+            record.end_time = timezone.now()
+            record.save()
+            return JsonResponse({"status": "ok"})
+        except LearningRecord.DoesNotExist:
+            return JsonResponse({"status": "error", "msg": "not found"}, status=400)
+
+    return JsonResponse({"status": "error", "msg": "invalid request"}, status=400)
