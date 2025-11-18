@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 儲存使用者選擇的問題類型
     let selectedQuestionType = null;
+    let index = null;
 
     // 問題類型：直接提問
     directQuestionBtn.addEventListener('click', () => {
@@ -25,7 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 問題類型：延伸提問
     extendQuestionBtn1.addEventListener('click', () => {
-        selectedQuestionType = 0; 
+        selectedQuestionType = 'extended'; 
+        index = 0;
         extendQuestionBtn1.classList.add('active');
         directQuestionBtn.classList.remove('active');
         extendQuestionBtn2.classList.remove('active');
@@ -34,7 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
      extendQuestionBtn2.addEventListener('click', () => {
-        selectedQuestionType = 1; 
+        selectedQuestionType = 'extended'; 
+        index = 1;
         extendQuestionBtn2.classList.add('active');
         directQuestionBtn.classList.remove('active');
         extendQuestionBtn1.classList.remove('active');
@@ -43,7 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
      extendQuestionBtn3.addEventListener('click', () => {
-        selectedQuestionType = 2; 
+        selectedQuestionType = 'extended'; 
+        index = 2;
         extendQuestionBtn3.classList.add('active');
         directQuestionBtn.classList.remove('active');
         extendQuestionBtn1.classList.remove('active');
@@ -80,11 +84,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 如果檢查都輸入才真正呼叫 sendMessage
-        sendMessage(messageText, selectedQuestionType);
+        sendMessage(messageText, selectedQuestionType,index);
 
         // 送出成功後的操作
         chatInput.value = ''; // 清空輸入框
         selectedQuestionType = null; 
+        index = null;
         // 移除按鈕的 active 狀態
         directQuestionBtn.classList.remove('active');
         extendQuestionBtn1.classList.remove('active');
@@ -93,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 送出訊息sendMessage
-    async function sendMessage(messageText, questionType) {
+    async function sendMessage(messageText, questionType,index) {
         // 送出訊息
         appendMessage(messageText, 'user');
         const loadingElement = createMessageElement('assistant');
@@ -104,8 +109,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // 傳送給後端的資料
             const payload = {
-                question_choice: questionType, // direct/-3/-2/-1
-                question: messageText,
+                question_choice: questionType, // direct/extended
+                user_question: messageText,
+                selected_question_index: index // None/0/1/2
             };
 
             // fetch API發送請求
@@ -129,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     extendedText += `${index + 1}. ${question}\n`;
                 });
 
-                appendMessage(extendedText, 'assistant');
+                appendMessage(extendedText, 'assistant', 'extended-mode');
 
             } else {
                  throw new Error('從伺服器收到無效的回應');
@@ -145,16 +151,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 建立空的訊息元素(sender:user/assistant/error)
-    function createMessageElement(sender) {
+    function createMessageElement(sender, extraClass = null) {
         const messageWrapper = document.createElement('div');
         messageWrapper.classList.add('message', `${sender}-message`);
+        if (extraClass) {
+            messageWrapper.classList.add(extraClass);
+        }
+        
         return messageWrapper;
     }
     
     // 將完成的訊息加到歷史紀錄(sender:user/assistant/error)
-    function appendMessage(text, sender) {
-        const messageElement = createMessageElement(sender);
-        messageElement.textContent = text;
+    function appendMessage(text, sender, extraClass = null) {
+        const messageElement = createMessageElement(sender, extraClass);
+        messageElement.innerHTML = text;
         chatHistory.appendChild(messageElement);
         chatHistory.scrollTop = chatHistory.scrollHeight;
     }

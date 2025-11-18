@@ -60,7 +60,7 @@
                 <!-- 歷史對話 -->
                 <div id="chat-history" class="card-body p-2" style="overflow-y: auto;">
                     <div class="message assistant-message">
-                        <strong>延伸提問：</strong><br>
+                        延伸提問：<br>
                         {% for question in extended_questions %}
                             {{ forloop.counter }}. {{ question }}<br>
                         {% endfor %}

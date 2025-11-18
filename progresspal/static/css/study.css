@@ -81,8 +81,12 @@
     border-radius: 1.25rem; /* 圓潤的邊角 (20px) */
     margin-bottom: 0.5rem; /* 和下一則訊息的間距 (8px) */
     max-width: 85%; /* 最大寬度不超過聊天室寬度的 85% */
-    white-space: pre-line;
+    white-space: normal;
     width: fit-content; /* 寬度自動根據內容調整 */
+}
+
+.message.extended-mode {
+    white-space: pre-wrap; /* 保留 \n 換行 */
 }
 
 /* 使用者的訊息樣式 */

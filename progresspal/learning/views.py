@@ -136,7 +136,7 @@ def answer_question_view(request, chapter_code, unit_code):
         role=role,
         extended_question = extended_question
     )
-    answer = utils.to_markdown(result.get("answer", "系統暫時無法回答，請稍後再試。"))
+    answer = utils.to_markdown(result.get("answer", "請詢問與資料結構相關的問題。"))
     
     # 處理新的延伸提問
     new_extended_text = result.get("extended_question")
