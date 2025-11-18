@@ -136,7 +136,7 @@ celerybeat.pid
 .env
 .envrc
 .env.*
-progresspal/teaching_material/material/chroma.sqlite3
+progresspal/teaching_material/material_db/chroma.sqlite3
 .venv
 env/
 venv/
