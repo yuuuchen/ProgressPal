@@ -53,7 +53,7 @@ def generate_materials_view(request, chapter_code, unit_code):
 
     # 處理延伸提問
     extended_questions = []
-    extended_text = result.get("extended_question") 
+    extended_text = result.get("extended_questions") 
     if extended_text:
         question_list = utils.split_extended_questions(extended_text)
         extended_questions = question_list if question_list else [extended_text]

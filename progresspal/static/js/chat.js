@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 問題類型：延伸提問
     extendQuestionBtn1.addEventListener('click', () => {
-        selectedQuestionType = '-3'; 
+        selectedQuestionType = 0; 
         extendQuestionBtn1.classList.add('active');
         directQuestionBtn.classList.remove('active');
         extendQuestionBtn2.classList.remove('active');
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
      extendQuestionBtn2.addEventListener('click', () => {
-        selectedQuestionType = '-2'; 
+        selectedQuestionType = 1; 
         extendQuestionBtn2.classList.add('active');
         directQuestionBtn.classList.remove('active');
         extendQuestionBtn1.classList.remove('active');
@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
      extendQuestionBtn3.addEventListener('click', () => {
-        selectedQuestionType = '-1'; 
+        selectedQuestionType = 2; 
         extendQuestionBtn3.classList.add('active');
         directQuestionBtn.classList.remove('active');
         extendQuestionBtn1.classList.remove('active');
