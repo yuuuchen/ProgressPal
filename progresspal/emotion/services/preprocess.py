@@ -1,6 +1,8 @@
 # emotion/services/preprocess.py
 '''
+輸入：影像
 影片與圖片的預處理：讀入 → 擷取臉部 → 灰階化 → 對齊 → resize → normalization
+輸出：模型可接受的 np.ndarray 輸入
 '''
 import cv2
 import math
