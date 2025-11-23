@@ -21,6 +21,7 @@ from django.conf.urls.static import static
 from django.conf.urls import url
 import accounts.views as accounts
 import learning.views as learning
+import emotion.views as emotion
 
 urlpatterns = [
     path('', learning.homepage, name='homepage'),
@@ -44,5 +45,8 @@ urlpatterns = [
 
     # 測試用
     path('user/add-material/', accounts.add_material, name='add-material'),
+
+    # 情緒相關
+    path("detect/", emotion.detect_emotion, name="emotion_detect"),
 
 ]
