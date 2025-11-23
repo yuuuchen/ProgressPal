@@ -18,7 +18,17 @@ def detect_emotion(request):
         return JsonResponse({"error": "No image provided"}, status=400)
 
     # 1. 前處理
-    frame = preprocess_frame(image_file)
+    # frame = preprocess_frame(image_file)
+
+    # if frame is None:
+    #     return JsonResponse({"error": "Face not detected"}, status=422)
+
+    try:
+        frame = preprocess_frame(image_file)
+    except ValueError as e:
+        return JsonResponse({"error": str(e)}, status=422)
+    except Exception:
+        return JsonResponse({"error": "Failed to preprocess image"}, status=400)
 
     if frame is None:
         return JsonResponse({"error": "Face not detected"}, status=422)

@@ -13,3 +13,15 @@ jieba==0.42.1
 numpy==1.26.4
 
 opencv-python==4.9.0.80
+
+# PyTorch（自動選 CPU/GPU）
+torch==2.1.0
+torchvision==0.16.0
+torchaudio==2.1.0
+
+# Mediapipe 用於臉部偵測與對齊
+tensorflow==2.15.0
+mediapipe==0.10.11
+
+# Pillow 用於影像處理
+Pillow==10.1.0
