@@ -25,6 +25,15 @@ mp_face_detection = mp.solutions.face_detection
 # model_selection=0 適合近距離 (筆電前學習場景)
 face_detection = mp_face_detection.FaceDetection(model_selection=0, min_detection_confidence=0.5)
 
+# ===================== Custom Exceptions =====================
+class InvalidImageError(Exception):
+    """圖片格式無法解析（不是合法影像）"""
+    pass
+
+class NoFaceDetectedError(Exception):
+    """沒有偵測到臉部"""
+    pass
+
 # ===================== Helper Functions =====================
 
 def get_rotation_angle(keypoints, img_w, img_h):
@@ -67,9 +76,12 @@ def align_face(face_img, angle):
 def read_uploaded_image(uploaded_file):
     """將 Django UploadedFile 轉成 OpenCV BGR image"""
     if not isinstance(uploaded_file, (InMemoryUploadedFile, TemporaryUploadedFile)):
-        return None
+        raise InvalidImageError("Uploaded file type is invalid")
     file_bytes = np.frombuffer(uploaded_file.read(), np.uint8)
     img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+    if img is None:
+        raise InvalidImageError("Failed to decode uploaded image")
+
     return img
 
 # ===================== Main Process =====================
@@ -133,6 +145,11 @@ def preprocess_frame(uploaded_file):
     try:
         resized = cv2.resize(aligned, (IMG_W, IMG_H), interpolation=cv2.INTER_AREA)
     except Exception:
+        if not results.detections:
+            raise NoFaceDetectedError("No face detected")
+        if w < 30 or h < 30:
+            raise NoFaceDetectedError("Face too small or bounding box invalid")
+
         return None
 
     # 8. 轉換格式 (Reshape & Normalize)
