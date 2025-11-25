@@ -7,7 +7,7 @@ from tensorflow.keras.models import load_model
 接收預處理後的輸入（np.ndarray）
 回傳情緒與confidence score.
 '''
-MODEL_PATH = "emotion/model/emotion_cnn.keras"
+MODEL_PATH = "emotion/small_label5_aug_best_model_fold_8_v94.74.keras"
 
 # Emotion label list
 EMOTION_LABELS = [ "喜悅", "投入", "驚訝", "無聊", "挫折", "困惑"]
