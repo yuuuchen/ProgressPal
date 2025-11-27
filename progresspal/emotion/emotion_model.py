@@ -1,4 +1,5 @@
 # emotion/emotion_model.py
+import os
 import numpy as np
 import traceback
 from tensorflow.keras.models import load_model
@@ -9,7 +10,10 @@ from tensorflow.keras.models import load_model
 並回傳對應的情緒分類與信心分數。
 '''
 
-MODEL_PATH = "emotion/small_label5_aug_best_model_fold_8_v94.74.keras"
+MODEL_PATH = os.path.join(
+    os.path.dirname(__file__),
+    "small_label5_aug_best_model_fold_8_v94.74.keras"
+)
 
 # 情緒標籤列表
 EMOTION_LABELS = ["喜悅", "投入", "驚訝", "無聊", "挫折", "困惑"]
@@ -28,7 +32,7 @@ except Exception as e:
 # 2. Emotion 預測函式
 def predict_emotion(face_input: np.ndarray) -> dict:
     """
-    使用已載入之模型，對輸入影像 (224,224,1) 進行情緒預測。
+    使用已載入之模型，對輸入影像 (1,224,224,1) 進行情緒預測。
     回傳格式：
         {"emotion": "情緒名稱", "confidence": 0.92}
     """
@@ -38,8 +42,8 @@ def predict_emotion(face_input: np.ndarray) -> dict:
         raise FileNotFoundError("情緒模型載入失敗。")
 
     # 驗證輸入影像大小是否符合預期
-    if face_input is None or face_input.shape != (224, 224, 1):
-        raise ValueError(f"輸入影像尺寸錯誤：預期 (224,224,1)，實際為 {face_input.shape}")
+    if face_input is None or face_input.shape != (1, 224, 224, 1):
+        raise ValueError(f"輸入影像尺寸錯誤：預期 (1, 224,224,1)，實際為 {face_input.shape}")
 
     try:
         # 增加 batch 維度，使形狀變為 (1, 224, 224, 1)
