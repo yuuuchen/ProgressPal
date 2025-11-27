@@ -27,7 +27,7 @@ def lesson(request):
 def generate_materials_view(request, chapter_code, unit_code):
     """生成教材內容頁面"""   
     chapter = Chapter.objects.get(chapter_number=chapter_code)
-    unit = Unit.objects.get(unit_number=unit_code)
+    unit = Unit.objects.get(unit_number=unit_code).filter(chapter=chapter)
     units = chapter.get_units()
 
     unit_list = list(units)

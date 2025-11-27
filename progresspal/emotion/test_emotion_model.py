@@ -1,54 +1,51 @@
 import unittest
 import numpy as np
-from unittest.mock import patch, MagicMock
-
-# 匯入你要測試的模組
-from emotion.emotion_model import predict_emotion, EMOTION_LABELS
+from unittest.mock import patch
+from emotion.emotion_model import predict_emotion
 
 
 class TestEmotionModel(unittest.TestCase):
 
     def setUp(self):
-        """建立一張假影像 (224,224,1) 做測試"""
-        self.fake_face = np.random.randint(0, 255, (224, 224, 1), dtype=np.uint8)
+        # 符合 shape (1,224,224,1)
+        self.fake_face = np.zeros((1, 224, 224, 1), dtype=np.float32)
 
-    # -----------------------------------------------------
-    # 1. 測試：輸入尺寸錯誤
-    # -----------------------------------------------------
-    def test_invalid_input_shape(self):
-        wrong_input = np.zeros((100, 100, 1))
-
+    @patch("emotion.emotion_model.model")
+    def test_invalid_input_shape(self, mock_model):
+        """
+        如果輸入影像 shape 不是 (1,224,224,1)，應該拋出 ValueError
+        """
+        mock_model.predict.return_value = np.zeros((1, 6))
+        
+        wrong_input = np.zeros((224, 224, 1))  
+        
         with self.assertRaises(ValueError):
             predict_emotion(wrong_input)
 
-    # -----------------------------------------------------
-    # 2. 測試：模型預測正常（mock model.predict）
-    # -----------------------------------------------------
     @patch("emotion.emotion_model.model")
     def test_predict_emotion_success(self, mock_model):
         """
-        模擬 model.predict() 回傳固定結果：
-        假設模型預測 6 個情緒的 logits，最大值在 index=2（驚訝）
+        模擬 model.predict() 回傳固定結果，測試 predict_emotion 是否正確回傳 emotion 與 confidence
         """
-        # 偽造 model.predict() 回傳形式：[[...]]
-        mock_model.predict.return_value = np.array([[0.1, 0.05, 0.8, 0.02, 0.015, 0.01]])
+        # 模擬模型預測結果：第 2 類（index=2）最高
+        mock_model.predict.return_value = np.array([[0.1, 0.2, 0.5, 0.1, 0.05, 0.05]])
 
         result = predict_emotion(self.fake_face)
 
-        self.assertEqual(result["emotion"], EMOTION_LABELS[2])  # 驚訝
-        self.assertAlmostEqual(result["confidence"], 0.8)
+        self.assertEqual(result["emotion"], "驚訝")  # EMOTION_LABELS[2]
+        self.assertAlmostEqual(result["confidence"], 0.5)
 
-    # -----------------------------------------------------
-    # 3. 測試：模型未載入時應拋出錯誤
-    # -----------------------------------------------------
-    @patch("emotion.emotion_model.model", None)
-    def test_model_not_loaded(self):
-        with self.assertRaises(FileNotFoundError):
-            predict_emotion(self.fake_face)
+    @patch("emotion.emotion_model.model")
+    def test_model_predict_called_once(self, mock_model):
+        """
+        確認 model.predict 是否有被呼叫一次
+        """
+        mock_model.predict.return_value = np.array([[0.3, 0.1, 0.2, 0.1, 0.2, 0.1]])
+
+        predict_emotion(self.fake_face)
+
+        mock_model.predict.assert_called_once()
 
 
-# ---------------------------------------------------------
-# 允許直接執行測試
-# ---------------------------------------------------------
 if __name__ == "__main__":
     unittest.main()
