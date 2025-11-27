@@ -1,6 +1,5 @@
 # emotion/services/preprocess.py
 """
-預處理流程 (Ultimate Optimized Version)：
 預處理流程 (Quality Gate Optimized Version)：
 1. 接收前端上傳影像
 2. MediaPipe 臉部偵測 (取得關鍵點)
