@@ -99,14 +99,19 @@ def retrieve_docs(query, top_k=5, weight_bm25=0.7, weight_vector=0.3):
     vector_scores = np.array(vector_scores)
 
     #標準化分數
-    def normalize(arr):
-      if len(arr) > 1:
-        return (arr - np.min(arr)) / (np.ptp(arr) + 1e-9)
-      else:
-        return np.array([1.0])  # 單一元素直接給 1
+    scaler = MinMaxScaler()
 
-    bm25_scores_norm = normalize(bm25_scores_candidates)
-    vector_scores_norm = normalize(vector_scores)
+    # 處理 bm25 分數
+    if len(bm25_scores_candidates) > 1:
+        bm25_scores_norm = scaler.fit_transform(bm25_scores_candidates.reshape(-1, 1)).flatten()
+    else:
+        bm25_scores_norm = np.array([1.0])
+
+    # 處理 vector 分數
+    if len(vector_scores) > 1:
+        vector_scores_norm = scaler.fit_transform(vector_scores.reshape(-1, 1)).flatten()
+    else:
+        vector_scores_norm = np.array([1.0])
 
     #融合分數
     final_scores = weight_bm25 * bm25_scores_norm + weight_vector * vector_scores_norm

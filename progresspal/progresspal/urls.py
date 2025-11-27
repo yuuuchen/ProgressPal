@@ -47,6 +47,6 @@ urlpatterns = [
     path('user/add-material/', accounts.add_material, name='add-material'),
 
     # 情緒相關
-    path("detect/", emotion.detect_emotion, name="emotion_detect"),
+    path("emotion/detect/", emotion.detect_emotion, name="emotion_detect"),
 
 ]
