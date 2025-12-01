@@ -4,18 +4,26 @@ import numpy as np
 import traceback
 from tensorflow.keras.models import load_model
 
-'''
-載入模型的模組。
-接受已完成前處理的輸入影像（np.ndarray），
-並回傳對應的情緒分類與信心分數。
-'''
 
+"""
+載入模型模組
+- 在 import 時就載入模型
+- 接受前處理後的影像輸入 (1,224,224,1)
+- 回傳情緒與信心分數
+"""
+
+# 自訂例外類型
+class InputShapeError(Exception):
+    """輸入影像尺寸錯誤"""
+    pass
+
+# 模型檔案路徑
 MODEL_PATH = os.path.join(
     os.path.dirname(__file__),
     "small_label5_aug_best_model_fold_8_v94.74.keras"
 )
 
-# 情緒標籤列表
+# 情緒標籤
 EMOTION_LABELS = ["喜悅", "投入", "驚訝", "無聊", "挫折", "困惑"]
 
 # 載入模型
@@ -28,40 +36,44 @@ except Exception as e:
     print("[ERROR] 載入情緒模型時發生錯誤：", str(e))
     model = None
 
-
-# 2. Emotion 預測函式
+# Emotion 預測函式
 def predict_emotion(face_input: np.ndarray) -> dict:
     """
-    使用已載入之模型，對輸入影像 (1,224,224,1) 進行情緒預測。
-    回傳格式：
-        {"emotion": "情緒名稱", "confidence": 0.92}
+    使用已載入的模型進行情緒預測。
+    參數：
+        face_input: np.ndarray, shape 必須為 (1,224,224,1)
+    回傳：
+        {"emotion": <str>, "confidence": <float>}
     """
 
-    # 若模型尚未正確載入，則拋出錯誤
+    # 1. 模型未正確載入
     if model is None:
-        raise FileNotFoundError("情緒模型載入失敗。")
+        raise FileNotFoundError("情緒模型載入失敗，無法進行預測。")
 
-    # 驗證輸入影像大小是否符合預期
-    if face_input is None or face_input.shape != (1, 224, 224, 1):
-        raise ValueError(f"輸入影像尺寸錯誤：預期 (1, 224,224,1)，實際為 {face_input.shape}")
+    # 2. 輸入 shape 驗證
+    expected_shape = (1, 224, 224, 1)
+    if face_input is None or face_input.shape != expected_shape:
+        raise InputShapeError(
+            f"輸入影像尺寸錯誤：預期 {expected_shape}，實際為 {face_input.shape}"
+        )
 
     try:
-        # 增加 batch 維度，使形狀變為 (1, 224, 224, 1)
-        x = np.expand_dims(face_input, axis=0)
+        # 3. 正規化影像
+        x = face_input.astype("float32") / 255.0  # shape 維持 (1,224,224,1)
 
-        # 正規化至 [0,1]
-        x = x.astype("float32") / 255.0
-
-        # 模型推論
+        # 4. 模型推論
         preds = model.predict(x)
-        preds = preds[0]  # 取出第一筆結果，大小為 (N,)
+        preds = preds[0]  # shape=(num_classes,)
 
-        # 取得最大機率之情緒索引
+        # 5. 找出最大機率情緒
         max_idx = np.argmax(preds)
         emotion = EMOTION_LABELS[max_idx]
         confidence = float(preds[max_idx])
 
-        return {"emotion": emotion, "confidence": confidence}
+        return {
+            "emotion": emotion,
+            "confidence": confidence
+        }
 
     except Exception as e:
         traceback.print_exc()
