@@ -4,10 +4,9 @@ import numpy as np
 import traceback
 from tensorflow.keras.models import load_model
 
-
 """
 載入模型模組
-- 在 import 時就載入模型
+- 只有在第一次呼叫 predict_emotion() 時才載入模型。
 - 接受前處理後的影像輸入 (1,224,224,1)
 - 回傳情緒與信心分數
 """
@@ -26,15 +25,20 @@ MODEL_PATH = os.path.join(
 # 情緒標籤
 EMOTION_LABELS = ["喜悅", "投入", "驚訝", "無聊", "挫折", "困惑"]
 
+# 全域模型變數（初始為 None）
+model = None
+
 # 載入模型
-try:
-    model = load_model(MODEL_PATH)
-except FileNotFoundError:
-    print(f"[ERROR] 找不到情緒模型檔案：{MODEL_PATH}")
-    model = None
-except Exception as e:
-    print("[ERROR] 載入情緒模型時發生錯誤：", str(e))
-    model = None
+def load_emotion_model():
+    """Lazy Load：只有在需要時才載入模型"""
+    global model
+    if model is None:
+        try:
+            model = load_model(MODEL_PATH)
+        except FileNotFoundError:
+            raise FileNotFoundError(f"找不到情緒模型檔案：{MODEL_PATH}")
+        except Exception as e:
+            raise RuntimeError(f"載入模型時發生錯誤：{str(e)}")
 
 # Emotion 預測函式
 def predict_emotion(face_input: np.ndarray) -> dict:
@@ -46,9 +50,7 @@ def predict_emotion(face_input: np.ndarray) -> dict:
         {"emotion": <str>, "confidence": <float>}
     """
 
-    # 1. 模型未正確載入
-    if model is None:
-        raise FileNotFoundError("情緒模型載入失敗，無法進行預測。")
+    load_emotion_model()
 
     # 2. 輸入 shape 驗證
     expected_shape = (1, 224, 224, 1)

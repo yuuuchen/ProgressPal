@@ -28,6 +28,8 @@ class TestEmotionModel(unittest.TestCase):
         """
         模擬 model.predict() 回傳固定結果，測試 predict_emotion 是否能正確回傳
         """
+        print("Mock Model =", mock_model)
+        
         # 模擬預測結果 → 第 2 類別（index=2）最大
         mock_model.predict.return_value = np.array([[0.1, 0.2, 0.5, 0.1, 0.05, 0.05]])
 
