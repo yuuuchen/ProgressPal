@@ -245,7 +245,7 @@ def preprocess_frame(uploaded_file):
     # 3. 正規化 (0~255 -> 0~1)
     # 4. 增加 Batch 維度 (H, W, 1) -> (1, H, W, 1)
     face_res = resized.astype(np.float32)[..., None]
-    # face_res = face_res / 255.0
+    # face_res = face_res / 255.0 #移除標準化
     face_final = np.expand_dims(face_res, axis=0)
 
     return face_final
