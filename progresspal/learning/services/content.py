@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from langchain_community.document_loaders import TextLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter, MarkdownHeaderTextSplitter 
+from langchain.text_splitter import  MarkdownHeaderTextSplitter 
 from langchain_community.vectorstores import Chroma 
 from langchain_community.embeddings import HuggingFaceEmbeddings 
 from langchain.schema import Document

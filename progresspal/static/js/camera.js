@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             if (!response.ok) {
-                console.warn(`API Error: ${response.status}`);
+                console.warn(`API Error: ${response.error}`);
                 return;
             }
 
