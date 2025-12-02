@@ -22,8 +22,11 @@ torchvision==0.16.0
 torchaudio==2.1.0
 
 # Mediapipe 用於臉部偵測與對齊
-tensorflow==2.15.0
+tensorflow==2.19.1
 mediapipe==0.10.11
 
 # Pillow 用於影像處理
 Pillow==10.1.0
+
+# 影像辨識
+keras==3.12.0
