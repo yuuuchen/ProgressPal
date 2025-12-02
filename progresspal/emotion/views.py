@@ -5,12 +5,15 @@ from django.contrib.auth.decorators import login_required
 from .emotion_model import predict_emotion, InputShapeError
 from .services.preprocess import preprocess_frame, NoFaceDetectedError, InvalidImageError 
 from .models import EmotionRecord
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
 def detect_emotion(request):
     if request.method != "POST":
-        return JsonResponse({"error": "POST only"}, status=400)
+        return JsonResponse({"error": "POST only"}, status=405)
 
     image_file = request.FILES.get("image")
 
@@ -22,7 +25,7 @@ def detect_emotion(request):
         frame = preprocess_frame(image_file)
     except NoFaceDetectedError as e:
         # 預期錯誤：臉不明顯、無臉、多臉、模糊
-        return JsonResponse({"error": str(e)}, status=421)
+        return JsonResponse({"error": str(e)}, status=422)
 
     except InvalidImageError as e:
         # 非法圖片格式
@@ -31,7 +34,7 @@ def detect_emotion(request):
     except Exception as e:
         # 預防預處理未知錯誤導致系統 crash
         print(f"Unexpected preprocessing error: {e}")
-        return JsonResponse({"error": "Failed to preprocess image"}, status=420)
+        return JsonResponse({"error": "Failed to preprocess image"}, status=500)
 
     # 2. 模型推論
     try:
@@ -43,18 +46,21 @@ def detect_emotion(request):
         print(f"Input shape error: {e}")
         return JsonResponse({"error": str(e)}, status=500)
     except ValueError as e:
-        return JsonResponse({"error": str(e)}, status=502)
+        return JsonResponse({"error": str(e)}, status=500)
     except RuntimeError as e:
-        return JsonResponse({"error": str(e)}, status=502)
+        return JsonResponse({"error": str(e)}, status=500)
     except Exception as e:
         print(f"Unexpected inference error: {e}")
         return JsonResponse({"error": "Failed to perform emotion detection"}, status=500)
     '''
     # 3. 存進資料庫
-    EmotionRecord.objects.create(
-        user=request.user,
-        emotion=result["emotion"],
-        confidence=result["confidence"]
-    )
+    try:
+        EmotionRecord.objects.create(
+            user=request.user,
+            emotion=result["emotion"],
+            confidence=result["confidence"]
+        )
+    except Exception as e:
+        logger.error(f"Database save error: {e}")
     '''
     return JsonResponse(result)
