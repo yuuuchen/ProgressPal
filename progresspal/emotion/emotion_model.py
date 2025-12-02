@@ -4,12 +4,6 @@ import numpy as np
 import traceback
 import keras 
 
-"""
-[FINAL VERSION]
-emotion_model.py
-針對灰階模型 (1 Channel) 的最終版本
-"""
-
 class InputShapeError(Exception):
     """輸入影像尺寸錯誤"""
     pass
@@ -29,7 +23,6 @@ def load_emotion_model():
     global model
     if model is None:
         try:
-            # 使用 keras.models.load_model 載入
             model = keras.models.load_model(MODEL_PATH)
             print("模型載入成功 (Grayscale Mode)")
         except Exception as e:
@@ -46,13 +39,10 @@ def predict_emotion(face_input: np.ndarray) -> dict:
     # 2. 轉 float32 (注意：preprocess.py 已經做過 /255 正規化，這裡保持原樣)
     x = face_input.astype("float32")
 
-    # 3. [關鍵] 通道檢查
-    # 我們已知模型需要 (None, 224, 224, 1)
-    # 如果輸入意外變成 RGB (..., 3)，我們必須轉回灰階，否則會報錯
+    # 3. 通道檢查:模型需要 (None, 224, 224, 1)，如果輸入意外變成 RGB (..., 3)，則轉回灰階
     if x.shape[-1] == 3:
         print("偵測到 RGB 輸入，正在轉為灰階以符合模型需求...")
-        # 簡單的 RGB 轉灰階方法 (取平均或是用權重)
-        # 這裡用 TensorFlow/Keras 的操作或是 numpy 平均
+        # RGB 轉灰階:numpy 平均
         x = np.mean(x, axis=-1, keepdims=True)
 
     try:

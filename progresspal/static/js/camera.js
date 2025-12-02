@@ -109,21 +109,23 @@ document.addEventListener("DOMContentLoaded", () => {
         "驚訝": "/static/images/emotions/surprise.png"
     };
 
-    // 取得對應的圖片路徑，若無對應則使用預設
+    // 取得對應的圖片路徑
     const imagePath = emotionImages[emotion]
+
+    const displayScore = confidence.toFixed(2);
 
     // 更新 HTML 內容，加入圖片顯示
     // 這裡使用 flex 佈局讓圖片和文字排版更好看
     resultElement.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px;">
-            <img src="${imagePath}" alt="${emotion}" style="width: 50px; height: 50px; object-fit: contain;">
+            <img src="${imagePath}" alt="${emotion}" style="width: 50px; height: 50px; object-fit: contain; margin-left: 15px;" >
             <div>
-                <span style="color: blue; font-size: 1.2em;">${emotion}</span> 
+                <span style="color: black; font-size:16;">情緒：${emotion}  <br> 信心分數：${displayScore} </span> 
             </div>
         </div>
     `;
 
-    console.log(`UI Updated: ${emotion} (${confidence}%)`);
+    console.log(`UI Updated: ${emotion} (${confidence})`);
 }
 
     // Django CSRF
