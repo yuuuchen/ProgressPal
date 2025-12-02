@@ -173,7 +173,6 @@ def preprocess_frame(uploaded_file):
     results = face_detection.process(frame_rgb)
     
     if not results.detections:
-        logger.warning(f"Info: 未偵測到臉部 (請檢查 {decoded_filename})")
         raise NoFaceDetectedError("未偵測到臉部")
 
     # 取信心度最高的一張臉
