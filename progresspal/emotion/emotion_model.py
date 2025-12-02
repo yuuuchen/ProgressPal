@@ -20,7 +20,7 @@ MODEL_PATH = os.path.join(
     "small_label5_aug_best_model_fold_8_v94.74.keras"
 )
 
-EMOTION_LABELS = ["喜悅", "投入", "驚訝", "無聊", "挫折", "困惑"]
+EMOTION_LABELS = ["挫折", "困惑", "無聊", "喜悅", "投入", "驚訝"]
 
 # 全域變數
 model = None
