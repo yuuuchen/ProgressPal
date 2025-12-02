@@ -60,12 +60,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 body: formData // Content-Type 為 multipart/form-data
             });
 
-            if (!response.ok) {
-                console.warn(`API Error: ${response.error}`);
+            let data;
+            try {
+                data = await response.json();
+            } catch (e) {
+                console.error("無法解析回應 (可能不是 JSON):", e);
                 return;
             }
 
-            const data = await response.json();
+            if (!response.ok) {
+                console.warn(`API Error: ${response.status}`, data.error);
+                return;
+            }
+
             handleResponse(data);
 
         } catch (error) {
@@ -99,12 +106,11 @@ document.addEventListener("DOMContentLoaded", () => {
         "無聊": "/static/images/emotions/boredom.png",
         "挫折": "/static/images/emotions/frustration.png",
         "投入": "/static/images/emotions/flow.png",
-        "驚訝": "/static/images/emotions/surprise.png",
-        "unknown": "/static/images/emotions/neutral.png" 
+        "驚訝": "/static/images/emotions/surprise.png"
     };
 
     // 取得對應的圖片路徑，若無對應則使用預設
-    const imagePath = emotionImages[emotion] || emotionImages["unknown"];
+    const imagePath = emotionImages[emotion]
 
     // 更新 HTML 內容，加入圖片顯示
     // 這裡使用 flex 佈局讓圖片和文字排版更好看
