@@ -193,7 +193,7 @@ def preprocess_frame(uploaded_file):
 
     # 轉換格式給模型 (1, 224, 224, 1)
     face_res = resized.astype(np.float32)[..., None]
-    face_res = face_res / 255.0
+    # face_res = face_res / 255.0
     face_final = np.expand_dims(face_res, axis=0)
 
     return face_final

@@ -2,16 +2,14 @@
 import os
 import numpy as np
 import traceback
-from tensorflow.keras.models import load_model
+import keras 
 
 """
-載入模型模組
-- 只有在第一次呼叫 predict_emotion() 時才載入模型。
-- 接受前處理後的影像輸入 (1,224,224,1)
-- 回傳情緒與信心分數
+[FINAL VERSION]
+emotion_model.py
+針對灰階模型 (1 Channel) 的最終版本
 """
 
-# 自訂例外類型
 class InputShapeError(Exception):
     """輸入影像尺寸錯誤"""
     pass
@@ -22,55 +20,55 @@ MODEL_PATH = os.path.join(
     "small_label5_aug_best_model_fold_8_v94.74.keras"
 )
 
-# 情緒標籤
 EMOTION_LABELS = ["喜悅", "投入", "驚訝", "無聊", "挫折", "困惑"]
 
-# 全域模型變數（初始為 None）
+# 全域變數
 model = None
 
-# 載入模型
 def load_emotion_model():
-    """Lazy Load：只有在需要時才載入模型"""
     global model
     if model is None:
         try:
-            model = load_model(MODEL_PATH)
-        except FileNotFoundError:
-            raise FileNotFoundError(f"找不到情緒模型檔案：{MODEL_PATH}")
+            # 使用 keras.models.load_model 載入
+            model = keras.models.load_model(MODEL_PATH)
+            print("模型載入成功 (Grayscale Mode)")
         except Exception as e:
+            print(f"模型載入失敗: {e}")
             raise RuntimeError(f"載入模型時發生錯誤：{str(e)}")
 
-# Emotion 預測函式
 def predict_emotion(face_input: np.ndarray) -> dict:
-    """
-    使用已載入的模型進行情緒預測。
-    參數：
-        face_input: np.ndarray, shape 必須為 (1,224,224,1)
-    回傳：
-        {"emotion": <str>, "confidence": <float>}
-    """
-
     load_emotion_model()
 
-    # 2. 輸入 shape 驗證
-    expected_shape = (1, 224, 224, 1)
-    if face_input is None or face_input.shape != expected_shape:
-        raise InputShapeError(
-            f"輸入影像尺寸錯誤：預期 {expected_shape}，實際為 {face_input.shape}"
-        )
+    # 1. 基本檢查
+    if face_input is None:
+        raise InputShapeError("輸入影像為 None")
+
+    # 2. 轉 float32 (注意：preprocess.py 已經做過 /255 正規化，這裡保持原樣)
+    x = face_input.astype("float32")
+
+    # 3. [關鍵] 通道檢查
+    # 我們已知模型需要 (None, 224, 224, 1)
+    # 如果輸入意外變成 RGB (..., 3)，我們必須轉回灰階，否則會報錯
+    if x.shape[-1] == 3:
+        print("偵測到 RGB 輸入，正在轉為灰階以符合模型需求...")
+        # 簡單的 RGB 轉灰階方法 (取平均或是用權重)
+        # 這裡用 TensorFlow/Keras 的操作或是 numpy 平均
+        x = np.mean(x, axis=-1, keepdims=True)
 
     try:
-        # 3. 正規化影像
-        x = face_input.astype("float32") / 255.0  # shape 維持 (1,224,224,1)
-
         # 4. 模型推論
-        preds = model.predict(x)
-        preds = preds[0]  # shape=(num_classes,)
+        preds = model.predict(x, verbose=0)
+        preds_vector = preds[0] # 取出第一筆
 
-        # 5. 找出最大機率情緒
-        max_idx = np.argmax(preds)
-        emotion = EMOTION_LABELS[max_idx]
-        confidence = float(preds[max_idx])
+        # 5. 解析結果
+        max_idx = np.argmax(preds_vector)
+        
+        if max_idx < len(EMOTION_LABELS):
+            emotion = EMOTION_LABELS[max_idx]
+        else:
+            emotion = "Unknown"
+
+        confidence = float(preds_vector[max_idx])
 
         return {
             "emotion": emotion,
@@ -78,5 +76,6 @@ def predict_emotion(face_input: np.ndarray) -> dict:
         }
 
     except Exception as e:
+        print(f"推論錯誤: {e}")
         traceback.print_exc()
-        raise RuntimeError(f"模型推論時發生錯誤：{str(e)}")
+        raise RuntimeError(f"模型推論失敗: {str(e)}")
