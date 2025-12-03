@@ -11,7 +11,6 @@ from .models import EmotionRecord
 def detect_emotion(request):
     if request.method != "POST":
         return JsonResponse({"error": "POST only"}, status=400)
-
     image_file = request.FILES.get("image")
 
     if not image_file:
