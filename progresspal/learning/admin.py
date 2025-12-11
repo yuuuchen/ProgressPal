@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Chapter, Unit
+from .models import Chapter, Unit, QuizQuestion
 
 # Register your models here.
 class ChapterAdmin(admin.ModelAdmin):
@@ -10,6 +10,10 @@ class UnitAdmin(admin.ModelAdmin):
     ordering = ('chapter__chapter_number', 'unit_number')
     list_filter = ('chapter',)
 
+class QuizQuestionAdmin(admin.ModelAdmin):
+    list_display = ('chapter', 'difficulty', 'question', 'answer')
+    list_filter = ('chapter', 'difficulty')
 
 admin.site.register(Chapter,ChapterAdmin)
 admin.site.register(Unit,UnitAdmin)
+admin.site.register(QuizQuestion,QuizQuestionAdmin)
