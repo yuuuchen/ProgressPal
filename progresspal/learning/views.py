@@ -190,13 +190,11 @@ def chapter_quiz_view(request, chapter_code):
 def chapter_quiz_api(request, chapter_code):
     chapter = Chapter.objects.get(chapter_number=chapter_code)
     quiz_questions = utils.get_exam_questions(chapter)
-    answer_map = {"A": 0, "B": 1, "C": 2, "D": 3}
     serialized = [
         {
             "id": q.id,
             "question": q.question,
             "options": [q.option_a, q.option_b, q.option_c, q.option_d],
-            "correctIndex": answer_map.get(q.answer, 0),
         }
         for q in quiz_questions
     ]
