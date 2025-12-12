@@ -41,8 +41,8 @@ urlpatterns = [
     path('lesson/<int:chapter_code>/<int:unit_code>/study/api/chat/', learning.answer_question_view, name='chat-api'), #提問區域
 
     # 測驗
-    path('lesson/<int:chapter_code>/quiz/', learning.generate_quiz_view, name='quiz'),
-    path('lesson/<int:chapter_code>/quiz/api/', learning.generate_quiz, name='quiz-api'), 
+    path('lesson/<int:chapter_code>/quiz/', learning.chapter_quiz_view, name='quiz'),
+    path('lesson/<int:chapter_code>/quiz/api/', learning.chapter_quiz_api, name='quiz-api'), 
 
     # 結束學習並更新學習記錄
     # path("lesson/end/", learning.end_study, name="end-study"),
