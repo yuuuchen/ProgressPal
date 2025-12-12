@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %} CH{{chapter.chapter_number}}測驗 {% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/study.css' %}">
+{% endblock %}
+{% block content %}
+<div class="container-fluid px-4 py-3 h-100 d-flex flex-column">
+    <div class="row g-4 flex-grow-1 overflow-hidden align-items-stretch pb-4"> 
+        <!--左側課程列表-->
+        <nav class="col-lg-2 col-md-2 d-flex flex-column h-100">
+            <div class="card d-flex flex-column w-100 flex-grow-1">
+                <div class="card-header fw-bold">
+                    CH{{ chapter.chapter_number }} 課程列表
+                </div>
+                <div class="card-body overflow-auto">
+                    <div class="list-group">
+                        {% for u in units %}
+                        <a href="{% url 'learning' chapter_code=u.chapter.chapter_number unit_code=u.unit_number %}" 
+                        class="list-group-item list-group-item-action">
+                            {{ chapter.chapter_number }}-{{u.unit_number}} {{u.title |truncatechars:7}}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!--測驗區-->
+        <div class="col-lg-10 col-md-10 d-flex flex-column h-100">
+            <div class="quiz-container">
+                
+                <div id="quiz-card" class="card-quiz">
+                    <div class="text-muted mb-3">
+                        第 <span id="current-q">1</span> 題
+                        </div>
+                    
+                    <div id="question-text" class="question-text">題目載入中...</div>
+                    
+                    <div id="options-container" class="options-container mb-4">
+                        </div>
+
+                    <div id="feedback-msg" style="height: 24px; font-weight: bold; margin-bottom: 10px;"></div>
+
+                    <div class="d-grid gap-2">
+                        <button id="confirm-btn" class="btn btn-dark btn-lg" disabled>確認答案</button>
+                        <button id="next-btn" class="btn btn-dark btn-lg hidden">下一題</button>
+                    </div>
+                </div>
+
+                <div id="result-card" class="card-quiz hidden">
+                    <h2 class="mb-4">測驗結束</h2>
+                    <p class="text-muted">您的得分是</p>
+                    <div id="final-score" class="score-text">0 / 5</div>
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        <button id="restart-btn" class="btn btn-outline-dark">重新測驗</button>
+                        
+                        <a href="'/lesson/'" 
+                           class="btn btn-primary">
+                            回到章節列表
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'js/quiz.js' %}"></script>
+{% endblock %}

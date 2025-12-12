@@ -26,6 +26,11 @@
                             </a>
                         </li>
                     {% endfor %} 
+                    <li class="list-group-item">
+                        <a href="{% url 'quiz' chapter.chapter_number %}" class="text-decoration-none text-dark">
+                            <strong>{{ chapter.chapter_number }}.{{ chapter.get_units|length|add:"1" }}</strong> — 第{{ chapter.chapter_number }}章測驗
+                        </a>
+                    </li>
                 </ul>
                     {% else %}
                         <p class="text-muted mb-0">此章節目前沒有單元。</p>

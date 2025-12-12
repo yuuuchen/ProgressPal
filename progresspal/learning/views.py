@@ -164,6 +164,17 @@ def answer_question_view(request, chapter_code, unit_code):
         "extended_questions": extended_questions
     })
 
+def generate_quiz_view(request,chapter_code):
+    if request.method == "POST":
+        data = json.loads(request.body.decode("utf-8"))
+
+    return
+
+def generate_quiz(request,chapter_code):
+    if request.method == "POST":
+        data = json.loads(request.body.decode("utf-8"))
+    return
+
 # 結束學習並更新學習記錄
 def end_study(request):
     if request.method == "POST":
