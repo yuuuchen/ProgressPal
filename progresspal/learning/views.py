@@ -73,8 +73,6 @@ def generate_materials_view(request, chapter_code, unit_code):
         unit_code=unit_code
     )
     '''
-
-
     context = {
         "chapter": chapter,
         "unit": unit,
@@ -190,3 +188,34 @@ def end_study(request):
             return JsonResponse({"status": "error", "msg": "not found"}, status=400)
 
     return JsonResponse({"status": "error", "msg": "invalid request"}, status=400)
+
+def chapter_quiz(request, chapter_code):
+    """
+    顯示測驗頁面，並將題目以 JSON 傳給前端 quiz.js
+    """
+    chapter = Chapter.objects.get(chapter_number=chapter_code)
+    # 抽 10 題
+    quiz_questions = utils.get_exam_questions(chapter)
+    # 轉成 quiz.js 需要的格式
+    serialized = []
+    for q in quiz_questions:
+        # 依據 answer 計算 correctIndex
+        answer_map = {"A": 0, "B": 1, "C": 2, "D": 3}
+        correct_idx = answer_map.get(q.answer, 0)
+        serialized.append({
+            "id": q.id,
+            "question": q.question,
+            "options": [
+                q.option_a,
+                q.option_b,
+                q.option_c,
+                q.option_d,
+            ],
+            "correctIndex": correct_idx,
+        })
+    # 回傳 JSON 給前端
+    questions_json = json.dumps(serialized, ensure_ascii=False)
+    return render(request, "learning/quiz.html", {
+        "chapter": chapter,
+        "questions_json": questions_json,
+    })
