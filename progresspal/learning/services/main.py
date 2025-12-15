@@ -1,5 +1,5 @@
 # learning/services/main.py
-import os, re, textwrap, time, json
+import os, re, textwrap, time, json,random
 from dotenv import load_dotenv
 
 from google import genai
@@ -13,8 +13,9 @@ from learning.services.prompt import (
     generate_prompt_extended,
     set_system_prompt
 )
+from learning.models import QuizQuestion
 from learning.services.content import get_unit, get_chapter
-from learning.services.utils import clean_text_tutoring, clean_text_qa,to_markdown
+from learning.services.utils import clean_text_tutoring, clean_text_qa
 from rag.services.rag import retrieve_docs
 
 class RotationalGeminiClient:
@@ -179,6 +180,26 @@ def respond_to_question(prompt, engagement, role):
         "answer": result.get("answer"),
         "extended_question": result.get("extended_question")
     }
+
+def get_exam_questions(chapter):
+    """
+    根據指定章節回傳隨機 10 題（簡單 4、中等 3、困難 3）。若題庫不足，會自動縮減。
+    """
+    # 讀取題庫
+    difficulty_map = {
+        "easy": 4,
+        "medium": 3,
+        "hard": 3,
+    }
+    selected = []
+    for level, required_num in difficulty_map.items():
+        qs = list(QuizQuestion.objects.filter(chapter=chapter, difficulty=level))
+        count = min(required_num, len(qs))
+        if count > 0:
+            selected.extend(random.sample(qs, count))
+    # 打亂
+    random.shuffle(selected)
+    return selected
 
 
 

@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 # utils.py
 import textwrap
-import re, random
-from learning.models import QuizQuestion
+import re
 from markdown import markdown
 
 """格式整理工具"""
@@ -102,23 +101,3 @@ def split_extended_questions(text):
             questions.append(cleaned)
 
     return questions
-
-def get_exam_questions(chapter):
-    """
-    根據指定章節回傳隨機 10 題（簡單 4、中等 3、困難 3）。若題庫不足，會自動縮減。
-    """
-    # 讀取題庫
-    difficulty_map = {
-        "easy": 4,
-        "medium": 3,
-        "hard": 3,
-    }
-    selected = []
-    for level, required_num in difficulty_map.items():
-        qs = list(QuizQuestion.objects.filter(chapter=chapter, difficulty=level))
-        count = min(required_num, len(qs))
-        if count > 0:
-            selected.extend(random.sample(qs, count))
-    # 打亂
-    random.shuffle(selected)
-    return selected

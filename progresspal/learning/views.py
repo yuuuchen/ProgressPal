@@ -4,11 +4,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from django.db import transaction
 from emotion.services.utils import compute_engagement
 from .services import main,utils
 from .forms import StudyForm
-from accounts.models import QuestionLog, LearningRecord
-from .models import Chapter, Unit
+from accounts.models import QuestionLog, LearningRecord, QuizResult, QuizResultDetail
+from .models import Chapter, Unit, QuizQuestion
 import json
 
 def homepage(request):
@@ -179,6 +180,7 @@ def end_study(request):
 
     return JsonResponse({"status": "error", "msg": "invalid request"}, status=400)
 
+# 將chapter、units 渲染到 quiz頁面
 def chapter_quiz_view(request, chapter_code):
     chapter = Chapter.objects.get(chapter_number=chapter_code)
     units = chapter.get_units()
@@ -186,10 +188,10 @@ def chapter_quiz_view(request, chapter_code):
         "chapter": chapter,
         "units": units,
     })
-
+# json 回傳測驗問題與選項給前端
 def chapter_quiz_api(request, chapter_code):
     chapter = Chapter.objects.get(chapter_number=chapter_code)
-    quiz_questions = utils.get_exam_questions(chapter)
+    quiz_questions = main.get_exam_questions(chapter)
     serialized = [
         {
             "id": q.id,
@@ -199,3 +201,74 @@ def chapter_quiz_api(request, chapter_code):
         for q in quiz_questions
     ]
     return JsonResponse(serialized, safe=False)
+
+# 章節測驗批改
+@csrf_exempt
+@login_required(login_url='login')
+def check_answers(request, chapter_code):
+    chapter = Chapter.objects.get(chapter_number=chapter_code)
+    try:
+        body_data = json.loads(request.body)
+        user_answers_list = body_data.get('answers', [])        
+        if not user_answers_list:
+             return JsonResponse({'score': 0, 'results': []})
+        # 取得所有題目 ID
+        question_ids = [item.get('question_id') for item in user_answers_list]
+        questions = QuizQuestion.objects.filter(id__in=question_ids)
+        question_map = {q.id: q for q in questions}
+        results = []
+        score = 0
+        details_to_create = []
+        with transaction.atomic():        
+            for item in user_answers_list:
+                q_id = item.get('question_id')
+                user_selected = item.get('selected_index')
+                question_obj = question_map.get(q_id)
+                if not question_obj:
+                    continue               
+                is_correct = (user_selected == question_obj.answer)
+                if is_correct:
+                    score += 1
+                # 準備回傳前端的 JSON
+                results.append({
+                    "question_id": question_obj.id,
+                    "question": question_obj.question,
+                    "options": {
+                        "A": question_obj.option_a,
+                        "B": question_obj.option_b,
+                        "C": question_obj.option_c,
+                        "D": question_obj.option_d,
+                    },
+                    "user_answer": user_selected,
+                    "correct_answer": question_obj.answer,
+                    "answer_explanation": question_obj.explanation,
+                    "is_correct": is_correct,
+                })
+                # 暫存明細資料
+                details_to_create.append({
+                    "question": question_obj,
+                    "user_answer": user_selected,
+                    "is_correct": is_correct
+                })
+            # --- 寫入資料庫 ---            
+            # 1. 建立問題紀錄
+            record = QuizResult.objects.create(
+                user=request.user,
+                chapter = chapter
+                score=score,
+            )
+            # 2. 建立問題紀錄明細
+            QuizResultDetail.objects.bulk_create([
+                QuizResultDetail(
+                    record=record,
+                    question=d['question'],
+                    user_answer=d['user_answer'],
+                    is_correct=d['is_correct']
+                ) for d in details_to_create
+            ])
+        return JsonResponse({
+            "score": score,
+            "results": results
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
