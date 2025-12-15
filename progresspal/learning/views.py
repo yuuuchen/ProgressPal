@@ -8,7 +8,7 @@ from django.db import transaction
 from emotion.services.utils import compute_engagement
 from .services import main,utils
 from .forms import StudyForm
-from accounts.models import QuestionLog, LearningRecord, QuizResult, QuizResultDetail
+from accounts.models import QuestionLog, LearningRecord, QuizResult, QuizResultQuestion
 from .models import Chapter, Unit, QuizQuestion
 import json
 
@@ -252,19 +252,21 @@ def check_answers(request, chapter_code):
                 })
             # --- 寫入資料庫 ---            
             # 1. 建立問題紀錄
-            record = QuizResult.objects.create(
-                user=request.user,
-                chapter = chapter,
-                score=score,
+            quiz_result = QuizResult.objects.create(
+            user=request.user,
+            chapter_code=chapter, # 使用 CharField
+            unit_code=None,
+            score=score,
             )
-            # 2. 建立問題紀錄明細
-            QuizResultDetail.objects.bulk_create([
-                QuizResultDetail(
-                    record=record,
-                    question=d['question'],
+            # 2. 建立每一題的作答紀錄（明細）
+            QuizResultQuestion.objects.bulk_create([
+                QuizResultQuestion(
+                    quiz_result=quiz_result,
+                    quiz_question=d['question'],
                     user_answer=d['user_answer'],
-                    is_correct=d['is_correct']
-                ) for d in details_to_create
+                    is_correct=d['is_correct'],
+                )
+                for d in details_to_create
             ])
         return JsonResponse({
             "score": score,

@@ -1,4 +1,7 @@
 # learning/services/main.py
+'''
+主要服務模組，整合問答、教材生成與測驗功能
+'''
 import os, re, textwrap, time, json,random
 from dotenv import load_dotenv
 

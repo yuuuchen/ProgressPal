@@ -1,5 +1,5 @@
 from django.db import models
-
+import random
 # Create your models here.
 class Chapter(models.Model):
     chapter_number = models.PositiveIntegerField(unique=True, verbose_name="章節數字")

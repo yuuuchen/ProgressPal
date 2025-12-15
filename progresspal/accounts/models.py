@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
+from learning.models import QuizQuestion 
 
 # 使用者
 class CustomUser(AbstractUser):
@@ -81,13 +82,59 @@ class QuestionLog(models.Model):
 # 測驗結果
 class QuizResult(models.Model):
     """
-    儲存每次測驗結果與題庫
+    儲存每次測驗結果（一次作答）
     """
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='quiz_results')
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='quiz_results'
+    )
+
     chapter_code = models.CharField(max_length=50, blank=True, null=True)
     unit_code = models.CharField(max_length=50, blank=True, null=True)
-    score = models.IntegerField()  # 每次 0~3 題的得分
+
+    score = models.IntegerField()  # 0~10 題得分
+
+    total_questions = models.PositiveIntegerField(
+        verbose_name="題目總數",
+        default=0
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.user.username} - {self.chapter_code}-{self.unit_code}: {self.score}分"
+    
+
+class QuizResultQuestion(models.Model):
+    """
+    紀錄一次測驗中，每一題的作答狀況
+    """
+    quiz_result = models.ForeignKey(
+        'QuizResult',
+        on_delete=models.CASCADE,
+        related_name='result_questions',
+        verbose_name="所屬測驗結果"
+    )
+
+    question = models.ForeignKey(
+        QuizQuestion,
+        on_delete=models.CASCADE,
+        verbose_name="題目"
+    )
+
+    selected_answer = models.CharField(
+        max_length=1,
+        choices=QuizQuestion.ANSWER_CHOICES,
+        verbose_name="學生作答"
+    )
+
+    is_correct = models.BooleanField(verbose_name="是否正確")
+
+    answered_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="作答時間"
+    )
+
+    def __str__(self):
+        return f"{self.quiz_result.user.username} - Q{self.question.id} - {self.selected_answer}"
