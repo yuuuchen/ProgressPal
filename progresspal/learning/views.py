@@ -254,7 +254,7 @@ def check_answers(request, chapter_code):
             # 1. 建立問題紀錄
             record = QuizResult.objects.create(
                 user=request.user,
-                chapter = chapter
+                chapter = chapter,
                 score=score,
             )
             # 2. 建立問題紀錄明細
