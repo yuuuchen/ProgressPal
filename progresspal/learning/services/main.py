@@ -1,9 +1,12 @@
 # learning/services/main.py
 import os, re, textwrap, time, json
 from dotenv import load_dotenv
+
 from google import genai
 from google.genai import types
+from google.api_core import exceptions
 
+from django.conf import settings
 from learning.services.prompt import (
     generate_prompt,
     generate_materials,
@@ -14,13 +17,50 @@ from learning.services.content import get_unit, get_chapter
 from learning.services.utils import clean_text_tutoring, clean_text_qa,to_markdown
 from rag.services.rag import retrieve_docs
 
-# 從環境變數中取得 API key
-API_KEY = os.getenv("GOOGLE_API_KEY")
-if not API_KEY:
-    raise ValueError("未找到 GOOGLE_API_KEY，請確認已設定在 .env 檔中。")
-# 初始化 Gemini
-client = genai.Client(api_key=API_KEY)
-model = "gemini-2.0-flash"
+class RotationalGeminiClient:
+    """
+    設計一個包裝過的 Client，用來自動輪替 API Keys。模仿官方 genai.Client 的呼叫結構： client.models.generate_content(...)
+    """
+    def __init__(self):
+        # 從 settings 取得所有的 Keys
+        self.api_keys = settings.GOOGLE_API_KEYS
+        # 初始化 models 屬性，讓外部可以用 client.models 呼叫
+        self.models = self._ModelsWrapper(self.api_keys)
+
+    class _ModelsWrapper:
+        def __init__(self, api_keys):
+            self.api_keys = api_keys
+        def generate_content(self, **kwargs):
+            """
+            這裡接收原本 generate_content 的所有參數 (model, config, contents...)
+            並在遇到 Rate Limit 時自動換 Key。
+            """
+            last_error = None           
+            # 遍歷所有 Key
+            for index, key in enumerate(self.api_keys):
+                try:
+                    # 使用當前的 Key 建立真正的 Client
+                    real_client = genai.Client(api_key=key)                    
+                    # 執行生成 (將參數透傳給真正的 Client)
+                    response = real_client.models.generate_content(**kwargs)                   
+                    # 成功則回傳
+                    return response
+                except Exception as e:
+                    error_msg = str(e)
+                    # 判斷是否為流量限制相關錯誤 (429, Quota, ResourceExhausted)
+                    if ("429" in error_msg or "ResourceExhausted" in error_msg or "403" in error_msg or "400" in error_msg or "API_KEY_INVALID" in error_msg):
+                        print(f"[警告] Key #{index+1} 失效或流量耗盡 (Error: {error_msg[:50]}...)，切換下一個 Key 重試...")
+                        last_error = e
+                        continue # 換下一個 Key
+                    else:
+                        # 如果是參數錯誤或其他問題，直接報錯，不要換 Key
+                        raise e           
+            # 如果跑完所有 Key 都失敗
+            raise RuntimeError("所有 API Key 的流量都已耗盡。") from last_error
+def get_rotational_client():
+    return RotationalGeminiClient()
+
+model = "gemini-2.5-flash"
 
 # 問題分類
 CLASSIFICATION_PROMPT = """
@@ -41,6 +81,7 @@ CLASSIFICATION_PROMPT = """
 {{"category": "clarification", "keywords": []}}
 """
 def classify_question(question: str) -> dict:
+    client = get_rotational_client()
     response = client.models.generate_content(
         model=model,
         contents=[
@@ -71,6 +112,7 @@ def display_materials(chapter_id, unit_id, engagement, role):
     unit = get_unit(chapter_id, unit_id)
     prompt = generate_materials(engagement, unit)
     gen_config = get_gen_config(engagement, role)
+    client = get_rotational_client()
     resp = client.models.generate_content(
         model=model,
         config=gen_config,
@@ -126,6 +168,7 @@ def answer_demand_question(question, engagement, unit_id, role):
 
 def respond_to_question(prompt, engagement, role):
     gen_config = get_gen_config(engagement, role)
+    client = get_rotational_client()
     resp = client.models.generate_content(
         model=model,
         config=gen_config,

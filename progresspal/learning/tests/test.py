@@ -4,9 +4,12 @@ import django
 import json
 
 # === Django 初始化 ===
-# 假設本檔案位於 learning/test.py，進入專案根目錄
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # progresspal/
+# 假設本檔案位於 learning/tests/test.py，進入專案根目錄
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(BASE_DIR)
+
+print(f"專案根目錄設為: {BASE_DIR}")
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'progresspal.settings')
 django.setup()
 
@@ -52,7 +55,7 @@ def test_answer_question():
             return
 
         # 模擬延伸問題暫存
-        extended_q_history = {(chapter_code, unit_code): ["什麼是陣列？", "陣列有哪些操作？"]}
+        extended_q_history = "陣列與鏈結串列有何不同"
 
         # 呼叫回答邏輯
         result = main.answer_question(
