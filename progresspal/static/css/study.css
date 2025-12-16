@@ -120,9 +120,6 @@
     
 /* 讓測驗卡片在區塊中垂直水平置中 */
 .quiz-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
     height: 100%;
     width: 100%;
     background-color: #f8f9fa; /* 淡淡的背景色讓卡片跳出來 */

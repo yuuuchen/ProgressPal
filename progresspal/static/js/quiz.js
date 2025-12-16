@@ -47,11 +47,11 @@ document.addEventListener("DOMContentLoaded", () => {
             if (questionsData.length > 0) {
                 loadQuestion();
             } else {
-                questionTextEl.innerText = "目前沒有題目。";
+                questionTextEl.innerText = "目前沒有題目";
             }
         } catch (error) {
             console.error("載入題目失敗:", error);
-            questionTextEl.innerText = "載入失敗，請重新整理頁面。";
+            questionTextEl.innerText = "載入失敗，請重新整理頁面";
         }
     }
 
@@ -73,8 +73,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const btn = document.createElement('div');
             btn.classList.add('option-btn');
 
+            // 將 Index (0,1,2) 轉成字母 (A,B,C) 
+            const currentLabel = String.fromCharCode(65 + index);
+
             // 如果之前選過這個，加上 selected 樣式
-            if (savedChoice === index) {
+            if (savedChoice === currentLabel) {
                 btn.classList.add('selected');
             }
 
@@ -91,8 +94,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function selectOption(qId, index) {
+        // 將 Index 轉成 ABCD 儲存
+        const label = String.fromCharCode(65 + index);
         // 記錄答案
-        userAnswersMap[qId] = index;
+        userAnswersMap[qId] = label;
 
         // 更新選項視覺 (單選)
         const buttons = optionsContainer.children;
@@ -182,7 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("交卷錯誤:", error);
             submitBtn.disabled = false;
             submitBtn.innerText = "送出答案";
-            alert("交卷發生錯誤，請稍後再試。");
+            alert("交卷發生錯誤，請稍後再試");
         }
     }
 
@@ -213,15 +218,17 @@ document.addEventListener("DOMContentLoaded", () => {
             // 迴圈渲染選項，並標示顏色
             item.options.forEach((opt, optIdx) => {
                 let classList = 'option-review-btn'; // 基本樣式
+
+                const currentLabel = String.fromCharCode(65 + optIdx);
                 
                 // 邏輯：
                 // 如果這個選項是「正確答案」 -> 綠色 (correct)
                 // 如果這個選項是「使用者選的」但「選錯了」 -> 紅色 (wrong)
                 // 如果是使用者選的且選對了 -> 綠色 
                 
-                if (optIdx === item.answer) {
+                if (currentLabel === item.answer) {
                     classList += ' correct'; // 綠色樣式
-                } else if (optIdx === item.user_answer) {
+                } else if (currentLabel === item.user_answer) {
                     classList += ' wrong';   // 紅色樣式
                 }
 

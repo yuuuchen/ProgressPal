@@ -21,6 +21,9 @@
                             {{ chapter.chapter_number }}-{{u.unit_number}} {{u.title |truncatechars:7}}
                         </a>
                         {% endfor %}
+                        <a href="{% url 'quiz' chapter.chapter_number %} " class="list-group-item list-group-item-action">
+                            {{ chapter.chapter_number }}-{{ chapter.get_units|length|add:"1" }} 第{{ chapter.chapter_number }}章測驗
+                        </a>
                     </div>
                 </div>
             </div>
