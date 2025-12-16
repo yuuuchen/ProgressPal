@@ -8,7 +8,7 @@ from django.db import transaction
 from emotion.services.utils import compute_engagement
 from .services import main,utils
 from .forms import StudyForm
-from accounts.models import QuestionLog, LearningRecord, QuizResult, QuizResultQuestion
+from accounts.models import QuestionLog, LearningRecord
 from .models import Chapter, Unit, QuizQuestion
 import json
 
@@ -207,68 +207,15 @@ def chapter_quiz_api(request, chapter_code):
 @login_required(login_url='login')
 def check_answers(request, chapter_code):
     try:
+        # 解析 Request
         body_data = json.loads(request.body)
         user_answers_list = body_data.get('answers', [])        
-        if not user_answers_list:
-             return JsonResponse({'score': 0, 'results': []})
-        # 取得所有題目 ID
-        question_ids = [item.get('question_id') for item in user_answers_list]
-        questions = QuizQuestion.objects.filter(id__in=question_ids)
-        question_map = {q.id: q for q in questions}
-        results = []
-        score = 0
-        details_to_create = []
-        with transaction.atomic():        
-            for item in user_answers_list:
-                q_id = item.get('question_id')
-                user_selected = item.get('selected_index')
-                question_obj = question_map.get(q_id)
-                if not question_obj:
-                    continue               
-                is_correct = (user_selected == question_obj.answer)
-                if is_correct:
-                    score += 1
-                # 準備回傳前端的 JSON
-                results.append({
-                    "question_id": question_obj.id,
-                    "question": question_obj.question,
-                    "options": {
-                        "A": question_obj.option_a,
-                        "B": question_obj.option_b,
-                        "C": question_obj.option_c,
-                        "D": question_obj.option_d,
-                    },
-                    "user_answer": user_selected,
-                    "correct_answer": question_obj.answer,
-                    "answer_explanation": question_obj.explanation,
-                    "is_correct": is_correct,
-                })
-                # 暫存明細資料
-                details_to_create.append({
-                    "question": question_obj,
-                    "user_answer": user_selected,
-                    "is_correct": is_correct
-                })
-            # --- 寫入資料庫 ---            
-            # 1. 建立問題紀錄
-            quiz_result = QuizResult.objects.create(
-            user=request.user,
-            chapter_code=chapter_code, # 使用 CharField
-            score=score,
-            )
-            # 2. 建立每一題的作答紀錄（明細）
-            QuizResultQuestion.objects.bulk_create([
-                QuizResultQuestion(
-                    quiz_result=quiz_result,
-                    quiz_question=d['question'],
-                    user_answer=d['user_answer'],
-                    is_correct=d['is_correct'],
-                )
-                for d in details_to_create
-            ])
+        score, results = main.process_quiz_submission(request.user, chapter_code, user_answers_list)       
+        # 回傳 Response
         return JsonResponse({
             "score": score,
             "results": results
         })
     except Exception as e:
+        # 錯誤處理
         return JsonResponse({'error': str(e)}, status=500)

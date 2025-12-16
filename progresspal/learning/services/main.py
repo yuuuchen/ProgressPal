@@ -9,6 +9,7 @@ from google import genai
 from google.genai import types
 from google.api_core import exceptions
 
+from django.db import transaction
 from django.conf import settings
 from learning.services.prompt import (
     generate_prompt,
@@ -17,6 +18,7 @@ from learning.services.prompt import (
     set_system_prompt
 )
 from learning.models import QuizQuestion
+from accounts.models import QuizResult, QuizResultQuestion
 from learning.services.content import get_unit, get_chapter
 from learning.services.utils import clean_text_tutoring, clean_text_qa
 from rag.services.rag import retrieve_docs
@@ -203,6 +205,70 @@ def get_exam_questions(chapter):
     # 打亂
     random.shuffle(selected)
     return selected
+
+def process_quiz_submission(user, chapter_code, user_answers_list):
+    """
+    處理測驗提交：計算分數、生成詳細結果並寫入資料庫。回傳: (score, results) tuple
+    """
+    if not user_answers_list:
+        return 0, []
+    # 1. 取得所有題目資料
+    question_ids = [item.get('question_id') for item in user_answers_list]
+    questions = QuizQuestion.objects.filter(id__in=question_ids)
+    question_map = {q.id: q for q in questions}
+    results = []
+    score = 0
+    details_to_create = []
+    # 2. 核心邏輯：比對答案與計算分數
+    for item in user_answers_list:
+        q_id = item.get('question_id')
+        user_selected = item.get('selected_index')        
+        question_obj = question_map.get(q_id)
+        if not question_obj:
+            continue            
+        is_correct = (user_selected == question_obj.answer)       
+        if is_correct:
+            score += 1
+        # 準備回傳給前端的資料結構
+        results.append({
+            "question_id": question_obj.id,
+            "question": question_obj.question,
+            "options": {
+                "A": question_obj.option_a,
+                "B": question_obj.option_b,
+                "C": question_obj.option_c,
+                "D": question_obj.option_d,
+            },
+            "user_answer": user_selected,
+            "correct_answer": question_obj.answer,
+            "answer_explanation": question_obj.explanation,
+            "is_correct": is_correct,
+        })
+        # 準備寫入資料庫的明細物件
+        details_to_create.append({
+            "question": question_obj,
+            "user_answer": user_selected,
+            "is_correct": is_correct
+        })
+    # 3. 資料庫寫入 (使用 transaction 確保資料一致性)
+    with transaction.atomic():
+        # 建立測驗紀錄
+        quiz_result = QuizResult.objects.create(
+            user=user,
+            chapter_code=chapter_code,
+            score=score,
+        )
+        # 建立測驗明細紀錄
+        QuizResultQuestion.objects.bulk_create([
+            QuizResultQuestion(
+                quiz_result=quiz_result,
+                quiz_question=d['question'],
+                user_answer=d['user_answer'],
+                is_correct=d['is_correct'],
+            )
+            for d in details_to_create
+        ])
+    return score, results
 
 
 
