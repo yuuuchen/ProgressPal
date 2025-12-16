@@ -195,8 +195,8 @@ def chapter_quiz_api(request, chapter_code):
     serialized = [
         {
             "question_id": q.id,
-            "question": q.question,
-            "options": [q.option_a, q.option_b, q.option_c, q.option_d],
+            "question": utils.to_markdown(q.question),
+            "options": [utils.to_markdown(q.option_a),utils.to_markdown(q.option_b), utils.to_markdown(q.option_c), utils.to_markdown(q.option_d)],
         }
         for q in quiz_questions
     ]

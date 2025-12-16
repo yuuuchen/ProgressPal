@@ -22,6 +22,7 @@ from accounts.models import QuizResult, QuizResultQuestion
 from learning.services.content import get_unit, get_chapter
 from learning.services.utils import clean_text_tutoring, clean_text_qa
 from rag.services.rag import retrieve_docs
+from . import utils
 
 class RotationalGeminiClient:
     """
@@ -233,15 +234,15 @@ def process_quiz_submission(user, chapter_code, user_answers_list):
         results.append({
             "question_id": question_obj.id,
             "question": question_obj.question,
-            "options": {
-                "A": question_obj.option_a,
-                "B": question_obj.option_b,
-                "C": question_obj.option_c,
-                "D": question_obj.option_d,
-            },
+            "options": [
+                utils.to_markdown(question_obj.option_a),
+                utils.to_markdown(question_obj.option_b),
+                utils.to_markdown(question_obj.option_c),
+                utils.to_markdown(question_obj.option_d),
+            ],
             "user_answer": user_selected,
-            "correct_answer": question_obj.answer,
-            "answer_explanation": question_obj.explanation,
+            "answer": question_obj.answer,
+            "explanation": utils.to_markdown(question_obj.explanation),
             "is_correct": is_correct,
         })
         # 準備寫入資料庫的明細物件
@@ -262,8 +263,8 @@ def process_quiz_submission(user, chapter_code, user_answers_list):
         QuizResultQuestion.objects.bulk_create([
             QuizResultQuestion(
                 quiz_result=quiz_result,
-                quiz_question=d['question'],
-                user_answer=d['user_answer'],
+                question=d['question'],
+                selected_answer=d['user_answer'],
                 is_correct=d['is_correct'],
             )
             for d in details_to_create
