@@ -29,7 +29,7 @@ class QuestionLogAdmin(admin.ModelAdmin):
 # 測驗結果管理
 @admin.register(QuizResult)
 class QuizResultAdmin(admin.ModelAdmin):
-    list_display = ('user', 'chapter_code', 'unit_code', 'score', 'created_at')
-    list_filter = ('chapter_code', 'unit_code')
+    list_display = ('user', 'chapter_code', 'score', 'created_at')
+    list_filter = ('chapter_code',)
     search_fields = ('user__username',)
     readonly_fields = ('created_at',)
