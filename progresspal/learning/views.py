@@ -194,7 +194,7 @@ def chapter_quiz_api(request, chapter_code):
     quiz_questions = main.get_exam_questions(chapter)
     serialized = [
         {
-            "id": q.id,
+            "question_id": q.id,
             "question": q.question,
             "options": [q.option_a, q.option_b, q.option_c, q.option_d],
         }
@@ -206,7 +206,6 @@ def chapter_quiz_api(request, chapter_code):
 @csrf_exempt
 @login_required(login_url='login')
 def check_answers(request, chapter_code):
-    chapter = Chapter.objects.get(chapter_number=chapter_code)
     try:
         body_data = json.loads(request.body)
         user_answers_list = body_data.get('answers', [])        
@@ -254,7 +253,7 @@ def check_answers(request, chapter_code):
             # 1. 建立問題紀錄
             quiz_result = QuizResult.objects.create(
             user=request.user,
-            chapter_code=chapter, # 使用 CharField
+            chapter_code=chapter_code, # 使用 CharField
             score=score,
             )
             # 2. 建立每一題的作答紀錄（明細）

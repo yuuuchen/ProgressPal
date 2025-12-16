@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // 獲取所有題目
     async function initQuiz() {
         try {
-            const response = await fetch('api');
+            const response = await fetch('api/');
             if (!response.ok) throw new Error('Network response was not ok');
             
             questionsData = await response.json();
