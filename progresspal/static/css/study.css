@@ -171,12 +171,23 @@
     background-color: white;
 }
 
+.option-btn .opt-text p {
+    margin: 0; 
+    padding: 0;
+}
+
+.option-btn .opt-text {
+    flex: 1; /* 佔滿剩餘空間 */
+    display: flex;
+    align-items: center; /* 垂直置中 */
+}
+
 .option-btn:hover {
     background-color: #f8f9fa;
     border-color: #dee2e6;
 }
 
-/* 被選中的樣式 (JS控制) */
+/* 被選中的樣式  */
 .option-btn.selected {
     border-color: #212529; /* Dark border */
     background-color: #e9ecef;

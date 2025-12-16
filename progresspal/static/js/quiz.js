@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // 更新介面文字
         currentQEl.innerText = currentQuestionIndex + 1;
-        questionTextEl.innerText = currentData.question;
+        questionTextEl.innerHTML = currentData.question;
         optionsContainer.innerHTML = ''; // 清空選項
 
         // 檢查這一題是否已經答過
@@ -73,7 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const btn = document.createElement('div');
             btn.classList.add('option-btn');
 
-            // 將 Index (0,1,2) 轉成字母 (A,B,C) 
+            // 將 Index (0,1,2,3) 轉成字母 (A,B,C,D) 
             const currentLabel = String.fromCharCode(65 + index);
 
             // 如果之前選過這個，加上 selected 樣式
@@ -82,7 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // HTML 結構：圈圈 + 文字
-            btn.innerHTML = `<div class="circle"></div><span>${optionText}</span>`;
+            btn.innerHTML = `<div class="circle"></div><div class="opt-text">${optionText}</div>`;
             
             // 綁定點擊事件
             btn.onclick = () => selectOption(qId, index);
@@ -114,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // 判斷是否為第一題
         const isFirstQuestion = currentQuestionIndex === 0;
 
-        // --- 控制「上一題」按鈕 ---
+        // 控制「上一題」按鈕 
         if (isFirstQuestion) {
             prevBtn.classList.add('hidden'); // 第一題不能按上一題
         } else {
@@ -156,7 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             // 整理傳送資料格式
-            // { "answers": [ { "question_id": 101, "selected_index": 0 }, ... ] }
+            // { "answers": [ { "question_id": 101, "selected_index": 'A' }, ... ] }
             const payload = {
                 answers: Object.keys(userAnswersMap).map(qId => ({
                     question_id: parseInt(qId),
@@ -165,7 +165,7 @@ document.addEventListener("DOMContentLoaded", () => {
             };
 
             // 發送 POST 請求
-            const response = await fetch('api', {
+            const response = await fetch('check/api/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -198,7 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
         resultCard.classList.remove('hidden');
 
         // 顯示總成績
-        finalScoreEl.innerText = `總分：${data.score} / 10`; // 假設後端回傳的是分數或 "答對題數"
+        finalScoreEl.innerText = `${data.score} / 10`; 
 
         // 渲染每一題的詳解列表
         reviewContainer.innerHTML = ''; // 清空
@@ -238,7 +238,7 @@ document.addEventListener("DOMContentLoaded", () => {
             htmlContent += `
                 </div>
                 <div class="review-explanation">
-                    <strong>詳解：</strong>${item.explaination}
+                    <strong>詳解：</strong>${item.explanation}
                 </div>
                 <hr>
             `;

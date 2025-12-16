@@ -92,12 +92,6 @@ class QuizResult(models.Model):
 
     chapter_code = models.CharField(max_length=50, blank=True, null=True)
     score = models.IntegerField()  # 0~10 題得分
-
-    total_questions = models.PositiveIntegerField(
-        verbose_name="題目總數",
-        default=0
-    )
-
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
