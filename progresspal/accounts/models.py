@@ -91,8 +91,6 @@ class QuizResult(models.Model):
     )
 
     chapter_code = models.CharField(max_length=50, blank=True, null=True)
-    unit_code = models.CharField(max_length=50, blank=True, null=True)
-
     score = models.IntegerField()  # 0~10 題得分
 
     total_questions = models.PositiveIntegerField(
@@ -130,11 +128,6 @@ class QuizResultQuestion(models.Model):
     )
 
     is_correct = models.BooleanField(verbose_name="是否正確")
-
-    answered_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="作答時間"
-    )
 
     def __str__(self):
         return f"{self.quiz_result.user.username} - Q{self.question.id} - {self.selected_answer}"

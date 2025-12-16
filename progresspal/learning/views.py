@@ -255,7 +255,6 @@ def check_answers(request, chapter_code):
             quiz_result = QuizResult.objects.create(
             user=request.user,
             chapter_code=chapter, # 使用 CharField
-            unit_code=None,
             score=score,
             )
             # 2. 建立每一題的作答紀錄（明細）
