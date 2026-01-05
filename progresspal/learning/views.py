@@ -45,8 +45,8 @@ def generate_materials_view(request, chapter_code, unit_code):
     user = request.user
     role = user.role
 
-    # Engagement（目前寫死）
-    emotions = ["喜悅", "投入", "無聊", "挫折", "投入", "投入"]
+    # Engagement
+    emotions = user.recent_emotion_history
     engagement = compute_engagement(emotions)
 
     # 呼叫教材生成
@@ -108,8 +108,8 @@ def answer_question_view(request, chapter_code, unit_code):
     user = request.user
     role = user.role
 
-    # Engagement（目前寫死）
-    emotions = ["喜悅", "投入", "無聊", "挫折", "投入", "投入"]
+    # Engagement
+    emotions = user.recent_emotion_history
     engagement = compute_engagement(emotions)
 
     # 讀取 session 延伸提問
