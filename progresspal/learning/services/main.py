@@ -5,9 +5,7 @@
 import os, re, textwrap, time, json,random
 from dotenv import load_dotenv
 
-from google import genai
-from google.genai import types
-from google.api_core import exceptions
+from groq import Groq
 
 from django.db import transaction
 from django.conf import settings
@@ -24,50 +22,42 @@ from learning.services.utils import clean_text_tutoring, clean_text_qa
 from rag.services.rag import retrieve_docs
 from . import utils
 
-class RotationalGeminiClient:
-    """
-    設計一個包裝過的 Client，用來自動輪替 API Keys。模仿官方 genai.Client 的呼叫結構： client.models.generate_content(...)
-    """
+class RotationalGroqClient:
+    """自動輪替 Groq API Keys 的 Client"""
     def __init__(self):
-        # 從 settings 取得所有的 Keys
-        self.api_keys = settings.GOOGLE_API_KEYS
-        # 初始化 models 屬性，讓外部可以用 client.models 呼叫
-        self.models = self._ModelsWrapper(self.api_keys)
+        self.api_keys = settings.GROQ_API_KEYS
 
-    class _ModelsWrapper:
-        def __init__(self, api_keys):
-            self.api_keys = api_keys
-        def generate_content(self, **kwargs):
-            """
-            這裡接收原本 generate_content 的所有參數 (model, config, contents...)
-            並在遇到 Rate Limit 時自動換 Key。
-            """
-            last_error = None           
-            # 遍歷所有 Key
-            for index, key in enumerate(self.api_keys):
-                try:
-                    # 使用當前的 Key 建立真正的 Client
-                    real_client = genai.Client(api_key=key)                    
-                    # 執行生成 (將參數透傳給真正的 Client)
-                    response = real_client.models.generate_content(**kwargs)                   
-                    # 成功則回傳
-                    return response
-                except Exception as e:
-                    error_msg = str(e)
-                    # 判斷是否為流量限制相關錯誤 (429, Quota, ResourceExhausted)
-                    if ("429" in error_msg or "ResourceExhausted" in error_msg or "403" in error_msg or "400" in error_msg or "API_KEY_INVALID" in error_msg):
-                        print(f"[警告] Key #{index+1} 失效或流量耗盡 (Error: {error_msg[:50]}...)，切換下一個 Key 重試...")
-                        last_error = e
-                        continue # 換下一個 Key
-                    else:
-                        # 如果是參數錯誤或其他問題，直接報錯，不要換 Key
-                        raise e           
-            # 如果跑完所有 Key 都失敗
-            raise RuntimeError("所有 API Key 的流量都已耗盡。") from last_error
+    def generate_content(self, model, messages, temperature=0.3):
+        """
+        模擬 Groq 的 chat.completions.create 並加入 Key 輪替邏輯
+        """
+        last_error = None           
+        for index, key in enumerate(self.api_keys):
+            try:
+                real_client = Groq(api_key=key)                    
+                response = real_client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    temperature=temperature,
+                )                   
+                # Groq 的回傳內容在 response.choices[0].message.content
+                return response.choices[0].message.content
+            except Exception as e:
+                error_msg = str(e)
+                # 針對 Groq 的 Rate Limit (429) 或授權問題進行切換
+                if "429" in error_msg or "rate_limit" in error_msg or "401" in error_msg:
+                    print(f"[警告] Groq Key #{index+1} 失效或流量耗盡，切換下一個 Key...")
+                    last_error = e
+                    continue 
+                else:
+                    raise e           
+        raise RuntimeError("所有 Groq API Key 的流量都已耗盡。") from last_error
+
 def get_rotational_client():
-    return RotationalGeminiClient()
+    return RotationalGroqClient()
 
-model = "gemini-2.5-flash"
+# 設定為指定的 Llama 3.3 模型
+model = "llama-3.3-70b-versatile"
 
 # 問題分類
 CLASSIFICATION_PROMPT = """
@@ -89,43 +79,35 @@ CLASSIFICATION_PROMPT = """
 """
 def classify_question(question: str) -> dict:
     client = get_rotational_client()
-    response = client.models.generate_content(
+    messages = [
+        {"role": "system", "content": "你是一位智慧助教，專精於資料結構教學。"},
+        {"role": "user", "content": CLASSIFICATION_PROMPT + "\n\n學生提問：" + question}
+    ]    
+    response_text = client.generate_content(
         model=model,
-        contents=[
-            types.Content(
-                role="user",
-                parts=[types.Part(text=CLASSIFICATION_PROMPT + "\n\n學生提問：" + question)]
-            )
-        ]
-    )
-    text = response.text.strip()
+        messages=messages,
+        temperature=0.1 
+    )    
+    text = response_text.strip()
     match = re.search(r"\{.*\}", text, re.DOTALL)
-
     if not match:
         raise ValueError(f"模型輸出不是 JSON 格式: {text}")
-
-    json_str = match.group(0)
-    return json.loads(json_str)
-
-# 參數與系統設定
-def get_gen_config(engagement,role):
-    """依照學生參與度設定 temperature"""
-    temperature = 0.3 if engagement != "low" else 0.5
-    SYSTEM_PROMPT = set_system_prompt(role)
-    return types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT, temperature=temperature)
+    return json.loads(match.group(0))
 
 # 教材顯示
 def display_materials(chapter_id, unit_id, engagement, role):
     unit = get_unit(chapter_id, unit_id)
-    prompt = generate_materials(engagement, unit)
-    gen_config = get_gen_config(engagement, role)
+    prompt = generate_materials(engagement, unit)    
+    # 取得系統提示詞與溫度
+    system_instruction = set_system_prompt(role)
+    temp = 0.3 if engagement != "low" else 0.5    
     client = get_rotational_client()
-    resp = client.models.generate_content(
-        model=model,
-        config=gen_config,
-        contents=[{"role": "user", "parts": [{"text": prompt}]}]
-    )
-    result = clean_text_tutoring(resp.text)
+    messages = [
+        {"role": "system", "content": system_instruction},
+        {"role": "user", "content": prompt}
+    ]    
+    resp_text = client.generate_content(model=model, messages=messages, temperature=temp)
+    result = clean_text_tutoring(resp_text)    
     return {
         "teaching": result.get("teaching"),
         "example": result.get("example"),
@@ -174,19 +156,19 @@ def answer_demand_question(question, engagement, unit_id, role):
     return respond_to_question(prompt, engagement, role)
 
 def respond_to_question(prompt, engagement, role):
-    gen_config = get_gen_config(engagement, role)
+    system_instruction = set_system_prompt(role)
+    temp = 0.3 if engagement != "low" else 0.5    
     client = get_rotational_client()
-    resp = client.models.generate_content(
-        model=model,
-        config=gen_config,
-        contents=[{"role": "user", "parts": [{"text": prompt}]}]
-    )
-    result = clean_text_qa(resp.text)
+    messages = [
+        {"role": "system", "content": system_instruction},
+        {"role": "user", "content": prompt}
+    ]    
+    resp_text = client.generate_content(model=model, messages=messages, temperature=temp)
+    result = clean_text_qa(resp_text)    
     return {
         "answer": result.get("answer"),
         "extended_question": result.get("extended_question")
     }
-
 def get_exam_questions(chapter):
     """
     根據指定章節回傳隨機 10 題（簡單 4、中等 3、困難 3）。若題庫不足，會自動縮減。

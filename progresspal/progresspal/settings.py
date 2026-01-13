@@ -27,15 +27,16 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default')
 # Debug 模式
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-# 讀取所有 Key 到列表中
-GOOGLE_API_KEYS = []
-for i in range(1, 8):
-    key = os.getenv(f"GOOGLE_API_KEY{i}")
+# 讀取所有 Groq API Keys 到列表中
+GROQ_API_KEYS = []
+for i in range(1, 3):
+    # 修改環境變數名稱為 GROQ_API_KEY1, GROQ_API_KEY2...
+    key = os.getenv(f"GROQ_API_KEY{i}")
     if key:
-        GOOGLE_API_KEYS.append(key)
+        GROQ_API_KEYS.append(key)
 
-if not GOOGLE_API_KEYS:
-    raise ValueError("未設定任何 GOOGLE_API_KEY")
+if not GROQ_API_KEYS:
+    raise ValueError("未設定任何 GROQ_API_KEY")
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
