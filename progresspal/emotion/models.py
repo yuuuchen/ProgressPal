@@ -14,8 +14,7 @@ class EmotionRecord(models.Model):
     ("engaged", "投入"),
     ("surprised", "驚訝"),
     ("happy", "喜悅"),
-]
-
+    ]
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

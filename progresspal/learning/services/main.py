@@ -34,16 +34,17 @@ class RotationalGroqClient:
         last_error = None           
         for index, key in enumerate(self.api_keys):
             try:
-                real_client = Groq(api_key=key)                    
+                clean_key = str(key).strip().replace('"', '').replace("'", "")
+                real_client = Groq(api_key=clean_key)                    
                 response = real_client.chat.completions.create(
                     model=model,
                     messages=messages,
                     temperature=temperature,
                 )                   
-                # Groq 的回傳內容在 response.choices[0].message.content
                 return response.choices[0].message.content
             except Exception as e:
                 error_msg = str(e)
+                print(f"[除錯] Groq Key #{index+1} 發生錯誤: {error_msg}")
                 # 針對 Groq 的 Rate Limit (429) 或授權問題進行切換
                 if "429" in error_msg or "rate_limit" in error_msg or "401" in error_msg:
                     print(f"[警告] Groq Key #{index+1} 失效或流量耗盡，切換下一個 Key...")
@@ -69,13 +70,10 @@ CLASSIFICATION_PROMPT = """
 - demand(學生需求相關)：例如「可以幫我整理這章節的考試重點嗎？」「能否推薦這單元的練習題？」「請講解更知識面」「能再用更簡單的比喻嗎」
 - irrelevant(不相關)：例如「你喜歡吃什麼？」「今天幾點下課？」
 
-若類別為 relevant，請同時抽取提問中的**關鍵字**，以利教材檢索。關鍵字請用單詞或短語，避免長句。
-若類別不是 relevant，請輸出空陣列。
-
 問題：{question}
 
 輸出請用 JSON 格式，例如:
-{{"category": "clarification", "keywords": []}}
+{ "category": "relevant" }
 """
 def classify_question(question: str) -> dict:
     client = get_rotational_client()
@@ -133,7 +131,7 @@ def answer_question(mode, question, engagement, role, chapter_id=None, unit_id=N
         return {"error": "Invalid mode"}
 
 def answer_extended_question(question, engagement, chapter_id, unit_id, extended_question, role):
-    docs = get_chapter(chapter_id)
+    docs = get_unit(chapter_id, unit_id)
     prompt = generate_prompt_extended(
         engagement, question, docs,extended_question,
     )
@@ -143,15 +141,15 @@ def answer_relevant_question(question, engagement, role):
     analysis = classify_question(question)
     if analysis["category"] != "relevant":
         return {"error": "這個問題與教材無關"}
-    docs = retrieve_docs(analysis, top_k=5)
+    docs = retrieve_docs(question, top_k=3)
     prompt = generate_prompt(engagement, question, docs)
     return respond_to_question(prompt, engagement, role)
 
-def answer_demand_question(question, engagement, unit_id, role):
+def answer_demand_question(question, engagement, chapter_id, unit_id, role):
     analysis = classify_question(question)
     if analysis["category"] != "demand":
         return {"error": "這不是學習需求類問題"}
-    docs = get_unit(unit_id)
+    docs = get_unit(chapter_id,unit_id)
     prompt = generate_prompt(engagement, question, docs)
     return respond_to_question(prompt, engagement, role)
 
@@ -169,6 +167,7 @@ def respond_to_question(prompt, engagement, role):
         "answer": result.get("answer"),
         "extended_question": result.get("extended_question")
     }
+
 def get_exam_questions(chapter):
     """
     根據指定章節回傳隨機 10 題（簡單 4、中等 3、困難 3）。若題庫不足，會自動縮減。

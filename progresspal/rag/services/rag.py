@@ -169,6 +169,6 @@ def retrieve_docs(query, top_k=3, weight_bm25=0.7, weight_vector=0.3):
     final_results.sort(key=lambda x: x[1], reverse=True)
 
     # 取出 Document 物件
-    results = [doc for doc, score in final_results[:k]]
+    results = [doc for doc, score in final_results[:top_k]]
 
     return results if results else None #回傳結果list，[]為空則回傳None
