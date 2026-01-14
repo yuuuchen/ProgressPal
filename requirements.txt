@@ -2,15 +2,16 @@ Django==3.2.25
 
 python-dotenv==1.1.1
 markdown==3.9
-google-genai
-google-api-core
+
+groq>=0.13.0
 
 langchain==0.2.14
 langchain-core==0.2.42
 langchain-community==0.2.11
 langchain-chroma==0.1.4
+langchain-huggingface==0.0.3
 
-sentence-transformers==5.1.1
+sentence-transformers==3.0.1
 rank_bm25==0.2.2
 jieba==0.42.1
 numpy==1.26.4
@@ -26,5 +27,9 @@ torchaudio==2.1.0
 # Pillow 用於影像處理
 Pillow==10.1.0
 
+mediapipe==0.10.11
+protobuf==3.20.3
+
 # 影像辨識
 keras==3.12.0
+tf-keras
