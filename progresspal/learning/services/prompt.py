@@ -159,7 +159,7 @@ def map_engagement_to_profile(engagement: str, mode: str = 'qa') -> dict:
     strategies = {
         # 教學模式 (Tutoring)
         "tutoring": {
-            "high": "提供一個小型的實作任務，或是嘗試讓學生解決不同的題型變化",
+            "high": "提出不需實作的高層次理解檢核問題，請學生思考概念在不同條件下的變化或其設計理由，避免要求實際操作",
             "low": "提出認知鷹架式的理解確認問題，協助學生回顧教材中的基礎概念，例如詢問是否理解關鍵名詞、流程中每一步的作用，或請學生選出目前最容易混淆的部分，避免要求推論、比較或延伸應用"
         },
         # 問答/回應模式 (QA & Extended Answer)
