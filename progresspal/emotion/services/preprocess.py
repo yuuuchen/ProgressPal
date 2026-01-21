@@ -100,17 +100,6 @@ def preprocess_frame(uploaded_file):
             logger.error("cv2.imdecode returned None. Image format might be invalid.")
             raise InvalidImageError("無法解碼影像")
 
-        # # [Step E] 檢查解碼後的亮度
-        # avg_brightness = np.mean(frame_bgr)
-        # logger.info(f"Decoded Image Brightness: {avg_brightness:.2f}")
-        
-        # # 存下解碼後的圖
-        # # 如果 raw 是好的，但這張是黑的，代表 OpenCV 解碼有問題
-        # decoded_filename = f"{debug_dir}/step2_decoded_{timestamp}.jpg"
-        # cv2.imwrite(decoded_filename, frame_bgr)
-
-        # if avg_brightness < 5:
-        #     logger.warning("警告：解碼後的影像極暗 (全黑)")
 
     except Exception as e:
         logger.error(f"Image read error: {e}")
