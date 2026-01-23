@@ -14,16 +14,15 @@ PROMPT_TEMPLATES = {
 - 僅能輸出以下兩個標題
 - 每個標題都必須出現
   - 「### 回答問題」：針對學生問題進行解答
-  - 「### 引導提問」：{extended_question}共三項。
+  - 「### 引導提問」：{extended_question}，一題即可。
 - 根據學生參與度調整語氣與解釋深度
 【輸出格式（必須完全一致）】
 ### 回答問題
 （此區僅回答問題）
 
 ### 引導提問
-1.
-2.
-3.
+- {extended_question}
+- 一題即可。
 
 【回答風格設定】
 回應風格: {style}
@@ -46,7 +45,8 @@ PROMPT_TEMPLATES = {
 ### 總結
 - 強調該單元學習重點
 ### 引導提問
-- {extended_question}。共三項請列出。
+- {extended_question}
+- 一題即可。
 
 【回答風格設定】
 回應風格: {style}
@@ -62,7 +62,7 @@ PROMPT_TEMPLATES = {
 - 僅能輸出以下兩個標題
 - 每個標題都必須出現
   - 「### 回答問題」：針對學生問題進行解答
-  - 「### 引導提問」：{extended_question}共三項。
+  - 「### 引導提問」：{extended_question}，一題即可。
 - 根據學生參與度調整語氣與解釋深度
 【輸出格式（必須完全一致）】
 - 輸出需依照以下結構：
@@ -70,9 +70,9 @@ PROMPT_TEMPLATES = {
 （回饋與補充）
 
 ### 引導提問
-1.
-2.
-3.
+- {extended_question}
+- 一題即可。
+
 【回答風格設定】
 回應風格: {style}
 學生的參與度: {engagement}
