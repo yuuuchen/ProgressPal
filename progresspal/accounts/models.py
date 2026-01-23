@@ -63,17 +63,24 @@ class LearningRecord(models.Model):
         return None
 
     def __str__(self):
-        return f"{self.user.username} - {self.unit_name}"
+        return f"{self.user.username} - {self.unit_code}"
     
 # 提問紀錄
-class QuestionLog(models.Model):
+class QuestionLog(models.Model): 
     """
     紀錄學生的每次提問與系統回覆
     """
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='question_logs')
+    TYPE_CHOICES = [
+    ('question', '學生提問'),
+    ('answer_extend_question', '學生回應引導提問'),
+]
+
+    type = models.CharField(max_length=30, choices=TYPE_CHOICES, default='question')
     chapter_code = models.CharField(max_length=50, blank=True, null=True)
     unit_code = models.CharField(max_length=50, blank=True, null=True)
-    question = models.TextField() # 學生提問
+    stu_input = models.TextField() # 學生輸入
+    system_question = models.TextField(blank=True, null=True) # 系統引導提問(當學生回應引導提問時會有內容)
     answer = models.TextField(blank=True, null=True) # 系統回覆
     engagement = models.CharField(max_length=20, blank=True, null=True)  # 參與度，例如：high、low
     created_at = models.DateTimeField(auto_now_add=True)
@@ -97,8 +104,7 @@ class QuizResult(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.username} - {self.chapter_code}-{self.unit_code}: {self.score}分"
-    
+        return f"{self.user.username} - {self.chapter_code or 'N/A'}: {self.score}分"
 
 class QuizResultQuestion(models.Model):
     """

@@ -22,8 +22,8 @@ class LearningRecordAdmin(admin.ModelAdmin):
 @admin.register(QuestionLog)
 class QuestionLogAdmin(admin.ModelAdmin):
     list_display = ('user', 'chapter_code', 'unit_code', 'engagement', 'created_at')
-    list_filter = ('engagement', 'chapter_code')
-    search_fields = ('user__username', 'question', 'answer')
+    list_filter = ('engagement', 'chapter_code','type')
+    search_fields = ('user', 'stu_input', 'answer', 'system_question')
     readonly_fields = ('created_at',)
 
 # 測驗結果管理
