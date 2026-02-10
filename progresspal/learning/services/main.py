@@ -17,8 +17,9 @@ from learning.services.prompt import (
 )
 from learning.models import QuizQuestion
 from accounts.models import QuizResult, QuizResultQuestion
-from learning.services.content import get_unit, get_chapter
+from learning.models import Chapter,Unit
 from learning.services.utils import clean_text_tutoring, clean_text_qa
+from learning.services.content import get_unit
 from rag.services.rag import retrieve_docs
 from . import utils
 
@@ -57,48 +58,14 @@ class RotationalGroqClient:
 def get_rotational_client():
     return RotationalGroqClient()
 
-# 設定為指定的 Llama 3.3 模型
 model = "llama-3.3-70b-versatile"
-
-# 問題分類
-CLASSIFICATION_PROMPT = """
-你是一位智慧助教，專精於資料結構教學。
-這是一個對話情境，你要根據上下文來判斷學生提問的類別。
-
-類別定義：
-- relevant(與教材相關)：例如「什麼是陣列？」「堆疊如何運作？」
-- demand(學生需求相關)：例如「可以幫我整理這章節的考試重點嗎？」「能否推薦這單元的練習題？」「請講解更知識面」「能再用更簡單的比喻嗎」
-- irrelevant(不相關)：例如「你喜歡吃什麼？」「今天幾點下課？」
-
-問題：{question}
-
-輸出請用 JSON 格式，例如:
-{ "category": "relevant" }
-"""
-def classify_question(question: str) -> dict:
-    client = get_rotational_client()
-    messages = [
-        {"role": "system", "content": "你是一位智慧助教，專精於資料結構教學。"},
-        {"role": "user", "content": CLASSIFICATION_PROMPT + "\n\n學生提問：" + question}
-    ]    
-    response_text = client.generate_content(
-        model=model,
-        messages=messages,
-        temperature=0.1 
-    )    
-    text = response_text.strip()
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if not match:
-        raise ValueError(f"模型輸出不是 JSON 格式: {text}")
-    return json.loads(match.group(0))
 
 # 教材顯示
 def display_materials(chapter_id, unit_id, engagement, role):
     unit = get_unit(chapter_id, unit_id)
     prompt = generate_materials(engagement, unit)    
-    # 取得系統提示詞與溫度
     system_instruction = set_system_prompt(role)
-    temp = 0.3 if engagement != "low" else 0.5    
+    temp = 0.5 if engagement != "low" else 0.7    
     client = get_rotational_client()
     messages = [
         {"role": "system", "content": system_instruction},
@@ -113,49 +80,85 @@ def display_materials(chapter_id, unit_id, engagement, role):
         "extended_questions": result.get("extended_question")
     }
 
-# 問答回應
-def answer_question(mode, question, engagement, role, chapter_id=None, unit_id=None, extended_question=None):
+# HyDE 擴展 Prompt
+HYDE_EXPANSION_PROMPT = """
+你是一位專業的資料結構課程助教。你的任務是將學生模糊或簡短的提問，根據目前的「教學上下文」轉化為一個更完整、具備專業技術背景的「正式查詢語句」。
+
+【任務規範】
+1. **補全代名詞**：將學生提問中的「這個」、「那種」、「它」替換為當前單元的具體技術名稱。
+2. **情境錨定**：確保提問中包含章節與單元的名稱，使檢索系統能精準定位教材。
+3. **專業術語**：根據單元標題，在提問中加入 2-3 個相關的技術關鍵字。
+4. **保持原意**：不要改變學生想問的核心問題，也不要回答問題。
+
+【當前教學上下文】
+- 章節：{chapter_name}
+- 單元：{unit_name}
+
+【學生原始提問】
+{question}
+
+請直接輸出完善後的「正式查詢語句」，不需要任何開場白或解釋：
+"""
+
+def expand_query_with_hyde(question, chapter_id, unit_id):
+    """利用 HyDE 方法，結合教材上下文將提問轉換成更豐富的檢索詞"""
+    client = get_rotational_client()
+    
+    # 取得名稱以提供上下文
+    chapter = Chapter.objects.get(chapter_number=chapter_id)
+    unit = Unit.objects.get(chapter=chapter, unit_number=unit_id)
+    chapter_name = chapter.title
+    unit_name = unit.title
+
+    # Debug 用：確認傳入的名稱是否有意義
+    print(f"[Debug] HyDE Context: Chapter={chapter_name}, Unit={unit_name}")
+
+    messages = [
+        {"role": "system", "content": "你是一個查詢優化專家，擅長將模糊問題轉化為精準的技術檢索詞。"},
+        {"role": "user", "content": HYDE_EXPANSION_PROMPT.format(
+            chapter_name=chapter_name,
+            unit_name=unit_name,
+            question=question
+        )}
+    ]    
+    expanded_query = client.generate_content(model=model, messages=messages, temperature=0.3)
+    return expanded_query.strip()
+
+def answer_question(question, engagement, role, chapter_id, unit_id, is_extended=False, extended_question_text=None):
     """
-    mode:
-      1: 回應延伸問題
-      2: 直接提問(與教材相關)
-      3: 直接提問(學習需求相關)
+    1. 延伸提問：使用者點選系統生成的延伸問題。
+    2. 一般提問：使用者自行輸入問題，使用 HyDE + RAG。
     """
-    if mode == 1:
-        return answer_extended_question(question, engagement, chapter_id, unit_id, extended_question, role)
-    elif mode == 2:
-        return answer_relevant_question(question, engagement, role)
-    elif mode == 3:
-        return answer_demand_question(question, engagement, unit_id, role)
+    if is_extended:
+        # 使用者點選延伸問題，直接進入延伸處理邏輯
+        return answer_extended_question(question, engagement, chapter_id, unit_id, extended_question_text, role)
     else:
-        return {"error": "Invalid mode"}
+        # 一般提問流程：HyDE 強化 -> RAG 檢索 -> 生成回答
+        return answer_general_question(question, engagement, role, chapter_id, unit_id)
 
 def answer_extended_question(question, engagement, chapter_id, unit_id, extended_question, role):
+    """處理延伸問題的回答"""
     docs = get_unit(chapter_id, unit_id)
     prompt = generate_prompt_extended(
-        engagement, question, docs,extended_question,
+        engagement, question, docs, extended_question,
     )
     return respond_to_question(prompt, engagement, role)
 
-def answer_relevant_question(question, engagement, role):
-    analysis = classify_question(question)
-    if analysis["category"] != "relevant":
-        return {"error": "這個問題與教材無關"}
-    docs = retrieve_docs(question, top_k=3)
-    prompt = generate_prompt(engagement, question, docs)
-    return respond_to_question(prompt, engagement, role)
-
-def answer_demand_question(question, engagement, chapter_id, unit_id, role):
-    analysis = classify_question(question)
-    if analysis["category"] != "demand":
-        return {"error": "這不是學習需求類問題"}
-    docs = get_unit(chapter_id,unit_id)
-    prompt = generate_prompt(engagement, question, docs)
+def answer_general_question(question, engagement, role, chapter_id, unit_id):
+    """處理一般提問：HyDE + RAG"""
+    # 1. 使用 HyDE 方法完整化提問
+    hyde_query = expand_query_with_hyde(question, chapter_id, unit_id)
+    
+    # 2. 呼叫 retrieve_docs() 檢索教材
+    docs = retrieve_docs(hyde_query, top_k=3)
+    
+    # 3. 呼叫 generate_prompt()
+    prompt = generate_prompt(engagement, question, docs)    
     return respond_to_question(prompt, engagement, role)
 
 def respond_to_question(prompt, engagement, role):
     system_instruction = set_system_prompt(role)
-    temp = 0.3 if engagement != "low" else 0.5    
+    temp = 0.5 if engagement != "low" else 0.7   
     client = get_rotational_client()
     messages = [
         {"role": "system", "content": system_instruction},

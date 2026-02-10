@@ -49,23 +49,13 @@ def generate_materials_view(request, chapter_code, unit_code):
     emotions = user.recent_emotion_history
     engagement = compute_engagement(emotions)
 
+    current_emotion = emotions[-1] if emotions else "未知"
+
     # 呼叫教材生成
     result = main.display_materials(chapter_code, unit_code, engagement, role)
-
-    # 處理延伸提問
-    extended_questions = []
-    extended_text = result.get("extended_questions") 
-    if extended_text:
-        question_list = utils.split_extended_questions(extended_text)
-        extended_questions = question_list if question_list else [extended_text]
-        # 存進 session
-        request.session["extended_questions"] = extended_questions
-        request.session.modified = True
-
-    teaching = utils.to_markdown(result.get("teaching"))
-    example = utils.to_markdown(result.get("example"))
-    summary = utils.to_markdown(result.get("summary"))
-
+    extended_question = result.get("extended_questions", "")
+    request.session["current_extended_question"] = extended_question
+    request.session.modified = True
     '''
     # 建立學習記錄
     record = LearningRecord.objects.create(
@@ -81,10 +71,11 @@ def generate_materials_view(request, chapter_code, unit_code):
         "previous_unit": previous_unit,
         "next_unit": next_unit,
         "role": role,
-        "teaching": teaching,
-        "example": example,
-        "summary": summary,
-        "extended_questions": extended_questions,
+        "teaching": utils.to_markdown(result.get("teaching")),
+        "example": utils.to_markdown(result.get("example")),
+        "summary": utils.to_markdown(result.get("summary")),
+        "extended_question": extended_question, 
+        "current_emotion": current_emotion,
         "form": StudyForm(),
         #"record_id": record.id,   # 傳給前端用於關聯學習記錄
     }
@@ -104,7 +95,6 @@ def answer_question_view(request, chapter_code, unit_code):
     # 取得前端資料
     question_choice = data.get("question_choice", "direct")
     user_question = data.get("user_question", "")
-    selected_index = data.get("selected_question_index")
     user = request.user
     role = user.role
 
@@ -113,39 +103,26 @@ def answer_question_view(request, chapter_code, unit_code):
     engagement = compute_engagement(emotions)
 
     # 讀取 session 延伸提問
-    extended_questions = request.session.get("extended_questions", [])
-    extended_question = None
-
-    if selected_index is not None:
-        try:
-            extended_question = extended_questions[int(selected_index)]
-        except (IndexError, ValueError, TypeError):
-            return JsonResponse({"error": "Invalid extended question index"}, status=400)
-    
-    # mode 判斷
-    mode = 1 if question_choice == "extended" else 2
+    extended_q = request.session.get("current_extended_question", "")
+    # 判斷是否為延伸提問
+    is_extended = (question_choice == "extended")
 
     # 呼叫 AI 回答邏輯
     result = main.answer_question(
-        mode=mode,
         question=user_question,
         engagement=engagement,
         chapter_id=chapter_code,
         unit_id=unit_code,
         role=role,
-        extended_question = extended_question
+        is_extended=is_extended,
+        extended_question = extended_q,
     )
     answer = utils.to_markdown(result.get("answer", "請詢問與資料結構相關的問題。"))
     
     # 處理新的延伸提問
-    new_extended_text = result.get("extended_question")
-    if new_extended_text:
-        new_list = utils.split_extended_questions(new_extended_text)
-        new_list = new_list if new_list else [new_extended_text]
-
-        request.session["extended_questions"] = new_list
-        request.session.modified = True
-        extended_questions = new_list
+    new_extended_question = result.get("extended_question", "")
+    request.session["current_extended_question"] = new_extended_question
+    request.session.modified = True
     
     # 儲存問答記錄
     QuestionLog.objects.create(
@@ -160,7 +137,7 @@ def answer_question_view(request, chapter_code, unit_code):
     # 回傳 JSON
     return JsonResponse({
         "answer": answer,
-        "extended_questions": extended_questions
+        "extended_questions": new_extended_question
     })
 
 
