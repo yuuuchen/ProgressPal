@@ -1,4 +1,105 @@
-/*教材*/
+/* --- 課程列表 ---*/
+.sidebar {
+    width: 12.5%; 
+    height: 100%;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+    overflow-x: hidden;
+    white-space: nowrap;
+    background-color: #ffffff;
+}
+
+/* 預設收合狀態：只留下按鈕寬度 */
+.sidebar.collapsed {
+    width: 55px; 
+    border-right: none;
+}
+
+.sidebar-content {
+    width: 100%;         
+    padding-left: 15px;  
+    padding-right: 15px; 
+    box-sizing: border-box; 
+}
+
+/* 控制標題與內容的顯示/隱藏 */
+.sidebar-title, 
+.sidebar-content {
+    transition: opacity 0.2s;
+    opacity: 1;
+}
+
+/* 收合時隱藏文字與列表，只留按鈕 */
+.sidebar.collapsed .sidebar-title,
+.sidebar.collapsed .sidebar-content {
+    opacity: 0;
+    pointer-events: none; /* 防止點擊到隱藏的連結 */
+}
+
+/* 側邊欄 Header 始終置頂 */
+.sidebar-header {
+    height: 50px;
+    flex-shrink: 0;
+}
+
+/* 修復中間內容區塊的捲動 */
+#material-card .card-body {
+    overflow-y: auto;
+    height: 100%;
+}
+
+.sidebar .list-group-item.active {
+    background-color: #264773; 
+    border-color: #264773 ;
+    color: #ffffff ;           
+    font-weight: bold;               
+}
+
+/* 滑鼠移上去的顏色*/
+.sidebar .list-group-item-action:hover {
+    background-color: #e9ecef;
+    color: #000;
+}
+
+
+/*平分剩餘空間的容器 */
+.main-content-area {
+    flex-grow: 1; /* 佔滿 sidebar 以外的所有空間 */
+}
+
+.teaching-section, 
+.chat-section {
+    /* 核心公式：flex: 1 1 0; 表示平分空間且初始寬度為 0 */
+    flex: 1 1 0; 
+    width: 0;    /* 配合 flex-grow 防止內容撐開 */
+    min-width: 0; /* 防止內部程式碼或圖片撐大區塊 */
+    height: 100%;
+}
+
+
+/* --- 全螢幕 --- */
+/* 問答區權重變大 */
+.chat-section.fullscreen-active {
+    flex: 99 !important; /* 強制佔滿空間 */
+}
+
+/* 當進入全螢幕時，隱藏情緒偵測區 */
+.chat-section.fullscreen-active #emotion-display {
+    display: none ; /* [關鍵] 全螢幕時情緒區消失 */
+}
+
+/* 教材區隱藏：權重歸零 */
+.teaching-section.is-hidden {
+    flex: 0 !important;
+    width: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    opacity: 0;
+    pointer-events: none;
+}
+
+
+/*--- 教材 --- */
 /*教材淡入*/
 #material-card {
     opacity: 0;
@@ -14,6 +115,7 @@
     max-height: 100%;
     overflow: hidden;
     flex-direction: column;
+    display: flex;
 }
 
 /* 當卡片被加上 .visible class 時，讓它顯示 */
@@ -45,11 +147,26 @@
     white-space: nowrap; /* 讓表格內容盡量保持在同一行 */
 }
 
-/*情緒*/
+/*--- 情緒 --- */
+.emotion-float-card {
+    background-color: #ffffff;
+    padding: 15px 20px;
+    border-radius: 16px;      /* [新增] 增加明顯圓角 */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05); /* 加入輕微陰影提升層次 */
+    border: none !important;
+}
 
+/*--- 提問區 ---*/
+.chat-section {
+    padding: 20px !important;   
+    flex-direction: column;
+    gap: 20px;
+}
 
-/*提問區*/
 #chat-container.card {
+    border: 1px solid #F2F2F2;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(9, 56, 78, 0.15);
     display: flex;
     flex-direction: column;
     /* 高度由 style="height: 75vh;" 或 h-100 控制 */
@@ -58,7 +175,14 @@
     overflow: hidden;
 }
 
+#chat-container .card-header {
+    background-color: #264773 !important; /* 使用您側邊欄的選中標色 */
+    color: #ffffff !important;
+    padding: 15px 20px;
+}
+
 #chat-history {
+    background-color: #fcfcfc;
     flex-grow: 1; /* 佔據所有可用垂直空間 */
     overflow-y: auto; /* 內容超出時顯示垂直捲軸 */
     height: 0;
@@ -68,11 +192,9 @@
 
 /* 讓按鈕在按下時，變成實心灰色 */
 #chat-container .card-footer .btn-outline-secondary.active {
-    background-color: #6c757d; /* 變成實心灰色 */
+    background-color: #8FAFD9; /* 變成實心灰色 */
     color: white;             /* 文字變成白色 */
-    border-color: #6c757d;    /* 邊框也變灰色 */
-    /* (可選) 加上一點陰影，讓它更突出 */
-    box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.5); 
+    border-color: #fdfdfd;    /* 邊框也變灰色 */
 }
 
 /* 所有對話框的基礎樣式*/
@@ -91,7 +213,7 @@
 
 /* 使用者的訊息樣式 */
 .user-message {
-    background-color: #265294; /* 背景色 */
+    background-color: #183253; /* 背景色 */
     color: white;             /* 白色文字 */
     align-self: flex-end;     /* 在 Flex 容器中靠右對齊 */
     border-bottom-right-radius: 0.3rem; /* 右下角稍微變方一點 */
@@ -100,7 +222,7 @@
 
 /* 回應訊息樣式 */
 .assistant-message {
-    background-color: #cdd6e0; /* 背景色 */
+    background-color: #CEDEF2; /* 背景色 */
     color: #000000; /* 黑色文字 */
     align-self: flex-start; /* 在 Flex 容器中靠左對齊 */
     border-bottom-left-radius: 0.25rem; /* 左下角稍微變方一點 (4px)，增加視覺變化 */
@@ -109,11 +231,45 @@
 
 /* 錯誤訊息樣式 */
 .error-message {
-    background-color: #cdd6e0; /* 背景色 */
+    background-color: #CEDEF2; /* 背景色 */
     color: #524f4f;             /* 灰色文字*/
     align-self: flex-start; /* 靠左對齊 */
     border-bottom-left-radius: 0.3rem;
     margin-right: auto;
+}
+
+/* 聊天室底部區塊 */
+#chat-container .card-footer {
+    background-color: #264773 !important; /* 與標題色一致 */
+    border-top: 1px solid rgba(255, 255, 255, 0.1); /* 加入細微的亮邊分割 */
+    padding: 20px !important;
+}
+
+/* 調整底部按鈕顏色：讓它們在深藍底上更清晰 */
+#chat-container .card-footer .btn-outline-secondary {
+    color: #ffffff !important;           /* 文字改為白色 */
+    border-color: rgba(255, 255, 255, 0.5) !important; /* 邊框改為半透明白 */
+}
+
+#chat-container .card-footer .btn-outline-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.1); /* 滑鼠移上去時有微光感 */
+}
+
+/* 輸入框微調 */
+#chat-input {
+    border-radius: 10px !important;
+    border: none;
+    padding: 10px 15px;
+}
+
+/* 送出按鈕*/
+#send-btn {
+    background-color: #ffffff !important; 
+    color: #09384e !important;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px !important;
+    margin-left: 10px;
 }
 
 /* --- 測驗專用樣式 --- */
@@ -122,12 +278,12 @@
 .quiz-container {
     height: 100%;
     width: 100%;
-    background-color: #f8f9fa; /* 淡淡的背景色讓卡片跳出來 */
+    background-color: #ffffff; /* 淡淡的背景色讓卡片跳出來 */
 }
 
 /* 白色的測驗卡片 */
 .card-quiz {
-    background: white;
+    background-color: #d1d1d1;
     width: 100%;
     max-width: 600px; /* 限制最大寬度，避免在大螢幕太寬 */
     padding: 2.5rem;
@@ -182,28 +338,35 @@
     align-items: center; /* 垂直置中 */
 }
 
-.option-btn:hover {
-    background-color: #f8f9fa;
-    border-color: #dee2e6;
+#prev-btn:hover {
+    background-color: #264773 ; 
+    border-color: #264773 ;
 }
 
 /* 被選中的樣式  */
 .option-btn.selected {
-    border-color: #212529; /* Dark border */
+    border-color: #264773; 
     background-color: #e9ecef;
 }
 
 .circle {
     width: 18px;
     height: 18px;
-    border: 2px solid #6c757d;
+    border: 2px solid #b6b6b7;
     border-radius: 50%;
     margin-right: 12px;
 }
 
 .option-btn.selected .circle {
-    background-color: #212529;
-    border-color: #212529;
+    background-color: #264773;
+    border-color: #264773;
+}
+
+.btn-theme {
+    background-color: #09384e ;
+    border-color: #09384e ;
+    color: #ffffff ;
+    transition: opacity 0.2s ease;
 }
 
 /* 結果頁詳解樣式 */

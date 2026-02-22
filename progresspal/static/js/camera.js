@@ -9,6 +9,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const INTERVAL_MS = 5000; // 5秒
     const CONFIDENCE_THRESHOLD = 0.5; // 信心門檻
 
+    //初始情緒
+    const initialEmotion = resultElement.getAttribute('data-initial-emotion');
+
+    if (initialEmotion && initialEmotion !== "None" && initialEmotion !== "") {
+        // 就立刻把它顯示在畫面上，不用等 5 秒偵測
+        updateUI(initialEmotion, 0.5,false);
+    }
+
     // 啟動 Webcam
     async function initCamera() {
         try {
@@ -99,7 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // 更新情緒
-    function updateUI(emotion, confidence) {
+    function updateUI(emotion, engagement,showTip = true) {
     const emotionImages = {
         "喜悅": "/static/images/emotions/delight.png",
         "困惑": "/static/images/emotions/confusion.png",
@@ -109,23 +117,53 @@ document.addEventListener("DOMContentLoaded", () => {
         "驚訝": "/static/images/emotions/surprise.png"
     };
 
+    // 正面情緒提示詞
+    const highEngagementPhrases = [
+        "專注力滿點！繼續保持喔 ",
+        "看起來你正進入學習狀態",
+        "學習效率極高，太優秀了！",
+        "很有精神喔！目前的節奏非常棒",
+        "目前的理解深度非常紮實喔~"
+    ];
+    // 負面情緒提示詞
+    const lowEngagementPhrases = [
+        "累了嗎？喝口水休息一下吧",
+        "學習是馬拉松不是百米衝刺，慢下來也沒關係",
+        "深呼吸，給自己一點時間再出發",
+        "放鬆一下心情，學習會更順利喔",
+        "休息是為了走更長遠的路，ProgressPal 陪你休息一下"
+    ];
+    
+    // 判斷參與度高低
+    const isHighEngagement = engagement >= 0.5;
+    const phrasesPool = isHighEngagement ? highEngagementPhrases : lowEngagementPhrases;
+    // 從對應的提示詞裡隨機挑選一句話
+    const randomPhrase = phrasesPool[Math.floor(Math.random() * phrasesPool.length)];
+    
     // 取得對應的圖片路徑
     const imagePath = emotionImages[emotion]
 
-    const displayScore = confidence.toFixed(2);
-
     // 更新 HTML 內容，加入圖片顯示
     // 這裡使用 flex 佈局讓圖片和文字排版更好看
+    const tipHTML = showTip 
+            ? `<div style="color: #000000; font-size:16px; flex-grow: 1; text-align: right; padding-right: 20px;">
+                ${randomPhrase}
+               </div>`
+            : "";
+
     resultElement.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <img src="${imagePath}" alt="${emotion}" style="width: 50px; height: 50px; object-fit: contain; margin-left: 15px;" >
-            <div>
-                <span style="color: black; font-size:16;">情緒：${emotion}  <br> 信心分數：${displayScore} </span> 
+        <div style="display: flex; align-items: center; gap: 15px; width: 100%;">
+            <img src="${imagePath}" alt="${emotion}" style="width: 45px; height: 45px; object-fit: contain; margin-left: 15px;">
+            
+            <div style="color: black; font-size: 16px; font-weight: bold; white-space: nowrap;">
+                情緒：${emotion}
             </div>
+            
+            ${tipHTML}
         </div>
     `;
 
-    console.log(`UI Updated: ${emotion} (${confidence})`);
+    console.log(`UI Updated: ${emotion} (${isHighEngagement ? 'High' : 'Low'})`);
 }
 
     // Django CSRF

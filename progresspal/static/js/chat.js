@@ -6,9 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendBtn = document.getElementById('send-btn');
     // 連接問題類型按鈕
     const directQuestionBtn = document.getElementById('direct-question-btn');
-    const extendQuestionBtn1 = document.getElementById('extend-question-btn1');
-    const extendQuestionBtn2 = document.getElementById('extend-question-btn2');
-    const extendQuestionBtn3 = document.getElementById('extend-question-btn3');
+    const extendQuestionBtn = document.getElementById('extend-question-btn');
 
     // 儲存使用者選擇的問題類型
     let selectedQuestionType = null;
@@ -18,40 +16,15 @@ document.addEventListener('DOMContentLoaded', () => {
     directQuestionBtn.addEventListener('click', () => {
         selectedQuestionType = 'direct'; 
         directQuestionBtn.classList.add('active'); 
-       extendQuestionBtn1.classList.remove('active');
-        extendQuestionBtn2.classList.remove('active');
-        extendQuestionBtn3.classList.remove('active');
+       extendQuestionBtn.classList.remove('active');
         clearError();
     });
 
     // 問題類型：延伸提問
-    extendQuestionBtn1.addEventListener('click', () => {
+    extendQuestionBtn.addEventListener('click', () => {
         selectedQuestionType = 'extended'; 
-        index = 0;
-        extendQuestionBtn1.classList.add('active');
+        extendQuestionBtn.classList.add('active');
         directQuestionBtn.classList.remove('active');
-        extendQuestionBtn2.classList.remove('active');
-        extendQuestionBtn3.classList.remove('active');
-        clearError();
-    });
-
-     extendQuestionBtn2.addEventListener('click', () => {
-        selectedQuestionType = 'extended'; 
-        index = 1;
-        extendQuestionBtn2.classList.add('active');
-        directQuestionBtn.classList.remove('active');
-        extendQuestionBtn1.classList.remove('active');
-        extendQuestionBtn3.classList.remove('active');
-        clearError();
-    });
-
-     extendQuestionBtn3.addEventListener('click', () => {
-        selectedQuestionType = 'extended'; 
-        index = 2;
-        extendQuestionBtn3.classList.add('active');
-        directQuestionBtn.classList.remove('active');
-        extendQuestionBtn1.classList.remove('active');
-        extendQuestionBtn2.classList.remove('active');
         clearError();
     });
 
@@ -84,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 如果檢查都輸入才真正呼叫 sendMessage
-        sendMessage(messageText, selectedQuestionType,index);
+        sendMessage(messageText, selectedQuestionType);
 
         // 送出成功後的操作
         chatInput.value = ''; // 清空輸入框
@@ -92,13 +65,11 @@ document.addEventListener('DOMContentLoaded', () => {
         index = null;
         // 移除按鈕的 active 狀態
         directQuestionBtn.classList.remove('active');
-        extendQuestionBtn1.classList.remove('active');
-        extendQuestionBtn2.classList.remove('active');
-        extendQuestionBtn3.classList.remove('active');
+        extendQuestionBtn.classList.remove('active');
     }
 
     // 送出訊息sendMessage
-    async function sendMessage(messageText, questionType,index) {
+    async function sendMessage(messageText, questionType) {
         // 送出訊息
         appendMessage(messageText, 'user');
         const loadingElement = createMessageElement('assistant');
@@ -111,7 +82,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const payload = {
                 question_choice: questionType, // direct/extended
                 user_question: messageText,
-                selected_question_index: index // None/0/1/2
             };
 
             // fetch API發送請求
