@@ -115,7 +115,7 @@ def answer_question_view(request, chapter_code, unit_code):
         unit_id=unit_code,
         role=role,
         is_extended=is_extended,
-        extended_question = extended_q,
+        extended_question_text = extended_q,
     )
     answer = utils.to_markdown(result.get("answer", "請詢問與資料結構相關的問題。"))
     
