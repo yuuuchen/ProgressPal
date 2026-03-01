@@ -132,12 +132,6 @@
     height: 0;
 }
 
-/* 針對 Markdown 產生的 <pre> (程式碼區塊) */
-#material-card .card-body pre {
-    white-space: pre-wrap;  /* 允許程式碼在 pre 標籤內自動換行 */
-    word-break: break-all; /* 對於過長的單一字串強制斷詞 */
-}
-
 /* 針對 Markdown 產生的 <table> */
 #material-card .card-body table {
     /* 讓表格在需要時可以水平捲動*/
@@ -146,6 +140,46 @@
     overflow-x: auto;
     white-space: nowrap; /* 讓表格內容盡量保持在同一行 */
 }
+
+/* --- 修正後的程式碼區塊樣式 --- */
+
+/* 1. 針對外層容器 pre */
+#material-card pre {
+    background-color: #f8f9fa !important;   /* 淺灰色底 */
+    border-left: 5px solid #09384e !important; /* 左側深藍飾條 */
+    border-radius: 8px !important;
+    padding: 2rem 1.5rem 1.5rem !important; /* 增加上方內距給標籤空間 */
+    margin: 1.5rem 0 !important;
+    position: relative !important;
+    overflow-x: auto !important;
+    display: block !important;
+}
+
+/* 2. [關鍵] 針對內層的 code 標籤，移除它可能自帶的背景色 */
+#material-card pre code {
+    background-color: transparent !important; /* 讓 pre 的底色透出來 */
+    color: #333 !important;
+    padding: 0 !important;
+    font-family: 'Consolas', 'Monaco', monospace !important;
+    font-size: 0.95rem !important;
+    border: none !important;
+}
+
+/* 3. 確保 PYTHON 標籤在正確位置 */
+#material-card pre::before {
+    content: "PYTHON";
+    position: absolute;
+    top: 0;
+    right: 15px;
+    background-color: #09384e; /* 主題深藍色 */
+    color: white;
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 0 0 5px 5px;
+    font-weight: bold;
+    z-index: 10;
+}
+
 
 /*--- 情緒 --- */
 .emotion-float-card {

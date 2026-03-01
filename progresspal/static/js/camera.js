@@ -4,13 +4,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const canvasElement = document.getElementById('captureCanvas'); 
     const resultElement = document.getElementById('emotion-display'); // 情緒
     const context = canvasElement.getContext('2d');
+    let lowEngagementCount = 0;  // 追蹤低參與度
+    const PROACTIVE_THRESHOLD = 5; // 連續 5 次低參與度就觸發訊息
 
     // 設定參數
     const INTERVAL_MS = 5000; // 5秒
     const CONFIDENCE_THRESHOLD = 0.5; // 信心門檻
 
     //初始情緒
-    const initialEmotion = resultElement.getAttribute('data-initial-emotion');
+    let initialEmotion = resultElement.getAttribute('data-initial-emotion');
+    // 加上這行除錯，打開瀏覽器 F12 看看 Console 顯示什麼
+    console.log("偵測到初始情緒屬性值:", initialEmotion);
 
     if (initialEmotion && initialEmotion !== "None" && initialEmotion !== "") {
         // 就立刻把它顯示在畫面上，不用等 5 秒偵測
@@ -102,8 +106,20 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        // 計算低參與度次數
+        if (data.engagement < 0.5) {
+            lowEngagementCounter++;
+            if (lowEngagementCounter === PROACTIVE_THRESHOLD) {
+                sendProactiveMessage(); // 觸發主動關懷
+            }
+        } else {
+            lowEngagementCounter = 0; // 觸發後重置次數
+        }
+
         // 信心分數高於門檻更新 
-        updateUI(data.emotion, data.confidence);
+        console.log(`Engagement: ${data.engagement} (Ignored)`);
+        updateUI(data.emotion, data.engagement);
+        
     }
 
     // 更新情緒
@@ -164,7 +180,29 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
 
     console.log(`UI Updated: ${emotion} (${isHighEngagement ? 'High' : 'Low'})`);
-}
+    }
+
+    // 主動傳送關懷訊息至問答區
+    function sendProactiveMessage() {
+        const chatHistory = document.getElementById('chat-history');
+        if (!chatHistory) return;
+
+        const phrases = [
+            "發現你好像有點累了，要不要休息 5 分鐘再繼續？休息是為了走更長遠的路喔！",
+            "這部分的內容可能比較艱深，如果感到挫折是正常的。別擔心慢慢來！",
+            "深呼吸一下，動一動脖子，補充水分能讓大腦更清醒喔！"
+        ];
+        const randomMessage = phrases[Math.floor(Math.random() * phrases.length)];
+
+        // 建立訊息元素
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'message assistant-message proactive-caring'; // 加入自定義類別以便後續美化
+        msgDiv.innerHTML = `<strong>小提醒：</strong><br>${randomMessage}`;
+
+        // 插入聊天室並自動捲動到底部
+        chatHistory.appendChild(msgDiv);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
 
     // Django CSRF
     function getCookie(name) {
