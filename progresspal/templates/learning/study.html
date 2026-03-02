@@ -137,35 +137,20 @@
     <!--全螢幕-->
     <script> 
         document.addEventListener('DOMContentLoaded', () => {
-            // 確保抓到正確的 ID
             const chatSection = document.getElementById('chat-section-wrapper');
             const teachingSection = document.querySelector('.teaching-section');
             const fsBtn = document.getElementById('fullscreen-toggle');
             const fsIcon = document.getElementById('fs-icon');
-            const sendBtn = document.getElementById('send-btn');
 
-            function toggleFullscreen() {
-                if (!chatSection || !teachingSection) return;
-
-                // 切換自定義的 CSS 類別
-                chatSection.classList.toggle('fullscreen-active');
-                teachingSection.classList.toggle('is-hidden');
-                
-                // 切換 Google 圖示文字
-                const isFS = chatSection.classList.contains('fullscreen-active');
-                if (fsIcon) {
-                    fsIcon.innerText = isFS ? 'fullscreen_exit' : 'fullscreen';
-                }
-            }
-
-            if (fsBtn) fsBtn.addEventListener('click', toggleFullscreen);
-
-            if (sendBtn) {
-                sendBtn.addEventListener('click', () => {
-                    const input = document.getElementById('chat-input').value;
-                    // 提問後自動全螢幕
-                    if (input.trim() !== "" && chatSection && !chatSection.classList.contains('fullscreen-active')) {
-                        toggleFullscreen();
+            if (fsBtn) {
+                fsBtn.addEventListener('click', () => {
+                    // 切換 CSS 類別
+                    const isActive = chatSection.classList.toggle('fullscreen-active');
+                    teachingSection.classList.toggle('is-hidden');
+                    
+                    // 更新圖示
+                    if (fsIcon) {
+                        fsIcon.innerText = isActive ? 'fullscreen_exit' : 'fullscreen';
                     }
                 });
             }

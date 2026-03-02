@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatHistory = document.getElementById('chat-history');
     const chatInput = document.getElementById('chat-input');
     const sendBtn = document.getElementById('send-btn');
+    const chatSection = document.getElementById('chat-section-wrapper');
     // 連接問題類型按鈕
     const directQuestionBtn = document.getElementById('direct-question-btn');
     const extendQuestionBtn = document.getElementById('extend-question-btn');
@@ -53,6 +54,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!messageText) {
             showError("請在下方輸入框輸入您的問題");
             return; 
+        }
+
+        if (chatSection && !chatSection.classList.contains('fullscreen-active')) {
+            // 直接呼叫全螢幕切換函數 (需確保函數可存取)
+            toggleFullscreenUI(); 
         }
 
         // 如果檢查都輸入才真正呼叫 sendMessage
@@ -181,5 +187,17 @@ document.addEventListener('DOMContentLoaded', () => {
         existingErrors.forEach(errorEl => {
             chatHistory.removeChild(errorEl);
         });
+    }
+
+    function toggleFullscreenUI() {
+        const chatSection = document.getElementById('chat-section-wrapper');
+        const teachingSection = document.querySelector('.teaching-section');
+        const fsIcon = document.getElementById('fs-icon');
+
+        if (chatSection && teachingSection) {
+            chatSection.classList.add('fullscreen-active'); // 改為 add 確保一定是開啟
+            teachingSection.classList.add('is-hidden');
+            if (fsIcon) fsIcon.innerText = 'fullscreen_exit';
+        }
     }
 });
