@@ -111,7 +111,7 @@ def expand_query_with_hyde(question, chapter_id, unit_id):
     unit_name = unit.title
 
     # Debug 用：確認傳入的名稱是否有意義
-    print(f"[Debug] HyDE Context: Chapter={chapter_name}, Unit={unit_name}")
+    # print(f"[Debug] HyDE Context: Chapter={chapter_name}, Unit={unit_name}")
 
     messages = [
         {"role": "system", "content": "你是一個查詢優化專家，擅長將模糊問題轉化為精準的技術檢索詞。"},

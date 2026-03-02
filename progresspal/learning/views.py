@@ -107,6 +107,11 @@ def answer_question_view(request, chapter_code, unit_code):
     # 判斷是否為延伸提問
     is_extended = (question_choice == "extended")
 
+    if is_extended:
+        log_type = 'answer_extend_question'
+    else:
+        log_type = 'question'
+
     # 呼叫 AI 回答邏輯
     result = main.answer_question(
         question=user_question,
@@ -115,7 +120,7 @@ def answer_question_view(request, chapter_code, unit_code):
         unit_id=unit_code,
         role=role,
         is_extended=is_extended,
-        extended_question = extended_q,
+        extended_question_text = extended_q,
     )
     answer = utils.to_markdown(result.get("answer", "請詢問與資料結構相關的問題。"))
     
@@ -129,10 +134,11 @@ def answer_question_view(request, chapter_code, unit_code):
         user=user,
         chapter_code=chapter_code,
         unit_code=unit_code,
-        question=user_question,
+        type=log_type,
+        stu_input=user_question,
+        system_question=extended_q,
         answer=answer,
         engagement=engagement,
-        created_at=timezone.now(),
     )
     # 回傳 JSON
     return JsonResponse({
