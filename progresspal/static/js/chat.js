@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 儲存使用者選擇的問題類型
     let selectedQuestionType = null;
-    let index = null;
 
     // 問題類型：直接提問
     directQuestionBtn.addEventListener('click', () => {
@@ -62,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 送出成功後的操作
         chatInput.value = ''; // 清空輸入框
         selectedQuestionType = null; 
-        index = null;
+
         // 移除按鈕的 active 狀態
         directQuestionBtn.classList.remove('active');
         extendQuestionBtn.classList.remove('active');
@@ -100,11 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             if (data.answer) {
                 appendMessage(data.answer, 'assistant');
-                let extendedText = '延伸提問：\n';
-                data.extended_questions.forEach((question, index) => {
-                    extendedText += `${index + 1}. ${question}\n`;
-                });
-
+                let extendedText = `延伸提問：\n${data.extended_questions}`;
                 appendMessage(extendedText, 'assistant', 'extended-mode');
 
             } else {
