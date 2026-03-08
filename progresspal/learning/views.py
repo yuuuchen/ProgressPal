@@ -73,7 +73,6 @@ def generate_materials_view(request, chapter_code, unit_code):
         "role": role,
         "teaching": utils.to_markdown(result.get("teaching")),
         "example": utils.to_markdown(result.get("example")),
-        "summary": utils.to_markdown(result.get("summary")),
         "extended_question": extended_question, 
         "current_emotion": current_emotion,
         "form": StudyForm(),

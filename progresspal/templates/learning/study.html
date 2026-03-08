@@ -39,9 +39,17 @@
                         <h2 class="card-title fw-bold">CH{{ chapter.chapter_number }} {{ chapter.title }}</h2>
                         <hr>
                         <h3 class="h5 mt-4 text-secondary">{{ chapter.chapter_number }}-{{ unit.unit_number }} {{ unit.title }}</h3>
-                        <div class="card-text content-spacing">{{ teaching | safe }}</div>
-                        <div class="card-text">{{ example | safe }}</div>
-                        <div class="card-text">{{ summary | safe }}</div>
+
+                        <div class="card-text content-spacing">
+                            {{ teaching | safe }}
+                        </div>
+
+                        {% if example %}
+                        <div class="card-text mt-3">
+                            {{ example | safe }}
+                        </div>
+                        {% endif %}
+
                     </div>
                 </div>
             </div>

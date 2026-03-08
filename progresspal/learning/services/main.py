@@ -76,7 +76,6 @@ def display_materials(chapter_id, unit_id, engagement, role):
     return {
         "teaching": result.get("teaching"),
         "example": result.get("example"),
-        "summary": result.get("summary"),
         "extended_questions": result.get("extended_question")
     }
 
