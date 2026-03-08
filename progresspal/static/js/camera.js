@@ -4,8 +4,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const canvasElement = document.getElementById('captureCanvas'); 
     const resultElement = document.getElementById('emotion-display'); // 情緒
     const context = canvasElement.getContext('2d');
-    let lowEngagementCount = 0;  // 追蹤低參與度
+    let lowEngagementCounter = 0;  // 追蹤低參與度
     const PROACTIVE_THRESHOLD = 5; // 連續 5 次低參與度就觸發訊息
+    const unitStartTime = Date.now();  // 紀錄進入單元的初始時間
 
     // 設定參數
     const INTERVAL_MS = 5000; // 5秒
@@ -13,13 +14,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     //初始情緒
     let initialEmotion = resultElement.getAttribute('data-initial-emotion');
-    // 加上這行除錯，打開瀏覽器 F12 看看 Console 顯示什麼
     console.log("偵測到初始情緒屬性值:", initialEmotion);
 
-    if (initialEmotion && initialEmotion !== "None" && initialEmotion !== "") {
-        // 就立刻把它顯示在畫面上，不用等 5 秒偵測
-        updateUI(initialEmotion, 0.5,false);
-    }
+    const startEmotion = (initialEmotion && initialEmotion !== "None" && initialEmotion !== "") 
+                         ? initialEmotion 
+                        : "偵測中";
+
+    updateUI(startEmotion, 0.5, false);
 
     // 啟動 Webcam
     async function initCamera() {
@@ -132,40 +133,12 @@ document.addEventListener("DOMContentLoaded", () => {
         "投入": "/static/images/emotions/flow.png",
         "驚訝": "/static/images/emotions/surprise.png"
     };
-
-    // 正面情緒提示詞
-    const highEngagementPhrases = [
-        "專注力滿點！繼續保持喔 ",
-        "看起來你正進入學習狀態",
-        "學習效率極高，太優秀了！",
-        "很有精神喔！目前的節奏非常棒",
-        "目前的理解深度非常紮實喔~"
-    ];
-    // 負面情緒提示詞
-    const lowEngagementPhrases = [
-        "累了嗎？喝口水休息一下吧",
-        "學習是馬拉松不是百米衝刺，慢下來也沒關係",
-        "深呼吸，給自己一點時間再出發",
-        "放鬆一下心情，學習會更順利喔",
-        "休息是為了走更長遠的路，ProgressPal 陪你休息一下"
-    ];
-    
-    // 判斷參與度高低
-    const isHighEngagement = engagement >= 0.5;
-    const phrasesPool = isHighEngagement ? highEngagementPhrases : lowEngagementPhrases;
-    // 從對應的提示詞裡隨機挑選一句話
-    const randomPhrase = phrasesPool[Math.floor(Math.random() * phrasesPool.length)];
     
     // 取得對應的圖片路徑
     const imagePath = emotionImages[emotion]
-
-    // 更新 HTML 內容，加入圖片顯示
-    // 這裡使用 flex 佈局讓圖片和文字排版更好看
-    const tipHTML = showTip 
-            ? `<div style="color: #000000; font-size:16px; flex-grow: 1; text-align: right; padding-right: 20px;">
-                ${randomPhrase}
-               </div>`
-            : "";
+    const timerHTML = `<div id="live-study-timer" style="color: #09384e; font-size:16px; font-weight: bold; flex-grow: 1; text-align: right; padding-right: 20px;">
+                        ${getFormattedDuration()}
+                        </div>`;
 
     resultElement.innerHTML = `
         <div style="display: flex; align-items: center; gap: 15px; width: 100%;">
@@ -175,11 +148,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 情緒：${emotion}
             </div>
             
-            ${tipHTML}
+            ${timerHTML}
         </div>
     `;
 
-    console.log(`UI Updated: ${emotion} (${isHighEngagement ? 'High' : 'Low'})`);
     }
 
     // 主動傳送關懷訊息至問答區
@@ -220,6 +192,30 @@ document.addEventListener("DOMContentLoaded", () => {
         return cookieValue;
     }
 
+    // 轉換為 hh:mm:ss 格式的函式
+    function getFormattedDuration() {
+        const diff = Date.now() - unitStartTime;
+        const seconds = Math.floor((diff / 1000) % 60);
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+
+        const h = hours > 0 ? `${hours.toString().padStart(2, '0')}:` : "";
+        const m = minutes.toString().padStart(2, '0');
+        const s = seconds.toString().padStart(2, '0');
+        
+        return `單元學習時間：${h}${m}:${s}`;
+    }
+
+    // 每秒更新一次計時器文字
+    setInterval(() => {
+        const timerElement = document.getElementById('live-study-timer');
+        if (timerElement) {
+            timerElement.innerText = getFormattedDuration();
+        }
+    }, 1000);
+
     // 啟動程式
     initCamera();
+
+
 });
