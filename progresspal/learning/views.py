@@ -103,6 +103,7 @@ def answer_question_view(request, chapter_code, unit_code):
 
     # 讀取 session 延伸提問
     extended_q = request.session.get("current_extended_question", "")
+    # print(f"[Debug] 從 session 讀取的延伸提問: {extended_q}")
     # 判斷是否為延伸提問
     is_extended = (question_choice == "extended")
 

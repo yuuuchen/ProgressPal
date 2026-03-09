@@ -21,8 +21,8 @@ PROMPT_TEMPLATES = {
 （此區僅回答問題）
 
 ### 引導提問
-- {extended_question}
-- 一題即可。
+{extended_question}
+一題即可。
 
 【回答風格設定】
 回應風格: {style}
@@ -48,16 +48,12 @@ PROMPT_TEMPLATES = {
 - 若教材包含演算法或結構，需解釋其運作方式
 - 解釋需清楚、具教學性
 
-### 範例（可選）
+### 範例（若教材不包含程式概念，請「不要輸出此段落」）
 - 若教材包含程式或演算法概念，提供對應的 Python 。範例需直接對應教材內容程式碼需簡潔並附簡短說明
-- 若教材不包含程式概念，請「不要輸出此段落」。
 
 ### 引導提問
-- {extended_question}
-
-### 引導提問
-- {extended_question}
-- 一題即可
+{extended_question}
+一題即可
 
 【回答風格設定】
 回應風格: {style}
@@ -82,8 +78,8 @@ PROMPT_TEMPLATES = {
 （回饋與補充）
 
 ### 引導提問
-- {extended_question}
-- 一題即可。
+{extended_question}
+一題即可。
 
 【回答風格設定】
 回應風格: {style}

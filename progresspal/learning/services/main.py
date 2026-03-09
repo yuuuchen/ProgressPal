@@ -147,9 +147,10 @@ def answer_general_question(question, engagement, role, chapter_id, unit_id):
     """處理一般提問：HyDE + RAG"""
     # 1. 使用 HyDE 方法完整化提問
     hyde_query = expand_query_with_hyde(question, chapter_id, unit_id)
-    
+    print(f"[Debug] HyDE 擴展後的查詢語句: {hyde_query}")
     # 2. 呼叫 retrieve_docs() 檢索教材
     docs = retrieve_docs(hyde_query, top_k=3)
+    print(docs)# Debug 用：確認檢索到的文件內容
     
     # 3. 呼叫 generate_prompt()
     prompt = generate_prompt(engagement, question, docs)    
