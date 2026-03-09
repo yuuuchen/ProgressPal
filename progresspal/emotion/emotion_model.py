@@ -11,7 +11,7 @@ class InputShapeError(Exception):
 # 模型檔案路徑
 MODEL_PATH = os.path.join(
     os.path.dirname(__file__),
-    "small_label5_aug_best_model_fold_8_v94.74.keras"
+    "finetuned_model_mix_v2.keras"
 )
 
 EMOTION_LABELS = ["挫折", "困惑", "無聊", "喜悅", "投入", "驚訝"]
