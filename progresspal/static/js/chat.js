@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 送出訊息
         appendMessage(messageText, 'user');
         const loadingElement = createMessageElement('assistant');
-        loadingElement.textContent = '回應中...';
+        loadingElement.textContent = '思考中...';
         chatHistory.appendChild(loadingElement);
         chatHistory.scrollTop = chatHistory.scrollHeight; // 捲動到底部
 
@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             if (data.answer) {
                 appendMessage(data.answer, 'assistant');
-                let extendedText = `延伸提問：\n${data.extended_questions}`;
+                let extendedText = `<strong>延伸提問：</strong>\n${extQuestion}`;
                 appendMessage(extendedText, 'assistant', 'extended-mode');
 
             } else {
