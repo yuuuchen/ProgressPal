@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base_scroll.html' %}
 {% load static %}
 
 {% block title %}學生中心 | ProgressPal{% endblock %}
@@ -48,29 +48,67 @@
             <h5 class="card-title text-warning">提問紀錄</h5>
             {% if question_logs %}
             <div class="table-responsive">
-                <table class="table table-bordered table-striped align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>章節</th>
-                            <th>單元</th>
-                            <th>問題</th>
-                            <th>系統回覆</th>
-                            <th>提問時間</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for q in question_logs %}
-                        <tr>
-                            <td>{{ q.chapter_code }}</td>
-                            <td>{{ q.unit_code }}</td>
-                            <td>{{ q.question }}</td>
-                            <td>{{ q.answer|default:"（尚無回覆）" }}</td>
-                            <td>{{ q.created_at|date:"Y-m-d H:i" }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+              <table class="table table-hover table-bordered align-middle">
+                  <thead class="table-dark">
+                      <tr>
+                          <th style="width: 12%;">類型</th>
+                          <th style="width: 15%;">章節 / 單元</th>
+                          <th style="width: 35%;">對話內容</th> <th style="width: 25%;">系統最終回覆</th>
+                          <th style="width: 13%;">紀錄時間</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      {% for q in question_logs %}
+                      <tr>
+                          <td>
+                              {% if q.type == 'question' %}
+                                  <span class="badge bg-primary">學生提問</span>
+                              {% elif q.type == 'answer_extend_question' %}
+                                  <span class="badge bg-info text-dark">回應引導</span>
+                              {% endif %}
+                          </td>
+
+                          <td>
+                              <div class="small text-muted">{{ q.chapter_code|default:"-" }}</div>
+                              <div class="fw-bold">{{ q.unit_code|default:"-" }}</div>
+                          </td>
+
+                          <td>
+                              {% if q.type == 'answer_extend_question' %}
+                                  <div class="mb-2">
+                                      <small class="text-primary fw-bold"><i class="material-symbols-outlined style-icon">psychology_alt</i> 系統引導問題：</small>
+                                      <div class="p-2 mt-1 bg-light border-start border-primary border-3 small text-secondary italic">
+                                          {{ q.system_question }}
+                                      </div>
+                                  </div>
+                                  <small class="text-success fw-bold">學生的回應：</small>
+                              {% endif %}
+                              
+                              <div class="mt-1">{{ q.stu_input|linebreaksbr }}</div>
+                          </td>
+
+                          <td>
+                              <div class="text-dark border-start ps-2" style="max-height: 120px; overflow-y: auto; font-size: 0.95rem;">
+                                  {{ q.answer|default:"<span class='text-muted italic'>處理中...</span>"|safe|linebreaksbr }}
+                              </div>
+                          </td>
+
+                          <td class="text-nowrap">
+                              {{ q.created_at|date:"Y-m-d" }}<br>
+                              <small class="text-muted">{{ q.created_at|date:"H:i" }}</small>
+                          </td>
+                      </tr>
+                      {% empty %}
+                      <tr>
+                          <td colspan="5" class="text-center py-5 text-muted">
+                              <i class="material-symbols-outlined d-block mb-2" style="font-size: 3rem;">history_edu</i>
+                              目前尚無任何提問紀錄
+                          </td>
+                      </tr>
+                      {% endfor %}
+                  </tbody>
+              </table>
+          </div>
             {% else %}
             <p class="text-muted">目前尚無提問紀錄。</p>
             {% endif %}
