@@ -1,10 +1,11 @@
 # accounts/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout, get_user_model, update_session_auth_hash
+from django.db.models import Sum, Avg, Count, F, DurationField
+from django.db.models.functions import TruncDate  # 導入日期截斷函式
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
-from django.db.models import Sum, F, ExpressionWrapper, DurationField
 from .models import LearningRecord, QuestionLog, QuizResult
 from accounts.models import CustomUser
 from django.utils import timezone
@@ -129,70 +130,78 @@ def learning_portfolio(request, username=None):
     else:
         target_user = request.user
 
-    # 基礎紀錄
+    # 1. 基礎紀錄 (用於表格)
     learning_records = LearningRecord.objects.filter(user=target_user).order_by('-start_time')
     question_logs = QuestionLog.objects.filter(user=target_user).order_by('-created_at')
 
-    # 1. 統計各章節學習時間 (Bar Chart)
-    # 我們排除 end_time 為空的紀錄，並計算分鐘數
-    chapter_stats = (
-        LearningRecord.objects.filter(user=target_user, end_time__isnull=False)
-        .values('chapter_code')
-        .annotate(total_minutes=Sum(F('end_time') - F('start_time')))
-        .order_by('chapter_code')
-    )
-    
-    # 處理 timedelta 轉為分鐘數
-    chapter_labels = []
-    chapter_times = []
-    for entry in chapter_stats:
-        chapter_labels.append(f"CH{entry['chapter_code']}" if entry['chapter_code'] else "未知")
-        # 將 timedelta 轉為總分鐘數
-        total_sec = entry['total_minutes'].total_seconds()
-        chapter_times.append(round(total_sec / 60, 1))
-
-    # 2. 測驗成績趨勢 (Line Chart)
+    # 2. 測驗成績趨勢 (最近 10 次，由舊到新)
     recent_quizzes = QuizResult.objects.filter(user=target_user).order_by('-created_at')[:10][::-1]
     quiz_labels = [q.created_at.strftime('%m/%d') + f" CH({q.chapter_code})" for q in recent_quizzes]
     quiz_scores = [q.score for q in recent_quizzes]
 
-    # 3. 提問參與度趨勢 (Line Chart)
-    # 假設你的 engagement 存的是 'high', 'low'，我們需要轉為數值 1, 0 或其他比例
-    # 這裡抓最近 10 次提問的參與度
-    engagement_map = {'high': 100, 'mid': 60, 'low': 20}
-    recent_questions = question_logs[:10][::-1]
-    engagement_labels = [q.created_at.strftime('%m/%d') for q in recent_questions]
-    engagement_values = [engagement_map.get(q.engagement, 0) for q in recent_questions]
-
-    # 4. 參與度 vs 學習時間 (Scatter Chart)
-    # 我們按章節彙整：該章平均參與度 vs 該章總學習時間
-    scatter_data = []
+    # 3. 各章節學習時間 (Bar Chart)
+    # 計算每個章節的總學習時數（分鐘）
+    chapter_stats = (
+        LearningRecord.objects.filter(user=target_user, end_time__isnull=False)
+        .values('chapter_code')
+        .annotate(total_time=Sum(F('end_time') - F('start_time')))
+        .order_by('chapter_code')
+    )
+    chapter_labels = []
+    chapter_times = []
     for entry in chapter_stats:
-        ch = entry['chapter_code']
-        # 該章節平均參與度
-        ch_questions = QuestionLog.objects.filter(user=target_user, chapter_code=ch)
+        chapter_labels.append(f"CH{entry['chapter_code']}" if entry['chapter_code'] else "未知")
+        chapter_times.append(round(entry['total_time'].total_seconds() / 60, 1))
+
+    # 4. 提問參與度趨勢 (按「日期」分組，解決 3/11 資料消失問題)
+    # 將參與度轉為數值：high=1, low=0，然後計算每天的平均值
+    daily_engagement = (
+        QuestionLog.objects.filter(user=target_user)
+        .annotate(date=TruncDate('created_at')) # 強制轉為日期 YYYY-MM-DD
+        .values('date')
+        .annotate(
+            avg_eng=Avg(F('engagement') == 'high'), # Django 的布林 Avg 會轉為 0~1 比例
+            count=Count('id')
+        )
+        .order_by('date')[:10] # 顯示最近 10 天
+    )
+    
+    # 如果 Avg 邏輯在你的 DB 報錯，可改用手動計算：
+    engagement_labels = []
+    engagement_values = []
+    for entry in daily_engagement:
+        # 重新計算比例 (high 的數量 / 總量)
+        day_logs = QuestionLog.objects.filter(user=target_user, created_at__date=entry['date'])
+        high_count = day_logs.filter(engagement='high').count()
+        total_count = day_logs.count()
+        
+        engagement_labels.append(entry['date'].strftime('%m/%d'))
+        engagement_values.append(round(high_count / total_count, 2) if total_count > 0 else 0)
+
+    # 5. 參與度 vs 學習時間 (Scatter Chart)
+    scatter_data = []
+    for i, ch_code in enumerate([item['chapter_code'] for item in chapter_stats]):
+        ch_questions = QuestionLog.objects.filter(user=target_user, chapter_code=ch_code)
         if ch_questions.exists():
-            avg_eng = sum(engagement_map.get(q.engagement, 0) for q in ch_questions) / ch_questions.count()
+            h_count = ch_questions.filter(engagement='high').count()
+            avg_eng = h_count / ch_questions.count()
             scatter_data.append({
-                'x': chapter_times[chapter_labels.index(f"CH{ch}")], # 學習時間
-                'y': round(avg_eng, 1), # 平均參與度
-                'label': f"CH{ch}"
+                'x': chapter_times[i],
+                'y': round(avg_eng, 2),
+                'label': f"CH{ch_code}"
             })
 
     context = {
         'target_user': target_user,
         'learning_records': learning_records,
         'question_logs': question_logs,
-        # 各章節時間
-        'chapter_labels': json.dumps(chapter_labels),
-        'chapter_times': json.dumps(chapter_times),
-        # 測驗成績
+        # 必須傳入以下變數，圖表才會有資料
         'quiz_labels': json.dumps(quiz_labels),
         'quiz_scores': json.dumps(quiz_scores),
-        # 參與度趨勢
+        'chapter_labels': json.dumps(chapter_labels),
+        'chapter_times': json.dumps(chapter_times),
         'engagement_labels': json.dumps(engagement_labels),
         'engagement_values': json.dumps(engagement_values),
-        # 散佈圖數據
         'scatter_data': json.dumps(scatter_data),
     }
 

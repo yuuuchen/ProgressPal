@@ -6,7 +6,7 @@
 {% block content %}
 <div class="container mt-4">
   <h2 class="mb-4 text-center">
-    {{ target_user.username }} 的學習歷程
+    {{ target_user.nickname }} 的學習儀表板
     {% if target_user == request.user %}
       <span class="text-muted"></span>
     {% else %}
@@ -161,18 +161,58 @@
   });
 
   // === 提問參與度趨勢 (Line Chart) ===
+  // === 提問參與度趨勢 ===
   new Chart(document.getElementById('engagementChart'), {
     type: 'line',
     data: {
       labels: engagementLabels,
       datasets: [{
-        label: '平均參與度',
+        label: '參與度',
         data: engagementValues,
         borderColor: '#42A5F5',
-        tension: 0.2
+        backgroundColor: 'rgba(66, 165, 245, 0.2)',
+        fill: true,
+        tension: 0, // 參與度建議用直線 (0)，呈現切換感，或者 0.2 稍微平滑
+        stepped: true, // 選項：如果想呈現像開關一樣的階梯圖，可開啟這行
+        pointRadius: 6,
+        pointBackgroundColor: '#42A5F5'
       }]
     },
-    options: { responsive: true }
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          min: 0,
+          max: 1,
+          ticks: {
+            stepSize: 1,
+            // 關鍵：將數字轉回文字顯示
+            callback: function(value) {
+              if (value === 1) return '高 (High)';
+              if (value === 0) return '低 (Low)';
+              return '';
+            }
+          },
+          title: {
+            display: true,
+            text: '參與層級'
+          }
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            // 讓滑鼠移上去時也顯示文字而不是數字
+            label: function(context) {
+              let label = context.dataset.label || '';
+              if (label) { label += ': '; }
+              label += (context.parsed.y === 1 ? '高' : '低');
+              return label;
+            }
+          }
+        }
+      }
+    }
   });
 
   // === 參與度 vs 學習時間 (Scatter Chart) ===
