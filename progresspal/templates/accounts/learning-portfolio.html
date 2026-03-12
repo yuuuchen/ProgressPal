@@ -8,7 +8,7 @@
   <h2 class="mb-4 text-center">
     {{ target_user.username }} 的學習歷程
     {% if target_user == request.user %}
-      <span class="text-muted">【自己】</span>
+      <span class="text-muted"></span>
     {% else %}
       <span class="text-danger">【由管理員檢視】</span>
     {% endif %}
@@ -36,7 +36,7 @@
   
   <!-- 測驗成績趨勢 -->
     <div class="col-md-6 mb-4">
-      <h5>測驗成績趨勢</h5>
+      <h5>測驗成績趨勢 (最近 10 次)</h5>
       <canvas id="quizChart"></canvas>
     </div>
   </div>
@@ -120,18 +120,30 @@
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  // 將 Django 傳入資料安全轉為 JS 物件
-  const chapterLabels = JSON.parse('{{ chapter_labels|escapejs }}');
-  const chapterTimes = JSON.parse('{{ chapter_times|escapejs }}');
-  const emotionLabels = JSON.parse('{{ emotion_labels|escapejs }}');
-  const emotionValues = JSON.parse('{{ emotion_values|escapejs }}');
-  const engagementLabels = JSON.parse('{{ engagement_labels|escapejs }}');
-  const engagementValues = JSON.parse('{{ engagement_values|escapejs }}');
-  const scatterData = JSON.parse('{{ scatter_data|escapejs }}');
-  const quizLabels = JSON.parse('{{ quiz_labels|escapejs }}');
-  const quizScores = JSON.parse('{{ quiz_scores|escapejs }}');
+  // 1. 將變數定義在最外層，確保整個 script 都讀得到
+  let quizLabels = [];
+  let quizScores = [];
 
-  // === 各章節學習時間 ===
+  try {
+    // 使用 JSON.parse 解析 Django 傳入的字串
+    // 注意：變數名稱需與 views.py 傳入的 context key 一致
+    quizLabels = JSON.parse('{{ quiz_labels|default:"[]"|escapejs }}');
+    quizScores = JSON.parse('{{ quiz_scores|default:"[]"|escapejs }}');
+    
+    console.log("Parsed Labels:", quizLabels);
+    console.log("Parsed Scores:", quizScores);
+  } catch (error) {
+    console.error("Error parsing quiz data:", error);
+  }
+
+  // 2. 其他現有的變數解析
+  const chapterLabels = JSON.parse('{{ chapter_labels|default:"[]"|escapejs }}');
+  const chapterTimes = JSON.parse('{{ chapter_times|default:"[]"|escapejs }}');
+  const engagementLabels = JSON.parse('{{ engagement_labels|default:"[]"|escapejs }}');
+  const engagementValues = JSON.parse('{{ engagement_values|default:"[]"|escapejs }}');
+  const scatterData = JSON.parse('{{ scatter_data|default:"[]"|escapejs }}');
+
+  // === 各章節學習時間 (Bar Chart) ===
   new Chart(document.getElementById('timeChart'), {
     type: 'bar',
     data: {
@@ -144,13 +156,11 @@
     },
     options: {
       responsive: true,
-      scales: {
-        y: { beginAtZero: true, title: { display: true, text: '分鐘' } }
-      }
+      scales: { y: { beginAtZero: true } }
     }
   });
 
-  // === 提問參與度趨勢 ===
+  // === 提問參與度趨勢 (Line Chart) ===
   new Chart(document.getElementById('engagementChart'), {
     type: 'line',
     data: {
@@ -158,49 +168,61 @@
       datasets: [{
         label: '平均參與度',
         data: engagementValues,
-        fill: false,
         borderColor: '#42A5F5',
         tension: 0.2
       }]
     },
-    options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    options: { responsive: true }
   });
 
-  // === 參與度 vs 學習時間 ===
+  // === 參與度 vs 學習時間 (Scatter Chart) ===
   new Chart(document.getElementById('scatterChart'), {
     type: 'scatter',
     data: {
       datasets: [{
         label: '章節參與度與學習時間',
-        data: scatterData,
+        data: scatterData, // 這裡現在接收的是 [{x: 分鐘, y: 參與度數值}, ...]
         backgroundColor: '#FF6384'
-      }]
+      }],
     },
     options: {
       responsive: true,
       scales: {
-        x: { title: { display: true, text: '學習時間 (分鐘)' }, beginAtZero: true },
-        y: { title: { display: true, text: '平均參與度' }, beginAtZero: true }
+        x: { title: { display: true, text: '學習時間 (分鐘)' } },
+        y: { title: { display: true, text: '平均參與度' } }
       }
     }
   });
 
-  // === 測驗成績趨勢 ===
+  // === 測驗成績趨勢 (Line Chart) ===
+  // 修正點：使用上面定義好的 quizLabels 和 quizScores
   new Chart(document.getElementById('quizChart'), {
     type: 'line',
     data: {
-      labels: quizLabels,
+      labels: quizLabels, 
       datasets: [{
-        label: '平均成績',
+        label: '得分',
         data: quizScores,
-        fill: false,
+        fill: true,
+        backgroundColor: 'rgba(142, 36, 170, 0.1)',
         borderColor: '#8E24AA',
+        borderWidth: 2,
+        pointBackgroundColor: '#8E24AA',
         tension: 0.3
       }]
     },
     options: {
       responsive: true,
-      scales: { y: { beginAtZero: true, title: { display: true, text: '分數' } } }
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 10,
+          ticks: { stepSize: 1 },
+          title: { display: true, text: '得分' }
+        },
+        x: { title: { display: true, text: '日期 / 章節' } }
+      }
     }
   });
 </script>

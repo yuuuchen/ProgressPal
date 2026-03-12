@@ -102,7 +102,6 @@ class QuizResult(models.Model):
     chapter_code = models.CharField(max_length=50, blank=True, null=True)
     score = models.IntegerField()  # 0~10 題得分
     created_at = models.DateTimeField(auto_now_add=True)
-
     def __str__(self):
         return f"{self.user.username} - {self.chapter_code or 'N/A'}: {self.score}分"
 

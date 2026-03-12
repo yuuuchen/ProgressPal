@@ -121,14 +121,7 @@ def delete_account(request):
 
 @login_required(login_url='login')
 def learning_portfolio(request, username=None):
-    """
-    學習歷程頁面：
-    - 若未傳入 username → 顯示自己的學習歷程。
-    - 若傳入 username → 僅 superuser 可查看他人。
-    """
-    # 判斷目標使用者
     if username:
-        # 若不是 superuser 則拒絕存取他人資料
         if not request.user.is_superuser:
             messages.error(request, "您沒有權限查看其他使用者的學習歷程。")
             return redirect('learning-portfolio-self')
@@ -136,22 +129,71 @@ def learning_portfolio(request, username=None):
     else:
         target_user = request.user
 
-    # 取得該使用者的紀錄
+    # 基礎紀錄
     learning_records = LearningRecord.objects.filter(user=target_user).order_by('-start_time')
     question_logs = QuestionLog.objects.filter(user=target_user).order_by('-created_at')
-    quiz_results = QuizResult.objects.filter(user=target_user).order_by('-created_at')
 
-    # 統計章節與單元學習時間
-    chapter_data = (
-        learning_records.values('chapter_code')
-        .annotate(total_time=Sum('end_time') - Sum('start_time'))
+    # 1. 統計各章節學習時間 (Bar Chart)
+    # 我們排除 end_time 為空的紀錄，並計算分鐘數
+    chapter_stats = (
+        LearningRecord.objects.filter(user=target_user, end_time__isnull=False)
+        .values('chapter_code')
+        .annotate(total_minutes=Sum(F('end_time') - F('start_time')))
+        .order_by('chapter_code')
     )
+    
+    # 處理 timedelta 轉為分鐘數
+    chapter_labels = []
+    chapter_times = []
+    for entry in chapter_stats:
+        chapter_labels.append(f"CH{entry['chapter_code']}" if entry['chapter_code'] else "未知")
+        # 將 timedelta 轉為總分鐘數
+        total_sec = entry['total_minutes'].total_seconds()
+        chapter_times.append(round(total_sec / 60, 1))
+
+    # 2. 測驗成績趨勢 (Line Chart)
+    recent_quizzes = QuizResult.objects.filter(user=target_user).order_by('-created_at')[:10][::-1]
+    quiz_labels = [q.created_at.strftime('%m/%d') + f" CH({q.chapter_code})" for q in recent_quizzes]
+    quiz_scores = [q.score for q in recent_quizzes]
+
+    # 3. 提問參與度趨勢 (Line Chart)
+    # 假設你的 engagement 存的是 'high', 'low'，我們需要轉為數值 1, 0 或其他比例
+    # 這裡抓最近 10 次提問的參與度
+    engagement_map = {'high': 100, 'mid': 60, 'low': 20}
+    recent_questions = question_logs[:10][::-1]
+    engagement_labels = [q.created_at.strftime('%m/%d') for q in recent_questions]
+    engagement_values = [engagement_map.get(q.engagement, 0) for q in recent_questions]
+
+    # 4. 參與度 vs 學習時間 (Scatter Chart)
+    # 我們按章節彙整：該章平均參與度 vs 該章總學習時間
+    scatter_data = []
+    for entry in chapter_stats:
+        ch = entry['chapter_code']
+        # 該章節平均參與度
+        ch_questions = QuestionLog.objects.filter(user=target_user, chapter_code=ch)
+        if ch_questions.exists():
+            avg_eng = sum(engagement_map.get(q.engagement, 0) for q in ch_questions) / ch_questions.count()
+            scatter_data.append({
+                'x': chapter_times[chapter_labels.index(f"CH{ch}")], # 學習時間
+                'y': round(avg_eng, 1), # 平均參與度
+                'label': f"CH{ch}"
+            })
 
     context = {
         'target_user': target_user,
         'learning_records': learning_records,
         'question_logs': question_logs,
-        'quiz_results': quiz_results,
+        # 各章節時間
+        'chapter_labels': json.dumps(chapter_labels),
+        'chapter_times': json.dumps(chapter_times),
+        # 測驗成績
+        'quiz_labels': json.dumps(quiz_labels),
+        'quiz_scores': json.dumps(quiz_scores),
+        # 參與度趨勢
+        'engagement_labels': json.dumps(engagement_labels),
+        'engagement_values': json.dumps(engagement_values),
+        # 散佈圖數據
+        'scatter_data': json.dumps(scatter_data),
     }
 
     return render(request, 'accounts/learning-portfolio.html', context)
