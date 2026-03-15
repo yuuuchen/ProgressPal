@@ -13,7 +13,9 @@ from learning.services.prompt import (
     generate_prompt,
     generate_materials,
     generate_prompt_extended,
-    set_system_prompt
+    set_system_prompt,
+    HYDE_EXPANSION_PROMPT,
+    REDIRECTION_PROMPT_TEMPLATE
 )
 from learning.models import QuizQuestion
 from accounts.models import QuizResult, QuizResultQuestion
@@ -79,25 +81,25 @@ def display_materials(chapter_id, unit_id, engagement, role):
         "extended_questions": result.get("extended_question")
     }
 
-# HyDE 擴展 Prompt
-HYDE_EXPANSION_PROMPT = """
-你是一位專業的資料結構課程助教。你的任務是將學生模糊或簡短的提問，根據目前的「教學上下文」轉化為一個更完整、具備專業技術背景的「正式查詢語句」。
-
-【任務規範】
-1. **補全代名詞**：將學生提問中的「這個」、「那種」、「它」替換為當前單元的具體技術名稱。
-2. **情境錨定**：確保提問中包含章節與單元的名稱，使檢索系統能精準定位教材。
-3. **專業術語**：根據單元標題，在提問中加入 2-3 個相關的技術關鍵字。
-4. **保持原意**：不要改變學生想問的核心問題，也不要回答問題。
-
-【當前教學上下文】
-- 章節：{chapter_name}
-- 單元：{unit_name}
-
-【學生原始提問】
-{question}
-
-請直接輸出完善後的「正式查詢語句」，不需要任何開場白或解釋：
-"""
+def validate_user_input(question):
+    """
+    初步過濾使用者輸入，回傳 (bool, message)
+    """
+    # 去除前後空白
+    text = question.strip()
+    # 1. 檢查是否為空
+    if not text:
+        return False, "輸入內容不能為空喔！請試著問我關於資料結構的問題。"
+    # 2. 檢查字數是否過短 (至少要 2 個字，可依需求調整)
+    if len(text) < 2:
+        return False, "你的提問太簡短了，助教可能無法理解，再多寫一點點吧！"
+    # 3. 檢查是否純粹為標點符號或特殊字元
+    if not re.search(r'[\u4e00-\u9fa5a-zA-Z0-9]', text):
+        return False, "請輸入有意義的文字，不要只傳標點符號或符號喔！"
+    # 4. 檢查是否有過度重複的內容 (例如: aaaaaa, 哈哈哈...)
+    if re.search(r'(.)\1{4,}', text):
+        return False, "偵測到重複性過高的內容，請輸入具體的提問。"
+    return True, ""
 
 def expand_query_with_hyde(question, chapter_id, unit_id):
     """利用 HyDE 方法，結合教材上下文將提問轉換成更豐富的檢索詞"""
@@ -123,11 +125,52 @@ def expand_query_with_hyde(question, chapter_id, unit_id):
     expanded_query = client.generate_content(model=model, messages=messages, temperature=0.3)
     return expanded_query.strip()
 
+def generate_redirection_message(question, chapter_id, unit_id):
+    """
+    當 HyDE 判斷為 [IRRELEVANT] 時，生成親切的引導語句，將學生帶回教材內容。
+    """
+    client = get_rotational_client()
+    try:
+        chapter = Chapter.objects.get(chapter_number=chapter_id)
+        unit = Unit.objects.get(chapter=chapter, unit_number=unit_id)
+        chapter_name = chapter.title
+        unit_name = unit.title
+    except (Chapter.DoesNotExist, Unit.DoesNotExist):
+        chapter_name = "目前的資料結構課程"
+        unit_name = "當前單元"
+    messages = [
+        {
+            "role": "system", 
+            "content": "你是一位幽默、親切且專業的資管系助教，擅長用學長姐的語氣引導學生學習。"
+        },
+        {
+            "role": "user", 
+            "content": REDIRECTION_PROMPT_TEMPLATE.format(
+                chapter_name=chapter_name,
+                unit_name=unit_name,
+                user_input=question
+            )
+        }
+    ]
+    response = client.generate_content(
+        model=model, 
+        messages=messages, 
+        temperature=0.7 
+    )    
+    return response.strip()
+
 def answer_question(question, engagement, role, chapter_id, unit_id, is_extended=False, extended_question_text=None):
     """
-    1. 延伸提問：使用者點選系統生成的延伸問題。
-    2. 一般提問：使用者自行輸入問題，使用 HyDE + RAG。
+    1. 基礎過濾：所有提問進入系統前的第一道防線。
+    2. 延伸提問：使用者點選系統生成的延伸問題。
+    3. 一般提問：使用者自行輸入問題，使用 HyDE + RAG。
     """
+    is_valid, error_message = validate_user_input(question)
+    if not is_valid:
+        return {
+            "answer": error_message,
+            "extended_question": "" 
+        }
     if is_extended:
         # 使用者點選延伸問題，直接進入延伸處理邏輯
         return answer_extended_question(question, engagement, chapter_id, unit_id, extended_question_text, role)
@@ -145,14 +188,20 @@ def answer_extended_question(question, engagement, chapter_id, unit_id, extended
 
 def answer_general_question(question, engagement, role, chapter_id, unit_id):
     """處理一般提問：HyDE + RAG"""
-    # 1. 使用 HyDE 方法完整化提問
+    # 使用 HyDE 方法完整化提問
     hyde_query = expand_query_with_hyde(question, chapter_id, unit_id)
     print(f"[Debug] HyDE 擴展後的查詢語句: {hyde_query}")
-    # 2. 呼叫 retrieve_docs() 檢索教材
+    if "[IRRELEVANT]" in hyde_query:
+        redirection_text = generate_redirection_message(question, chapter_id, unit_id)
+        return {
+            "answer": redirection_text,
+            "extended_question": " "
+        }
+    # 執行 RAG 檢索
     docs = retrieve_docs(hyde_query, top_k=3)
-    print(docs)# Debug 用：確認檢索到的文件內容
-    
-    # 3. 呼叫 generate_prompt()
+    print(f"[Debug] 檢索到的文件: {docs}")
+
+    # 呼叫 generate_prompt()
     prompt = generate_prompt(engagement, question, docs)    
     return respond_to_question(prompt, engagement, role)
 
