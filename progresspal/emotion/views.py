@@ -52,7 +52,6 @@ def detect_emotion(request):
     except Exception as e:
         print(f"Unexpected inference error: {e}")
         return JsonResponse({"error": "Failed to perform emotion detection"}, status=500)
-    '''
     # 3. 存進資料庫
     try:
         EmotionRecord.objects.create(
@@ -62,5 +61,4 @@ def detect_emotion(request):
         )
     except Exception as e:
         logger.error(f"Database save error: {e}")
-    '''
     return JsonResponse(result)

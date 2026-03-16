@@ -56,14 +56,12 @@ def generate_materials_view(request, chapter_code, unit_code):
     extended_question = result.get("extended_questions", "")
     request.session["current_extended_question"] = extended_question
     request.session.modified = True
-    '''
     # 建立學習記錄
     record = LearningRecord.objects.create(
         user=request.user,
         chapter_code=chapter_code,
         unit_code=unit_code
     )
-    '''
     context = {
         "chapter": chapter,
         "unit": unit,
