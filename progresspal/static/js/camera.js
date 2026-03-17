@@ -131,23 +131,26 @@ document.addEventListener("DOMContentLoaded", () => {
         "無聊": "/static/images/emotions/boredom.png",
         "挫折": "/static/images/emotions/frustration.png",
         "投入": "/static/images/emotions/flow.png",
-        "驚訝": "/static/images/emotions/surprise.png"
+        "驚訝": "/static/images/emotions/surprise.png",
     };
     
     // 取得對應的圖片路徑
-    const imagePath = emotionImages[emotion]
+    let imageHTML = ''; // 預設為空字串
+    const imagePath = emotionImages[emotion];
+    // 只有當 emotionImages 裡有定義該情緒，且該情緒不是 "偵測中" 時才生成 <img>
+    if (emotion !== "偵測中") {
+        imageHTML = `<img src="${imagePath}" alt="${emotion}" style="width: 50px; height: 50px; flex-shrink: 0; border-radius: 50%;">`;
+    }
     const timerHTML = `<div id="live-study-timer" style="color: #09384e; font-size:16px; font-weight: bold; flex-grow: 1; text-align: right; padding-right: 20px;">
                         ${getFormattedDuration()}
                         </div>`;
 
     resultElement.innerHTML = `
         <div style="display: flex; align-items: center; gap: 15px; width: 100%;">
-            <img src="${imagePath}" alt="${emotion}" style="width: 45px; height: 45px; object-fit: contain; margin-left: 15px;">
-            
+            ${imageHTML}
             <div style="color: black; font-size: 16px; font-weight: bold; white-space: nowrap;">
                 情緒：${emotion}
             </div>
-            
             ${timerHTML}
         </div>
     `;

@@ -49,7 +49,7 @@ def generate_materials_view(request, chapter_code, unit_code):
     emotions = user.recent_emotion_history
     engagement = compute_engagement(emotions)
 
-    current_emotion = emotions[-1] if emotions else "未知"
+    current_emotion = emotions[-1] if emotions else "偵測中"
 
     # 呼叫教材生成
     result = main.display_materials(chapter_code, unit_code, engagement, role)

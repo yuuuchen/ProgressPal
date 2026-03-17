@@ -1,5 +1,19 @@
 {% extends 'base.html' %}
 {% block title %}首頁{% endblock %}
 {% block content %}
-
+<div class="welcome-banner p-5 mb-4 rounded-3 shadow-sm">
+    <div class="container-fluid py-3">
+        <h1 class="display-5 fw-bold text-navy">歡迎回來，{{ user.username }}！</h1>
+        <div class="d-flex gap-4 mt-4">
+            <div class="stat-item">
+                <span class="d-block fs-2 fw-bold text-primary">{{ total_study_hours|default:"0" }}</span>
+                <span class="text-muted">總學習時數</span>
+            </div>
+            <div class="stat-item">
+                <span class="d-block fs-2 fw-bold text-success">{{ completed_units_count|default:"0" }}</span>
+                <span class="text-muted">已完成單元</span>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

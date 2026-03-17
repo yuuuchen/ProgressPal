@@ -54,11 +54,19 @@ def detect_emotion(request):
         return JsonResponse({"error": "Failed to perform emotion detection"}, status=500)
     # 3. 存進資料庫
     try:
+        EMOTION_CHOICES = {
+            "挫折": "frustration",
+            "困惑": "confusion",
+            "無聊": "boredom",
+            "投入": "engagement",
+            "驚訝": "surprise",
+            "喜悅": "delight",
+        }
         EmotionRecord.objects.create(
             user=request.user,
-            emotion=result["emotion"],
+            emotion=EMOTION_CHOICES[result["emotion"]],
             confidence=result["confidence"]
         )
     except Exception as e:
-        logger.error(f"Database save error: {e}")
+        print(f"Database save error: {e}")
     return JsonResponse(result)

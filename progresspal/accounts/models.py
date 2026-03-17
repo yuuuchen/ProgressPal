@@ -23,12 +23,12 @@ class CustomUser(AbstractUser):
         return f"{self.nickname} ({self.role})"
     
     EMOTION_MAP = {
-        "frustrated": "挫折",
-        "confused": "困惑",
-        "bored": "無聊",
-        "engaged": "投入",
-        "surprised": "驚訝",
-        "happy": "喜悅",
+        "frustration":"挫折",
+        "confusion":"困惑",
+        "boredom":"無聊",
+        "engagement":"投入",
+        "surprise":"驚訝",
+        "delight":"喜悅",
     }
 
     @property
@@ -40,7 +40,7 @@ class CustomUser(AbstractUser):
         if not records.exists():
             return ["None"]
         records = reversed(records)  # 由遠到近
-        return [self.EMOTION_MAP.get(rec.emotion, "未知") for rec in records]
+        return [self.EMOTION_MAP.get(rec.emotion, "不知") for rec in records]
 
     
 # 學習紀錄
