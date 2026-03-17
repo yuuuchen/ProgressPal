@@ -32,7 +32,7 @@ PROMPT_TEMPLATES = {
 """,
 
     # 行為 2：教學（教材結構化）
-"tutoring": """
+"tutoring_with_code": """
 【任務】教學
 
 【輸出格式（必須完全一致）】
@@ -46,10 +46,37 @@ PROMPT_TEMPLATES = {
 - 依照教材逐步解釋核心概念
 - 說明概念之間的關係或流程
 - 若教材包含演算法或結構，需解釋其運作方式
-- 解釋需清楚、具教學性
 
-### 範例（若教材不包含程式概念，請「不要輸出此段落」）
-- 若教材包含程式或演算法概念，提供對應的 Python 。範例需直接對應教材內容程式碼需簡潔並附簡短說明
+### 範例
+- 提供對應教材的 Python 範例
+- 程式碼需簡潔並附簡短說明
+
+### 引導提問
+{extended_question}
+一題即可
+
+【回答風格設定】
+回應風格: {style}
+學生參與度: {engagement}
+
+教材:
+{materials}
+""",
+
+    "tutoring_no_code": """
+【任務】教學
+
+【輸出格式（必須完全一致）】
+
+### 觀念導讀
+- 用 2~3 句話說明此教材的學習主題
+- 說明「這個概念在資料結構中的角色或用途」
+- 不可引入教材未出現的新名詞
+
+### 核心解析
+- 依照教材逐步解釋核心概念
+- 說明概念之間的關係或流程
+- 若教材包含演算法或結構，需解釋其運作方式
 
 ### 引導提問
 {extended_question}
@@ -188,8 +215,13 @@ def map_engagement_to_profile(engagement: str, mode: str = 'qa') -> dict:
         "extended_question": selected_question_strategy
     }
 
-
-
+### 判斷教材中是否包含程式碼區塊
+def has_code(materials: list) -> bool:
+    """
+    判斷教材中是否包含 Python 程式碼區塊
+    """
+    materials_text = "\n".join(materials)
+    return "```python" in materials_text.lower()
 
 
 # 主方法：回答學生提問。使用學習參與度
@@ -215,23 +247,29 @@ def generate_prompt(engagement, question, materials):
 
 
 # 根據教材進行教學
-def generate_materials(engagement ,materials):
-  '''
-  engagement=high/low
-  materials=list(教材內容)
-  '''
-  materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
-  template = PROMPT_TEMPLATES["tutoring"]
-  # Mode 設定為 'tutoring' (教學模式)
-  mapping = map_engagement_to_profile(engagement, mode='tutoring')
-  
-  prompt_text = template.format(
-      style=mapping["style"],
-      engagement=engagement,
-      materials=materials_text,
-      extended_question=mapping["extended_question"]
-  )
-  return prompt_text
+def generate_materials(engagement, materials):
+    """
+    根據教材內容動態選擇 prompt
+    """
+
+    materials_text = "\n".join(f"{i+1}. {m}" for i, m in enumerate(materials))
+
+    mapping = map_engagement_to_profile(engagement, mode='tutoring')
+
+    # 判斷是否有程式碼
+    if has_code(materials):
+        template = PROMPT_TEMPLATES["tutoring_with_code"]
+    else:
+        template = PROMPT_TEMPLATES["tutoring_no_code"]
+
+    prompt_text = template.format(
+        style=mapping["style"],
+        engagement=engagement,
+        materials=materials_text,
+        extended_question=mapping["extended_question"]
+    )
+
+    return prompt_text
 
 # 進行題目回應。使用學習參與度
 def generate_prompt_extended(engagement, answer, materials,topic):
