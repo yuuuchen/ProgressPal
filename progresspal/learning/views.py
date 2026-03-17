@@ -192,6 +192,13 @@ def check_answers(request, chapter_code):
         body_data = json.loads(request.body)
         user_answers_list = body_data.get('answers', [])        
         score, results = main.process_quiz_submission(request.user, chapter_code, user_answers_list)       
+
+        for item in results:
+            # 確保題目被解析 (解決出現 ` 的問題)
+            item['question'] = utils.to_markdown(item.get('question', ''))
+            # 確保詳解也被解析
+            item['explanation'] = utils.to_markdown(item.get('explanation', ''))
+            
         # 回傳 Response
         return JsonResponse({
             "score": score,

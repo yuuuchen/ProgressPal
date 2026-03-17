@@ -84,5 +84,5 @@ def clean_text_qa(raw_text: str) -> dict:
 
 def to_markdown(text):
   text = text.replace('•', '  *')
-  html_output = markdown(text, extensions=['fenced_code', 'nl2br', 'tables'])
+  html_output = markdown(text, extensions=['fenced_code', 'nl2br', 'tables','mdx_math'])
   return html_output

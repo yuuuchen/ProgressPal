@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             if (data.answer) {
                 appendMessage(data.answer, 'assistant');
-                let extendedText = `<strong>延伸提問：</strong>\n${extQuestion}`;
+                let extendedText = `<strong>延伸提問：</strong>\n${data.extended_questions}`;
                 appendMessage(extendedText, 'assistant', 'extended-mode');
 
             } else {
@@ -138,6 +138,10 @@ document.addEventListener('DOMContentLoaded', () => {
         messageElement.innerHTML = text;
         chatHistory.appendChild(messageElement);
         chatHistory.scrollTop = chatHistory.scrollHeight;
+
+        if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
+            MathJax.typesetPromise([messageElement]).catch((err) => console.log('MathJax error:', err));
+        }
     }
 
     // 取得 Django 的 CSRF token

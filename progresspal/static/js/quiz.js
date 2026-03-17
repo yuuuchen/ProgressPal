@@ -89,6 +89,10 @@ document.addEventListener("DOMContentLoaded", () => {
             optionsContainer.appendChild(btn);
         });
 
+        if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
+            // 指定渲染題目文字與選項容器
+            MathJax.typesetPromise([questionTextEl, optionsContainer]).catch((err) => console.log(err));
+        }
         // 按鈕狀態控制：必須有選擇答案才能按「下一題」或「交卷」
         updateNavButtons(savedChoice !== undefined);
     }
@@ -246,6 +250,10 @@ document.addEventListener("DOMContentLoaded", () => {
             reviewItem.innerHTML = htmlContent;
             reviewContainer.appendChild(reviewItem);
         });
+        
+        if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
+            MathJax.typesetPromise([reviewContainer]).catch((err) => console.log(err));
+        }
     }
 
     // 啟動程式
