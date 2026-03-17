@@ -138,7 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let imageHTML = ''; // 預設為空字串
     const imagePath = emotionImages[emotion];
     // 只有當 emotionImages 裡有定義該情緒，且該情緒不是 "偵測中" 時才生成 <img>
-    if (emotion !== "偵測中") {
+    if (emotion !== "偵測中" && emotion !== "未知" && imagePath) {
         imageHTML = `<img src="${imagePath}" alt="${emotion}" style="width: 50px; height: 50px; flex-shrink: 0; border-radius: 50%;">`;
     }
     const timerHTML = `<div id="live-study-timer" style="color: #09384e; font-size:16px; font-weight: bold; flex-grow: 1; text-align: right; padding-right: 20px;">
