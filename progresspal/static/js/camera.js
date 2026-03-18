@@ -103,22 +103,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // 信心分數低於門檻不更新
         if (data.confidence < CONFIDENCE_THRESHOLD) {
-            console.log(`Confidence too low: ${data.confidence} (Ignored)`);
+            console.log(`Confidence too low: ${data.confidence}`);
             return;
         }
 
         // 計算低參與度次數
-        if (data.engagement < 0.5) {
+        if (data.engagement === "low") {
             lowEngagementCounter++;
             if (lowEngagementCounter === PROACTIVE_THRESHOLD) {
                 sendProactiveMessage(); // 觸發主動關懷
+                lowEngagementCounter = 0;
             }
         } else {
             lowEngagementCounter = 0; // 觸發後重置次數
         }
 
         // 信心分數高於門檻更新 
-        console.log(`Engagement: ${data.engagement} (Ignored)`);
+        console.log(`Engagement: ${data.engagement} `);
+        console.log(`lowEngagementCounter: ${lowEngagementCounter} `);
         updateUI(data.emotion, data.engagement);
         
     }
