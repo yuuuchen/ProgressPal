@@ -125,39 +125,46 @@ def expand_query_with_hyde(question, chapter_id, unit_id):
     expanded_query = client.generate_content(model=model, messages=messages, temperature=0.3)
     return expanded_query.strip()
 
-def generate_redirection_message(question, chapter_id, unit_id):
+def generate_redirection_message(user_input, chapter_id, unit_id, error_msg=None):
     """
-    當 HyDE 判斷為 [IRRELEVANT] 時，生成親切的引導語句，將學生帶回教材內容。
+    通用引導函式：
+    - 若有 error_msg：針對輸入錯誤（亂碼、太短等）進行優化回應。
+    - 若無 error_msg：針對離題（HyDE 判定 IRRELEVANT）進行引導。
     """
     client = get_rotational_client()
-    try:
-        chapter = Chapter.objects.get(chapter_number=chapter_id)
-        unit = Unit.objects.get(chapter=chapter, unit_number=unit_id)
-        chapter_name = chapter.title
-        unit_name = unit.title
-    except (Chapter.DoesNotExist, Unit.DoesNotExist):
-        chapter_name = "目前的資料結構課程"
-        unit_name = "當前單元"
+    chapter = Chapter.objects.get(chapter_number=chapter_id)
+    unit = Unit.objects.get(chapter=chapter, unit_number=unit_id)
+    
+    # 將錯誤提示訊息加入 Prompt 上下文
     messages = [
-        {
-            "role": "system", 
-            "content": "你是一位幽默、親切且專業的資管系助教，擅長用學長姐的語氣引導學生學習。"
-        },
-        {
-            "role": "user", 
-            "content": REDIRECTION_PROMPT_TEMPLATE.format(
-                chapter_name=chapter_name,
-                unit_name=unit_name,
-                user_input=question
-            )
-        }
+        {"role": "system", "content": "你是一位親切的資管系助教，擅長鼓勵學生並引導他們回到學習主軸。"},
+        {"role": "user", "content": REDIRECTION_PROMPT_TEMPLATE.format(
+            chapter_name=chapter.title,
+            unit_name=unit.title,
+            user_input=user_input,
+            error_msg=error_msg if error_msg else "這是一個與課程無關的話題"
+        )}
     ]
-    response = client.generate_content(
-        model=model, 
-        messages=messages, 
-        temperature=0.7 
-    )    
-    return response.strip()
+    
+    raw_response = client.generate_content(model=model, messages=messages, temperature=0.7)
+    
+    answer_text = ""
+    ext_question = ""
+    try:
+        lines = raw_response.strip().split("\n")
+        for line in lines:
+            if line.startswith("回應："):
+                answer_text = line.replace("回應：", "").strip()
+            elif line.startswith("延伸提問："):
+                ext_question = line.replace("延伸提問：", "").strip()
+    except:
+        answer_text = error_msg if error_msg else "我們還是先回來聊聊資料結構吧！"
+        ext_question = f"你知道 {unit.title} 最重要的概念是什麼嗎？"
+
+    return {
+        "answer": answer_text,
+        "extended_question": ext_question
+    }
 
 def answer_question(question, engagement, role, chapter_id, unit_id, is_extended=False, extended_question_text=None):
     """
@@ -167,10 +174,12 @@ def answer_question(question, engagement, role, chapter_id, unit_id, is_extended
     """
     is_valid, error_message = validate_user_input(question)
     if not is_valid:
-        return {
-            "answer": error_message,
-            "extended_question": "" 
-        }
+        return generate_redirection_message(
+            user_input=question, 
+            chapter_id=chapter_id, 
+            unit_id=unit_id, 
+            error_msg=error_message
+        )
     if is_extended:
         # 使用者點選延伸問題，直接進入延伸處理邏輯
         return answer_extended_question(question, engagement, chapter_id, unit_id, extended_question_text, role)
@@ -192,11 +201,7 @@ def answer_general_question(question, engagement, role, chapter_id, unit_id):
     hyde_query = expand_query_with_hyde(question, chapter_id, unit_id)
     print(f"[Debug] HyDE 擴展後的查詢語句: {hyde_query}")
     if "[IRRELEVANT]" in hyde_query:
-        redirection_text = generate_redirection_message(question, chapter_id, unit_id)
-        return {
-            "answer": redirection_text,
-            "extended_question": " "
-        }
+        return generate_redirection_message(question, chapter_id, unit_id, error_msg=None)
     # 執行 RAG 檢索
     docs = retrieve_docs(hyde_query, top_k=3)
     print(f"[Debug] 檢索到的文件: {docs}")
