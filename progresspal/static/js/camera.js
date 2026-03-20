@@ -174,7 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // 建立訊息元素
         const msgDiv = document.createElement('div');
         msgDiv.className = 'message assistant-message proactive-caring'; // 加入自定義類別以便後續美化
-        msgDiv.innerHTML = `<strong>小提醒：</strong><br>${randomMessage}`;
+        msgDiv.innerHTML = `<strong>💡小提醒：</strong><br>${randomMessage}`;
 
         // 插入聊天室並自動捲動到底部
         chatHistory.appendChild(msgDiv);

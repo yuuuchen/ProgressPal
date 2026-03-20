@@ -1,37 +1,39 @@
 {% extends 'base.html' %}
 {% block title %}課程列表{% endblock %}
+
 {% block content %}
 <div class="container-fluid px-4 py-3">
-    <h2 class="text-center mb-4">課程列表</h2>
-    <div class="accordion" id="chapterAccordion">
+    <h2 class="text-center mb-4 text-navy"><strong>課程列表</strong></h2>
+    <div class="accordion shadow-sm" id="chapterAccordion">
         {% for chapter in chapters %}
-        <div class="accordion-item">
+        <div class="accordion-item border-0 mb-2">
             <h2 class="accordion-header" id="heading{{ chapter.id }}">
-                <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse"
+                <!-- 加入了 btn-chapter 類別 -->
+                <button class="accordion-button collapsed fw-bold btn-chapter" type="button" data-bs-toggle="collapse"
                         data-bs-target="#collapse{{ chapter.id }}" aria-expanded="false"
                         aria-controls="collapse{{ chapter.id }}">
-                    第{{ chapter.chapter_number }}章. {{ chapter.title }}
+                    第 {{ chapter.chapter_number }} 章. {{ chapter.title }}
                 </button>
             </h2>
             <div id="collapse{{ chapter.id }}" class="accordion-collapse collapse"
                  aria-labelledby="heading{{ chapter.id }}" data-bs-parent="#chapterAccordion">
-                <div class="accordion-body">
+                <div class="accordion-body bg-light">
                     {% if chapter.get_units %}
                     <ul class="list-group list-group-flush">
                         {% for unit in chapter.get_units %}
-                        <li class="list-group-item">
+                        <li class="list-group-item bg-transparent">
                             <a href="{% url 'learning' chapter.chapter_number unit.unit_number %}" 
-                            class="text-decoration-none text-dark">
+                            class="text-decoration-none text-dark d-block py-1 unit-link">
                                 <strong>{{ chapter.chapter_number }}.{{ unit.unit_number }}</strong> — {{ unit.title }}
                             </a>
                         </li>
-                    {% endfor %} 
-                    <li class="list-group-item">
-                        <a href="{% url 'quiz' chapter.chapter_number %}" class="text-decoration-none text-dark">
-                            <strong>{{ chapter.chapter_number }}.{{ chapter.get_units|length|add:"1" }}</strong> — 第{{ chapter.chapter_number }}章測驗
-                        </a>
-                    </li>
-                </ul>
+                        {% endfor %} 
+                        <li class="list-group-item bg-transparent">
+                            <a href="{% url 'quiz' chapter.chapter_number %}" class="text-decoration-none text-dark d-block py-1 unit-link">
+                                <strong>{{ chapter.chapter_number }}.{{ chapter.get_units|length|add:"1" }}</strong> — 第 {{ chapter.chapter_number }} 章總結測驗
+                            </a>
+                        </li>
+                    </ul>
                     {% else %}
                         <p class="text-muted mb-0">此章節目前沒有單元</p>
                     {% endif %}
@@ -41,6 +43,47 @@
         {% endfor %}
     </div>
 </div>
+
+<style>
+    /* 1. 設定章節標題顏色 (深藍底白字) */
+    .btn-chapter {
+        background-color: #264773 !important;
+        color: white !important;
+        border-radius: 8px !important;
+        transition: all 0.3s ease;
+    }
+
+    /* 2. 處理展開後的狀態 (避免變成 Bootstrap 預設的淡藍色) */
+    .accordion-button:not(.collapsed) {
+        background-color: #183253 !important; /* 展開時稍微深一點 */
+        color: white !important;
+        box-shadow: none !important;
+    }
+
+    /* 3. 讓右側箭頭圖示變成白色 */
+    .accordion-button::after {
+        filter: brightness(0) invert(1);
+    }
+
+    /* 4. 微調清單項目，滑鼠移上去時有底色 */
+    .unit-link:hover {
+        color: #09384e !important;
+        font-weight: bold;
+        transform: translateX(5px);
+        transition: all 0.2s ease;
+    }
+
+    .text-navy {
+        color: #09384e;
+    }
+
+    /* 讓整個手風琴項目的邊界圓滑一點 */
+    .accordion-item {
+        overflow: hidden;
+        border-radius: 8px !important;
+    }
+</style>
 {% endblock %}
+
 {% block scripts %}
 {% endblock %}

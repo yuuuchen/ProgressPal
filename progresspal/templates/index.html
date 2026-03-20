@@ -1,19 +1,68 @@
 {% extends 'base.html' %}
-{% block title %}首頁{% endblock %}
+{% load static %} 
+{% block title %}Progresspal | 首頁{% endblock %}
 {% block content %}
-<div class="welcome-banner p-5 mb-4 rounded-3 shadow-sm">
-    <div class="container-fluid py-3">
-        <h1 class="display-5 fw-bold text-navy">歡迎回來，{{ user.username }}！</h1>
-        <div class="d-flex gap-4 mt-4">
-            <div class="stat-item">
-                <span class="d-block fs-2 fw-bold text-primary">{{ total_study_hours|default:"0" }}</span>
-                <span class="text-muted">總學習時數</span>
-            </div>
-            <div class="stat-item">
-                <span class="d-block fs-2 fw-bold text-success">{{ completed_units_count|default:"0" }}</span>
-                <span class="text-muted">已完成單元</span>
-            </div>
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 70vh;">
+    <div class="text-center">
+        <!-- Logo 區塊 -->
+        <div class="logo-container mt-5">
+            <img src="{% static 'images/logo.png' %}" 
+                 alt="ProgressPal Logo" 
+                 class="img-fluid" 
+                 style="max-width: 300px; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));">
+        </div>
+
+        <!-- 歡迎標語 -->
+        <h1 class="display-3 fw-bold text-navy mb-4">
+            歡迎回來 <span style="color: #264773;">ProgressPal</span>
+        </h1>
+
+        <!-- 按鈕群組 -->
+        <div class="d-flex justify-content-center gap-3 mt-4">
+            {% if user.is_authenticated %}
+                <!-- 已登入：進入課程列表 -->
+                <a href="{% url 'lesson' %}" class="btn btn-lg px-5 rounded-pill shadow-sm btn-theme">
+                進入課程列表
+                </a>
+            {% else %}
+                <!-- 未登入：登入與註冊 -->
+                <a href="{% url 'login' %}" class="btn btn-lg px-4 rounded-pill shadow-sm btn-theme">
+                立即登入
+                </a>
+                <a href="{% url 'register' %}" class="btn btn-lg px-4 rounded-pill shadow-sm btn-theme">
+                註冊帳號
+                </a>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<style>
+    /* 讓首頁背景稍微有一點質感漸層 */
+    body {
+        background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+    }
+    .text-navy {
+        color: #09384e;
+    }
+
+    /* 確保與學習頁面的深藍色完全一致 */
+    .btn-theme {
+        background-color: #264773 !important;
+        border-color: #264773 !important;
+        color: #ffffff !important;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+
+    /* 滑鼠移上去時稍微變亮或增加陰影，提升互動感 */
+    .btn-theme:hover {
+        background-color: #183253 !important; /* 稍微深一點點的藍 */
+        border-color: #183253 !important;
+        color: #ffffff !important;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(9, 56, 78, 0.3);
+    }
+
+</style>
 {% endblock %}
