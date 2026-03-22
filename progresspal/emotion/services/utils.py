@@ -31,8 +31,10 @@ def map_emotion_to_score(emotion):
         scores.append(0.5) #設為0.5
     else:
       if e not in EMOTION_TO_ENGAGEMENT:
-        raise ValueError(f"未知情緒: {e}")
-      scores.append(EMOTION_TO_ENGAGEMENT[e])
+          # 遇到 "未知"、"None" 或其他未知情緒時，不再報錯，而是給予預設的 0.5 分 (中性)
+          scores.append(0.5)
+      else:
+          scores.append(EMOTION_TO_ENGAGEMENT[e])
   return scores
 
 #輸入情緒序列，回傳參與度分數
