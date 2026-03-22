@@ -40,7 +40,7 @@ class CustomUser(AbstractUser):
         if not records.exists():
             return ["None"]
         records = reversed(records)  # 由遠到近
-        return [self.EMOTION_MAP.get(rec.emotion, "不知") for rec in records]
+        return [self.EMOTION_MAP.get(rec.emotion, "未知") for rec in records]
 
     
 # 學習紀錄
