@@ -46,7 +46,7 @@ urlpatterns = [
     path('lesson/<int:chapter_code>/quiz/check/api/', learning.check_answers, name='quiz-check-api'),
 
     # 結束學習並更新學習記錄
-    # path("lesson/end/", learning.end_study, name="end-study"),
+    path("lesson/end/", learning.end_study, name="end-study"),
 
     # 測試用
     path('user/add-material/', accounts.add_material, name='add-material'),

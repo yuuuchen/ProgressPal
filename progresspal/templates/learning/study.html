@@ -100,23 +100,23 @@
     <!--切換單元-->
     <div class="d-flex justify-content-center gap-3 my-2 mt-3 ">
         {% if previous_unit %}
-            <a href="{% url 'learning' chapter_code=previous_unit.chapter.chapter_number unit_code=previous_unit.unit_number %}"
-            class="btn btn-secondary">
-                &larr; 上一單元
-            </a>
-        {% endif %}
+        <a href="{% url 'learning' chapter_code=previous_unit.chapter.chapter_number unit_code=previous_unit.unit_number %}"
+        class="btn btn-secondary record-exit"> &larr; 上一單元
+        </a>
+    {% endif %}
 
-        {% if next_unit %}
-            <a href="{% url 'learning' chapter_code=next_unit.chapter.chapter_number unit_code=next_unit.unit_number %}"
-            class="btn text-white" style="background-color: #09384e; border-color: #09384e;"> 
-                下一單元 &rarr;
-            </a>
-        {% else %}
+    {% if next_unit %}
+        <a href="{% url 'learning' chapter_code=next_unit.chapter.chapter_number unit_code=next_unit.unit_number %}"
+        class="btn text-white record-exit" style="background-color: #09384e;"> 
+            下一單元 &rarr;
+        </a>
+    {% else %}
         <a href="{% url 'quiz' chapter_code=unit.chapter.chapter_number %}"
-           class="btn text-white" style="background-color: #09384e; border-color: #09384e;"> 
+        class="btn text-white record-exit" style="background-color: #09384e;"> 
             進入測驗 &rarr;
         </a>
-        {% endif %}
+    {% endif %}
+        
     </div>
 </div>
 {% endblock %}
@@ -166,19 +166,18 @@
     </script>
     
 
-{% comment %}
     <!-- 傳遞record_id給前端 -->
-    <!--
     <script>
-    window.RECORD_ID = {{ record_id }};
-    window.END_URL = "{% url 'end-study' %}";
-    </script> -->
-{% endcomment %}
+        window.RECORD_ID = "{{ record_id|default:'' }}"; 
+        window.END_URL = "{% url 'end-study' %}";
+        window.HAS_SENT_RECORD = false;
 
+        // 除錯用：進入頁面時先印出來看看
+        console.log("初始化學習紀錄 - ID:", window.RECORD_ID, "URL:", window.END_URL);
+    </script>
 
     <script src="{% static 'js/material.js' %}"></script>
     <script src="{% static 'js/chat.js' %}"></script>
-    <!-- <script src="{% static 'js/duration.js' %}"></script> -->
+    <script src="{% static 'js/duration.js' %}"></script>
     <script src="{% static 'js/camera.js' %}"></script>
-    <!--script src="{% static 'js/emotion.js' %}"></script-->
 {% endblock %}

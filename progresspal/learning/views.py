@@ -11,6 +11,7 @@ from .forms import StudyForm
 from accounts.models import QuestionLog, LearningRecord
 from .models import Chapter, Unit, QuizQuestion
 import json
+from datetime import timedelta
 
 def homepage(request):
     """學習首頁"""
@@ -52,16 +53,31 @@ def generate_materials_view(request, chapter_code, unit_code):
     current_emotion = emotions[-1] if emotions else "偵測中"
 
     # 呼叫教材生成
-    result = main.display_materials(chapter_code, unit_code, engagement, role)
+    try:
+        # 呼叫教材生成
+        result = main.display_materials(chapter_code, unit_code, engagement, role)
+    except RuntimeError as e:
+        # 捕捉 "所有 Groq API Key 的流量都已耗盡" 的錯誤
+        if "耗盡" in str(e) or "quota" in str(e).lower():
+            # 渲染額度用盡的提示頁面
+            return render(request, "learning/quota_exceeded.html")
+        else:
+            # 如果是其他未知的 RuntimeError，則重新拋出或做其他處理
+            raise e
+        
     extended_question = result.get("extended_questions", "")
     request.session["current_extended_question"] = extended_question
     request.session.modified = True
-    # 建立學習記錄
+    # 建立學習記錄(起點)並傳給前端以便後續更新結束時間
+    
     record = LearningRecord.objects.create(
         user=request.user,
         chapter_code=chapter_code,
         unit_code=unit_code
     )
+    # 2. 除錯點：在終端機印出來看看
+    print(f"DEBUG: 產生的紀錄 ID 為 {record.id}")
+
     context = {
         "chapter": chapter,
         "unit": unit,
@@ -74,7 +90,7 @@ def generate_materials_view(request, chapter_code, unit_code):
         "extended_question": extended_question, 
         "current_emotion": current_emotion,
         "form": StudyForm(),
-        #"record_id": record.id,   # 傳給前端用於關聯學習記錄
+        "record_id": record.id,   # 傳給前端用於關聯學習記錄
     }
     return render(request, "learning/study.html", context)
 
@@ -146,20 +162,29 @@ def answer_question_view(request, chapter_code, unit_code):
 
 
 # 結束學習並更新學習記錄
+@csrf_exempt
 def end_study(request):
     if request.method == "POST":
-        data = json.loads(request.body.decode("utf-8"))
-        record_id = data.get("id")
-
         try:
-            record = LearningRecord.objects.get(id=record_id)
-            record.end_time = timezone.now()
-            record.save()
-            return JsonResponse({"status": "ok"})
-        except LearningRecord.DoesNotExist:
-            return JsonResponse({"status": "error", "msg": "not found"}, status=400)
+            data = json.loads(request.body)
+            record_id = data.get("id")
+            duration_seconds = data.get("duration_seconds")
 
-    return JsonResponse({"status": "error", "msg": "invalid request"}, status=400)
+            if record_id:
+                record = LearningRecord.objects.get(id=record_id, user=request.user)
+                
+                # 如果有傳秒數，用 start_time + 秒數
+                if duration_seconds is not None:
+                    record.end_time = record.start_time + timedelta(seconds=int(duration_seconds))
+                else:
+                    # 沒傳秒數則用當下時間（備援）
+                    record.end_time = timezone.now()
+                
+                record.save()
+                return JsonResponse({"status": "ok"})
+        except Exception as e:
+            return JsonResponse({"status": "error", "msg": str(e)}, status=400)
+    return JsonResponse({"status": "error"}, status=405)
 
 # 將chapter、units 渲染到 quiz頁面
 def chapter_quiz_view(request, chapter_code):
