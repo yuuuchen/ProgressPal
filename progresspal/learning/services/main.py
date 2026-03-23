@@ -60,7 +60,8 @@ class RotationalGroqClient:
 def get_rotational_client():
     return RotationalGroqClient()
 
-model = "llama-3.3-70b-versatile"
+model_qa = "llama-3.3-70b-versatile"
+model_materials = "openai/gpt-oss-120b"
 
 # 教材顯示
 def display_materials(chapter_id, unit_id, engagement, role):
@@ -73,7 +74,7 @@ def display_materials(chapter_id, unit_id, engagement, role):
         {"role": "system", "content": system_instruction},
         {"role": "user", "content": prompt}
     ]    
-    resp_text = client.generate_content(model=model, messages=messages, temperature=temp)
+    resp_text = client.generate_content(model=model_materials, messages=messages, temperature=temp)
     result = clean_text_tutoring(resp_text)    
     return {
         "teaching": result.get("teaching"),
@@ -122,7 +123,7 @@ def expand_query_with_hyde(question, chapter_id, unit_id):
             question=question
         )}
     ]    
-    expanded_query = client.generate_content(model=model, messages=messages, temperature=0.3)
+    expanded_query = client.generate_content(model=model_qa, messages=messages, temperature=0.3)
     return expanded_query.strip()
 
 def generate_redirection_message(user_input, chapter_id, unit_id, error_msg=None):
@@ -146,7 +147,7 @@ def generate_redirection_message(user_input, chapter_id, unit_id, error_msg=None
         )}
     ]
     
-    raw_response = client.generate_content(model=model, messages=messages, temperature=0.7)
+    raw_response = client.generate_content(model=model_qa, messages=messages, temperature=0.7)
     
     answer_text = ""
     ext_question = ""
@@ -218,7 +219,7 @@ def respond_to_question(prompt, engagement, role):
         {"role": "system", "content": system_instruction},
         {"role": "user", "content": prompt}
     ]    
-    resp_text = client.generate_content(model=model, messages=messages, temperature=temp)
+    resp_text = client.generate_content(model=model_qa, messages=messages, temperature=temp)
     result = clean_text_qa(resp_text)    
     return {
         "answer": result.get("answer"),
