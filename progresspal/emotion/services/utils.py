@@ -48,7 +48,7 @@ def compute_engagement(emotions):
 
   #空序列
   if not emotions:
-    raise ValueError("情緒序列不可為空")
+    return "high"
 
   #情緒字串轉成數值分數
   scores = map_emotion_to_score(emotions)
