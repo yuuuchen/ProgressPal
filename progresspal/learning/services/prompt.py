@@ -141,7 +141,7 @@ SYSTEM_PROMPT = """
 
 ### 輸出規格限制：
 1. 使用 Markdown 或表格。
-2. 回答中若包含程式碼，請使用python語言 (例如 ```python)。
+2. 回答中若包含程式碼，請使用python語言與標籤 (例如 ```python。結尾 ```)。
 """
 def set_system_prompt(identity='資訊領域大學生'):
   '''
