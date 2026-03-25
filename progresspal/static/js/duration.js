@@ -60,14 +60,14 @@ async function saveAndNavigate(targetUrl) {
     window.location.href = targetUrl;
 }
 
-// 4. 心跳機制：每 20 秒跑一次
+// 4. 心跳機制：每 10 秒跑一次
 function startHeartbeat() {
     setInterval(async () => {
         // 如果還沒執行跳轉存檔，就繼續跑心跳
         if (!window.HAS_SENT_RECORD) {
             await sendDurationUpdate();
         }
-    }, 20000); 
+    }, 10000); 
 }
 
 // 頁面載入後啟動心跳
