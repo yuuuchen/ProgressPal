@@ -87,7 +87,7 @@ def generate_materials_view(request, chapter_code, unit_code):
         "role": role,
         "teaching": utils.to_markdown(result.get("teaching")),
         "example": utils.to_markdown(result.get("example")),
-        "extended_question": extended_question, 
+        "extended_question": utils.to_markdown(extended_question), 
         "current_emotion": current_emotion,
         "form": StudyForm(),
         "record_id": record.id,   # 傳給前端用於關聯學習記錄
@@ -157,7 +157,7 @@ def answer_question_view(request, chapter_code, unit_code):
     # 回傳 JSON
     return JsonResponse({
         "answer": answer,
-        "extended_questions": new_extended_question
+        "extended_questions": utils.to_markdown(new_extended_question)
     })
 
 
