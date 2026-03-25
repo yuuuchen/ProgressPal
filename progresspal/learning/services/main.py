@@ -200,12 +200,12 @@ def answer_general_question(question, engagement, role, chapter_id, unit_id):
     """處理一般提問：HyDE + RAG"""
     # 使用 HyDE 方法完整化提問
     hyde_query = expand_query_with_hyde(question, chapter_id, unit_id)
-    print(f"[Debug] HyDE 擴展後的查詢語句: {hyde_query}")
+    # print(f"[Debug] HyDE 擴展後的查詢語句: {hyde_query}")
     if "[IRRELEVANT]" in hyde_query:
         return generate_redirection_message(question, chapter_id, unit_id, error_msg=None)
     # 執行 RAG 檢索
     docs = retrieve_docs(hyde_query, top_k=3)
-    print(f"[Debug] 檢索到的文件: {docs}")
+    # print(f"[Debug] 檢索到的文件: {docs}")
 
     # 呼叫 generate_prompt()
     prompt = generate_prompt(engagement, question, docs)    
