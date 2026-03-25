@@ -6,7 +6,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const context = canvasElement.getContext('2d');
     let lowEngagementCounter = 0;  // 追蹤低參與度
     const PROACTIVE_THRESHOLD = 7; // 連續 7 次低參與度就觸發訊息
-    const unitStartTime = Date.now();  // 紀錄進入單元的初始時間
+    //const unitStartTime = Date.now();  // 紀錄進入單元的初始時間
+    window.unitStartTime = Date.now();  // 綁定到 window 變成全域變數
 
     // 設定參數
     const INTERVAL_MS = 5000; // 5秒
@@ -197,27 +198,28 @@ document.addEventListener("DOMContentLoaded", () => {
         return cookieValue;
     }
 
-    // 轉換為 hh:mm:ss 格式的函式
-    function getFormattedDuration() {
-        const diff = Date.now() - unitStartTime;
-        const seconds = Math.floor((diff / 1000) % 60);
-        const minutes = Math.floor((diff / (1000 * 60)) % 60);
-        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    // // 轉換為 hh:mm:ss 格式的函式
+    // function getFormattedDuration() {
+    //     //const diff = Date.now() - unitStartTime;
+    //     const diff = Date.now() - window.unitStartTime;
+    //     const seconds = Math.floor((diff / 1000) % 60);
+    //     const minutes = Math.floor((diff / (1000 * 60)) % 60);
+    //     const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
 
-        const h = hours > 0 ? `${hours.toString().padStart(2, '0')}:` : "";
-        const m = minutes.toString().padStart(2, '0');
-        const s = seconds.toString().padStart(2, '0');
+    //     const h = hours > 0 ? `${hours.toString().padStart(2, '0')}:` : "";
+    //     const m = minutes.toString().padStart(2, '0');
+    //     const s = seconds.toString().padStart(2, '0');
         
-        return `單元學習時間：${h}${m}:${s}`;
-    }
+    //     return `單元學習時間：${h}${m}:${s}`;
+    // }
 
-    // 每秒更新一次計時器文字
-    setInterval(() => {
-        const timerElement = document.getElementById('live-study-timer');
-        if (timerElement) {
-            timerElement.innerText = getFormattedDuration();
-        }
-    }, 1000);
+    // // 每秒更新一次計時器文字
+    // setInterval(() => {
+    //     const timerElement = document.getElementById('live-study-timer');
+    //     if (timerElement) {
+    //         timerElement.innerText = getFormattedDuration();
+    //     }
+    // }, 1000);
 
     // 啟動程式
     initCamera();
