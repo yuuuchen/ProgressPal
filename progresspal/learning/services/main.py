@@ -3,19 +3,16 @@
 主要服務模組，整合問答、教材生成與測驗功能
 '''
 import os, re, textwrap, time, json,random
-from dotenv import load_dotenv
-
-from groq import Groq
 
 from django.db import transaction
-from django.conf import settings
+from learning.services.llm_model import (model_qa,model_materials,get_rotational_client)
 from learning.services.prompt import (
     generate_prompt,
     generate_materials,
     generate_prompt_extended,
     set_system_prompt,
     HYDE_EXPANSION_PROMPT,
-    REDIRECTION_PROMPT_TEMPLATE
+    REDIRECTION_PROMPT,
 )
 from learning.models import QuizQuestion
 from accounts.models import QuizResult, QuizResultQuestion
@@ -25,46 +22,8 @@ from learning.services.content import get_unit
 from rag.services.rag import retrieve_docs
 from . import utils
 
-class RotationalGroqClient:
-    """自動輪替 Groq API Keys 的 Client"""
-    def __init__(self):
-        self.api_keys = settings.GROQ_API_KEYS
-
-    def generate_content(self, model, messages, temperature=0.3):
-        """
-        模擬 Groq 的 chat.completions.create 並加入 Key 輪替邏輯
-        """
-        last_error = None           
-        for index, key in enumerate(self.api_keys):
-            try:
-                clean_key = str(key).strip().replace('"', '').replace("'", "")
-                real_client = Groq(api_key=clean_key)                    
-                response = real_client.chat.completions.create(
-                    model=model,
-                    messages=messages,
-                    temperature=temperature,
-                )                   
-                return response.choices[0].message.content
-            except Exception as e:
-                error_msg = str(e)
-                print(f"[除錯] Groq Key #{index+1} 發生錯誤: {error_msg}")
-                # 針對 Groq 的 Rate Limit (429) 或授權問題進行切換
-                if "429" in error_msg or "rate_limit" in error_msg or "401" in error_msg:
-                    print(f"[警告] Groq Key #{index+1} 失效或流量耗盡，切換下一個 Key...")
-                    last_error = e
-                    continue 
-                else:
-                    raise e           
-        raise RuntimeError("所有 Groq API Key 的流量都已耗盡。") from last_error
-
-def get_rotational_client():
-    return RotationalGroqClient()
-
-model_qa = "llama-3.3-70b-versatile"
-model_materials = "openai/gpt-oss-120b"
-
-# 教材顯示
 def display_materials(chapter_id, unit_id, engagement, role):
+    """教材顯示"""
     unit = get_unit(chapter_id, unit_id)
     prompt = generate_materials(engagement, unit)    
     system_instruction = set_system_prompt(role)
@@ -83,9 +42,7 @@ def display_materials(chapter_id, unit_id, engagement, role):
     }
 
 def validate_user_input(question):
-    """
-    初步過濾使用者輸入，回傳 (bool, message)
-    """
+    """初步過濾使用者輸入，回傳 (bool, message)"""
     # 去除前後空白
     text = question.strip()
     # 1. 檢查是否為空
@@ -111,7 +68,6 @@ def expand_query_with_hyde(question, chapter_id, unit_id):
     unit = Unit.objects.get(chapter=chapter, unit_number=unit_id)
     chapter_name = chapter.title
     unit_name = unit.title
-
     # Debug 用：確認傳入的名稱是否有意義
     # print(f"[Debug] HyDE Context: Chapter={chapter_name}, Unit={unit_name}")
 
@@ -128,44 +84,47 @@ def expand_query_with_hyde(question, chapter_id, unit_id):
 
 def generate_redirection_message(user_input, chapter_id, unit_id, error_msg=None):
     """
-    通用引導函式：
     - 若有 error_msg：針對輸入錯誤（亂碼、太短等）進行優化回應。
     - 若無 error_msg：針對離題（HyDE 判定 IRRELEVANT）進行引導。
     """
     client = get_rotational_client()
     chapter = Chapter.objects.get(chapter_number=chapter_id)
     unit = Unit.objects.get(chapter=chapter, unit_number=unit_id)
-    
-    # 將錯誤提示訊息加入 Prompt 上下文
+    docs = get_unit(chapter_id, unit_id)
+    # 準備對話訊息
     messages = [
         {"role": "system", "content": "你是一位親切的資管系助教，擅長鼓勵學生並引導他們回到學習主軸。"},
-        {"role": "user", "content": REDIRECTION_PROMPT_TEMPLATE.format(
+        {"role": "user", "content": REDIRECTION_PROMPT.format(
             chapter_name=chapter.title,
             unit_name=unit.title,
             user_input=user_input,
-            error_msg=error_msg if error_msg else "這是一個與課程無關的話題"
+            error_msg=error_msg if error_msg else "這是一個與課程無關的話題",
+            docs=docs  # 補上 Prompt 裡需要的 docs 變數
         )}
-    ]
-    
-    raw_response = client.generate_content(model=model_qa, messages=messages, temperature=0.7)
-    
-    answer_text = ""
-    ext_question = ""
+    ]        
     try:
-        lines = raw_response.strip().split("\n")
-        for line in lines:
-            if line.startswith("回應："):
-                answer_text = line.replace("回應：", "").strip()
-            elif line.startswith("延伸提問："):
-                ext_question = line.replace("延伸提問：", "").strip()
-    except:
-        answer_text = error_msg if error_msg else "我們還是先回來聊聊資料結構吧！"
-        ext_question = f"你知道 {unit.title} 最重要的概念是什麼嗎？"
+        # 呼叫 LLM (依據你的 client API 可能回傳字串或物件，此處假設與原版行為相同)
+        raw_response = client.generate_content(model=model_qa, messages=messages, temperature=0.7)
+        
+        # 確保轉為字串格式
+        raw_text = raw_response if isinstance(raw_response, str) else str(raw_response)
+        
+        # 呼叫 clean_text_qa 進行統一格式解析
+        result = clean_text_qa(raw_text)
+        
+        # 如果模型沒有照格式輸出，替換為預設回覆
+        if result["answer"] == "（模型未輸出回答）":
+            result["answer"] = error_msg if error_msg else "我們還是先回來聊聊資料結構吧！"
+        if result["extended_question"] == "（模型未輸出回答）":
+            result["extended_question"] = f"你知道 {unit.title} 最重要的概念是什麼嗎？"        
+        return result
 
-    return {
-        "answer": answer_text,
-        "extended_question": ext_question
-    }
+    except Exception as e:
+        # 錯誤處理 (API 錯誤或其他異常)：回傳預設的安全回應
+        return {
+            "answer": error_msg if error_msg else "我們還是先回來聊聊資料結構吧！",
+            "extended_question": f"你知道 {unit.title} 最重要的概念是什麼嗎？"
+        }
 
 def answer_question(question, engagement, role, chapter_id, unit_id, is_extended=False, extended_question_text=None):
     """
@@ -185,8 +144,17 @@ def answer_question(question, engagement, role, chapter_id, unit_id, is_extended
         # 使用者點選延伸問題，直接進入延伸處理邏輯
         return answer_extended_question(question, engagement, chapter_id, unit_id, extended_question_text, role)
     else:
-        # 一般提問流程：HyDE 強化 -> RAG 檢索 -> 生成回答
-        return answer_general_question(question, engagement, role, chapter_id, unit_id)
+        # 使用 HyDE 方法完整化提問
+        hyde_query = expand_query_with_hyde(question, chapter_id, unit_id)
+        # print(f"[Debug] HyDE 擴展後的查詢語句: {hyde_query}")
+        if "[IRRELEVANT]" in hyde_query:
+            return generate_redirection_message(question, chapter_id, unit_id, error_msg=None)
+        # 執行 RAG 檢索
+        docs = retrieve_docs(hyde_query, top_k=3)
+        # print(f"[Debug] 檢索到的文件: {docs}")
+
+        prompt = generate_prompt(engagement, question, docs)    
+        return respond_to_question(prompt, engagement, role)
 
 def answer_extended_question(question, engagement, chapter_id, unit_id, extended_question, role):
     """處理延伸問題的回答"""
@@ -195,22 +163,7 @@ def answer_extended_question(question, engagement, chapter_id, unit_id, extended
         engagement, question, docs, extended_question,
     )
     return respond_to_question(prompt, engagement, role)
-
-def answer_general_question(question, engagement, role, chapter_id, unit_id):
-    """處理一般提問：HyDE + RAG"""
-    # 使用 HyDE 方法完整化提問
-    hyde_query = expand_query_with_hyde(question, chapter_id, unit_id)
-    # print(f"[Debug] HyDE 擴展後的查詢語句: {hyde_query}")
-    if "[IRRELEVANT]" in hyde_query:
-        return generate_redirection_message(question, chapter_id, unit_id, error_msg=None)
-    # 執行 RAG 檢索
-    docs = retrieve_docs(hyde_query, top_k=3)
-    # print(f"[Debug] 檢索到的文件: {docs}")
-
-    # 呼叫 generate_prompt()
-    prompt = generate_prompt(engagement, question, docs)    
-    return respond_to_question(prompt, engagement, role)
-
+    
 def respond_to_question(prompt, engagement, role):
     system_instruction = set_system_prompt(role)
     temp = 0.5 if engagement != "low" else 0.7   
