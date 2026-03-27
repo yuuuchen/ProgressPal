@@ -1,13 +1,22 @@
+/* 1. 修正 body，讓它回歸正常垂直排列 */
 body {
     background-color: #FFFFFF;
     color: #000000;
     font-family: "Noto Sans TC", "微軟正黑體", sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+    margin: 0;
+    display: block; /* 確保不是 flex */
 }
 
+/* 2. 針對 main-content 進行設定，讓它佔滿剩餘空間並居中內容 */
+.main-content {
+    min-height: calc(100vh - 160px); /* 扣除 header 和 footer 的預估高度 */
+    display: flex;
+    justify-content: center; /* 這裡才開始水平居中 */
+    align-items: center;     /* 這裡才開始垂直居中 */
+    padding: 40px 0;
+}
+
+/* 3. 登入框維持原樣，不需要動 */
 .login-container {
     width: 360px;
     padding: 40px;

@@ -79,15 +79,6 @@
 
 /* --- 全螢幕 --- */
 /* 問答區權重變大 */
-.chat-section.fullscreen-active {
-    flex: 99 !important; /* 強制佔滿空間 */
-}
-
-/* 當進入全螢幕時，隱藏情緒偵測區 */
-.chat-section.fullscreen-active #emotion-display {
-    display: none ; /* [關鍵] 全螢幕時情緒區消失 */
-}
-
 /* 教材區隱藏：權重歸零 */
 .teaching-section.is-hidden {
     flex: 0 !important;
