@@ -33,19 +33,33 @@ PROMPT_TEMPLATES = {
 
     # 行為 2：教學（教材結構化）
 "tutoring_with_code": """
-【任務】教學
+【任務】根據教材進行教學，若內容過長，優先保留核心解析，簡化觀念導讀
 
-【輸出格式（必須完全一致）】
+【關鍵規則（必須遵守）】
+1. 若教材中包含「比較表 / 表格 / 對照內容」，必須完整保留
+2. 表格優先級高於觀念導讀（可縮減觀念導讀，不可刪表格）
+3. 表格需轉為 Markdown 表格格式輸出
+4. 不可省略表格欄位或內容
 
+【回答風格設定】
+回應風格: {style}
+學生參與度: {engagement}
+【輸出格式（必須包含：### 觀念導讀、### 核心解析、### 範例、### 引導提問）】
 ### 觀念導讀
-- 用 2~3 句話說明此教材的學習主題
+- 先用一個自然段落說明概念（像在對學生說話）
+- 段落後可用 2~3 點條列整理關鍵詞
 - 說明「這個概念在資料結構中的角色或用途」
 - 不可引入教材未出現的新名詞
 
 ### 核心解析
-- 依照教材逐步解釋核心概念，，請包含「所有」重點
-- 說明概念之間的關係或流程
-- 若教材包含演算法或結構，需解釋其運作方式
+- 依照教材逐步解釋核心概念，請包含「所有」重點
+- 使用自然段落與markdown
+- 若教材包含表格：
+  - 先用一句話說明表格用途
+  - 再輸出 Markdown 表格
+  - 最後補充解釋
+- 禁止使用程式碼教學
+- 不可引入教材未出現的新名詞
 
 ### 範例
 - 提供對應教材的 Python 範例
@@ -55,39 +69,38 @@ PROMPT_TEMPLATES = {
 {extended_question}
 一題即可
 
-【回答風格設定】
-回應風格: {style}
-學生參與度: {engagement}
-
-教材:
-{materials}
+【教材】{materials}
 """,
 
     "tutoring_no_code": """
-【任務】教學
-
-【輸出格式（必須完全一致）】
+【任務】根據教材進行教學，若內容過長，優先保留核心解析，簡化觀念導讀
+【規則】
+- 總字數必須 ≤ 800 字（超出視為錯誤）
+【回答風格設定】
+回應風格: {style}
+學生參與度: {engagement}
+【輸出格式（必須包含：### 觀念導讀、### 核心解析、### 引導提問）】
 
 ### 觀念導讀
-- 用 2~3 句話說明此教材的學習主題
+- 先用一個自然段落說明概念（像在對學生說話）
+- 段落後用 2~3 點條列整理關鍵詞
 - 說明「這個概念在資料結構中的角色或用途」
 - 不可引入教材未出現的新名詞
 
 ### 核心解析
 - 依照教材逐步解釋核心概念，請包含「所有」重點
-- 說明概念之間的關係或流程
-- 若教材包含演算法或結構，需解釋其運作方式
+- 使用自然段落與markdown
+- 若教材包含表格：
+  - 先用一句話說明表格用途
+  - 再輸出 Markdown 表格
+  - 最後補充解釋
+- 禁止使用程式碼教學
+- 不可引入教材未出現的新名詞
 
 ### 引導提問
 {extended_question}
 一題即可
-
-【回答風格設定】
-回應風格: {style}
-學生參與度: {engagement}
-
-教材:
-{materials}
+【教材】{materials}
 """,
     # 行為 3:回應學生對於題目的回答
 "extended_answer": """
@@ -127,20 +140,19 @@ SYSTEM_PROMPT = """
 你需要根據學生的「學習參與度」調整語氣、解釋深度與互動方式。
 
 ### 語言與風格限制（必須遵守）
-1. 使用自然語言分段回答
-2. 語氣需「溫暖、教學導向」。
-3. 直接回應問題，不要打招呼。
-4. 全文需使用繁體中文。
-5. 以學生需求為主，學習參與度調整為輔
+1. 主要內容必須使用「自然段落」講解（像老師解釋）
+2. 直接回應問題，不要打招呼。
+3. 全文需使用繁體中文。
+4. 以學生需求為主，學習參與度調整為輔
 
 ### 內容限制（違反即為錯誤輸出）
-1. 僅能使用提供的教材內容
-2. 不可引入外部知識
-3. 不可自行補充未出現在教材的概念
-4. 若需進行程式碼教學，請使用 python 語言
+1. 使用提供的教材內容，**不可引入外部知識**
+2. 禁止自行補充未出現在教材的概念
+3. 若需進行程式碼教學，請使用 python 語言
+4. 回答需避免過長導致截斷，請確保總字數 ≤ 800 字
 
 ### 輸出規格限制：
-1. 使用 Markdown 或表格。
+1. 使用 Markdown 或表格回應。
 2. 回答中若包含程式碼，請使用python語言與標籤 (例如 ```python。結尾 ```)。
 """
 def set_system_prompt(identity='資訊領域大學生'):
@@ -149,9 +161,9 @@ def set_system_prompt(identity='資訊領域大學生'):
   return: new Systemprompt
   '''
   mapping = {
-  '資訊領域大學生':'''請以專業術語講解，提供程式碼範例。''',
+  '資訊領域大學生':'''請以專業術語講解。''',
   '非資訊領域大學生':'''請循序漸進，不要一次丟太多資訊。避免使用專業術語。''',
-  'mis_student':'''請以專業術語講解，提供程式碼範例。''',
+  'mis_student':'''請以專業術語講解。''',
   'normal_student':'''請循序漸進，不要一次丟太多資訊。避免使用專業術語。''',
   }
   strategy = mapping.get(identity, "請根據學生程度調整教學方式。")
@@ -164,29 +176,29 @@ def set_system_prompt(identity='資訊領域大學生'):
 def map_engagement_to_profile(engagement: str, mode: str = 'qa') -> dict:
     """
     根據學生參與度與模式，返回教學風格與引導提問設定。
-    
+
     Args:
         engagement: 'high' 或 'low'
-        mode: 
+        mode:
             - 'tutoring': 主動教學模式
             - 'qa': 問答與回應模式 (包含 qa 與 extended_answer)
-            
+
     Returns:
         dict: {
             "style": 教學回覆風格描述,
             "extended_question": 引導提問策略
         }
     """
-    
+
     # 定義基礎語氣風格 (Styles)
     styles = {
         "high": '''- 語氣：積極且肯定
 - 教學風格：引導延伸思考，促使挑戰性學習
 - 回覆時：提供更深入的概念解釋''',
-        
+
         "low": '''- 語氣：溫和且耐心
 - 教學風格：降低學習困難度，舉例對照、比喻解釋
-- 回覆時：用簡單清楚的方式解釋概念，加入生活化例子，結尾加入正向鼓勵。'''
+- 回覆時：用簡單清楚的方式解釋概念，加入概念相同的生活化例子，結尾加入正向鼓勵。'''
     }
 
     # 定義提問策略 (Question Strategies) 區分為教學與問答
@@ -205,7 +217,7 @@ def map_engagement_to_profile(engagement: str, mode: str = 'qa') -> dict:
 
     # 取得基礎風格 (若無對應則給預設值)
     selected_style = styles.get(engagement, "提供直接的解釋，避免額外挑戰或比喻")
-    
+
     # 取得策略 (預設為 qa 模式)
     mode_strategies = strategies.get(mode, strategies["qa"])
     selected_question_strategy = mode_strategies.get(engagement, "提供學習的下一步建議")
@@ -235,7 +247,7 @@ def generate_prompt(engagement, question, materials):
   template = PROMPT_TEMPLATES["qa"]
   # Mode 設定為 'qa'
   mapping = map_engagement_to_profile(engagement, mode='qa')
-  
+
   prompt_text = template.format(
       style=mapping["style"],
       extended_question=mapping["extended_question"],
@@ -283,7 +295,7 @@ def generate_prompt_extended(engagement, answer, materials,topic):
   template = PROMPT_TEMPLATES["extended_answer"]
   # Mode 設定為 'qa' (回應視為廣義的問答)
   mapping = map_engagement_to_profile(engagement, mode='qa')
-  
+
   prompt_text = template.format(
       style=mapping["style"],
       extended_question=mapping["extended_question"],
@@ -335,7 +347,7 @@ REDIRECTION_PROMPT = """
 
 【輸入情境分析】
 1. 學生原始輸入： 「{user_input}」
-2. 系統過濾建議： 「{error_msg}」 
+2. 系統過濾建議： 「{error_msg}」
    (註：若此項為 "None" 或為空，代表輸入格式正確但內容與「資料結構」課程無關。)
 
 【單元教材參考】
