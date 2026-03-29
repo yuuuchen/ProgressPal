@@ -16,29 +16,6 @@ function getCookie(name) {
     return cookieValue;
 }
 
-    // 轉換為 hh:mm:ss 格式的函式
-    function getFormattedDuration() {
-        //const diff = Date.now() - unitStartTime;
-        const diff = Date.now() - window.unitStartTime;
-        const seconds = Math.floor((diff / 1000) % 60);
-        const minutes = Math.floor((diff / (1000 * 60)) % 60);
-        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-
-        const h = hours > 0 ? `${hours.toString().padStart(2, '0')}:` : "";
-        const m = minutes.toString().padStart(2, '0');
-        const s = seconds.toString().padStart(2, '0');
-        
-        return `單元學習時間：${h}${m}:${s}`;
-    }
-
-    // 每秒更新一次計時器文字
-    setInterval(() => {
-        const timerElement = document.getElementById('live-study-timer');
-        if (timerElement) {
-            timerElement.innerText = getFormattedDuration();
-        }
-    }, 1000);
-
 
 // 2. 核心發送邏輯
 async function sendDurationUpdate() {
