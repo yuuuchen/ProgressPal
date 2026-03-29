@@ -75,8 +75,8 @@ def generate_materials_view(request, chapter_code, unit_code):
         chapter_code=chapter_code,
         unit_code=unit_code
     )
-    # 2. 除錯點：在終端機印出來看看
-    print(f"DEBUG: 產生的紀錄 ID 為 {record.id}")
+    # 除錯點：在終端機印出來看看
+    # print(f"DEBUG: 產生的紀錄 ID 為 {record.id}")
 
     context = {
         "chapter": chapter,
