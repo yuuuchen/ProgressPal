@@ -27,13 +27,12 @@ def display_materials(chapter_id, unit_id, engagement, role):
     unit = get_unit(chapter_id, unit_id)
     prompt = generate_materials(engagement, unit)    
     system_instruction = set_system_prompt(role)
-    temp = 0.5 if engagement != "low" else 0.7    
     client = get_rotational_client()
     messages = [
         {"role": "system", "content": system_instruction},
         {"role": "user", "content": prompt}
     ]    
-    resp_text = client.generate_materials_content(model=model_materials, messages=messages, temperature=temp)
+    resp_text = client.generate_materials_content(model=model_materials, messages=messages)
     result = clean_text_tutoring(resp_text)    
     return {
         "teaching": result.get("teaching"),

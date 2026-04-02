@@ -54,7 +54,6 @@ class RotationalGroqClient:
                     temperature=temperature,
                     max_completion_tokens=max_tokens, 
                     top_p=1,
-                    reasoning_effort="low", # 成功關閉深度推理
                     stream=False
                 )                   
                 return response.choices[0].message.content
