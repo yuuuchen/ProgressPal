@@ -22,7 +22,7 @@ PROMPT_TEMPLATES = {
 
 ### 引導提問
 {extended_question}
-一題即可。
+**一題**即可
 
 【回答風格設定】
 回應風格: {style}
@@ -47,7 +47,7 @@ PROMPT_TEMPLATES = {
 【輸出格式（必須包含：### 觀念導讀、### 核心解析、### 範例、### 引導提問）】
 ### 觀念導讀
 - 先用一個自然段落說明概念（像在對學生說話）
-- 段落後用#### 關鍵詞： 2~3 點條列整理關鍵詞
+- **必須輸出**在上述段落後，緊接著換行使用 #### {hint}： 並條列 2~3 點本章關鍵詞
 - 說明「這個概念在資料結構中的角色或用途」
 - 不可引入教材未出現的新名詞
 
@@ -67,7 +67,7 @@ PROMPT_TEMPLATES = {
 
 ### 引導提問
 {extended_question}
-一題即可
+**一題**即可
 
 【教材】{materials}
 """,
@@ -83,7 +83,7 @@ PROMPT_TEMPLATES = {
 
 ### 觀念導讀
 - 先用一個自然段落說明概念（像在對學生說話）
-- 段落後用#### 關鍵詞： 2~3 點條列整理關鍵詞
+- **必須輸出**在上述段落後，緊接著換行使用 #### {hint}： 並條列 2~3 點本章關鍵詞
 - 說明「這個概念在資料結構中的角色或用途」
 - 不可引入教材未出現的新名詞
 
@@ -99,7 +99,7 @@ PROMPT_TEMPLATES = {
 
 ### 引導提問
 {extended_question}
-一題即可
+**一題**即可
 【教材】{materials}
 """,
     # 行為 3:回應學生對於題目的回答
@@ -187,6 +187,7 @@ def map_engagement_to_profile(engagement: str, mode: str = 'qa') -> dict:
         dict: {
             "style": 教學回覆風格描述,
             "extended_question": 引導提問策略
+            "hint": 提示詞"
         }
     """
 
@@ -199,6 +200,10 @@ def map_engagement_to_profile(engagement: str, mode: str = 'qa') -> dict:
         "low": '''- 語氣：溫和且耐心
 - 教學風格：降低學習困難度，舉例對照、比喻解釋
 - 回覆時：用簡單清楚的方式解釋概念，加入概念相同的生活化例子，結尾加入正向鼓勵。'''
+    }
+    hint = {
+        "high": "本章亮點",
+        "low": "核心金鑰"
     }
 
     # 定義提問策略 (Question Strategies) 區分為教學與問答
@@ -217,6 +222,7 @@ def map_engagement_to_profile(engagement: str, mode: str = 'qa') -> dict:
 
     # 取得基礎風格 (若無對應則給預設值)
     selected_style = styles.get(engagement, "提供直接的解釋，避免額外挑戰或比喻")
+    selected_hint = hint.get(engagement, "本章亮點")
 
     # 取得策略 (預設為 qa 模式)
     mode_strategies = strategies.get(mode, strategies["qa"])
@@ -224,7 +230,8 @@ def map_engagement_to_profile(engagement: str, mode: str = 'qa') -> dict:
 
     return {
         "style": selected_style,
-        "extended_question": selected_question_strategy
+        "extended_question": selected_question_strategy,
+        "hint": selected_hint
     }
 
 ### 判斷教材中是否包含程式碼區塊
@@ -278,7 +285,8 @@ def generate_materials(engagement, materials):
         style=mapping["style"],
         engagement=engagement,
         materials=materials_text,
-        extended_question=mapping["extended_question"]
+        extended_question=mapping["extended_question"],
+        hint=mapping['hint']
     )
 
     return prompt_text
