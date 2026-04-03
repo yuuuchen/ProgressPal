@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // 更新介面文字
         currentQEl.innerText = currentQuestionIndex + 1;
-        questionTextEl.innerHTML = currentData.question;
+        questionTextEl.innerHTML = marked.parse(currentData.question);
         optionsContainer.innerHTML = ''; // 清空選項
 
         // 檢查這一題是否已經答過
@@ -82,7 +82,10 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // HTML 結構：圈圈 + 文字
-            btn.innerHTML = `<div class="circle"></div><div class="opt-text">${optionText}</div>`;
+            btn.innerHTML = `
+                <div class="circle"></div>
+                <div class="opt-text">${marked.parse(optionText)}</div>
+            `;
             
             // 綁定點擊事件
             btn.onclick = () => selectOption(qId, index);
@@ -214,7 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // 建立該題的 HTML 結構
             let htmlContent = `
                 <div class="review-question">
-                    <strong>第 ${idx + 1} 題：${item.question}</strong>
+                    <strong>第 ${idx + 1} 題：</strong>${marked.parse(item.question)}
                 </div>
                 <div class="review-options">
             `;
@@ -236,13 +239,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     classList += ' wrong';   // 紅色樣式
                 }
 
-                htmlContent += `<div class="${classList}">${opt}</div>`;
+                htmlContent += `<div class="${classList}">${marked.parse(opt)}</div>`;
             });
 
             htmlContent += `
                 </div>
                 <div class="review-explanation">
-                    <strong>詳解：</strong>${item.explanation}
+                    <strong>詳解：</strong>${marked.parse(item.explanation)}
                 </div>
                 <hr>
             `;

@@ -56,6 +56,7 @@ def generate_materials_view(request, chapter_code, unit_code):
     try:
         # 呼叫教材生成
         result = main.display_materials(chapter_code, unit_code, engagement, role)
+        print(f"DEBUG: 範例內容為: {result.get('example')}")
     except RuntimeError as e:
         # 捕捉 "所有 Groq API Key 的流量都已耗盡" 的錯誤
         if "耗盡" in str(e) or "quota" in str(e).lower():
@@ -85,9 +86,9 @@ def generate_materials_view(request, chapter_code, unit_code):
         "previous_unit": previous_unit,
         "next_unit": next_unit,
         "role": role,
-        "teaching": utils.to_markdown(result.get("teaching")),
-        "example": utils.to_markdown(result.get("example")),
-        "extended_question": utils.to_markdown(extended_question), 
+        "teaching": result.get("teaching"),
+        "example": result.get("example"),
+        "extended_question": extended_question, 
         "current_emotion": current_emotion,
         "form": StudyForm(),
         "record_id": record.id,   # 傳給前端用於關聯學習記錄
@@ -136,7 +137,7 @@ def answer_question_view(request, chapter_code, unit_code):
         is_extended=is_extended,
         extended_question_text = extended_q,
     )
-    answer = utils.to_markdown(result.get("answer", "請詢問與資料結構相關的問題。"))
+    answer = result.get("answer", "請詢問與資料結構相關的問題。")
     
     # 處理新的延伸提問
     new_extended_question = result.get("extended_question", "")
@@ -157,7 +158,7 @@ def answer_question_view(request, chapter_code, unit_code):
     # 回傳 JSON
     return JsonResponse({
         "answer": answer,
-        "extended_questions": utils.to_markdown(new_extended_question)
+        "extended_questions": new_extended_question
     })
 
 
@@ -201,8 +202,8 @@ def chapter_quiz_api(request, chapter_code):
     serialized = [
         {
             "question_id": q.id,
-            "question": utils.to_markdown(q.question),
-            "options": [utils.to_markdown(q.option_a),utils.to_markdown(q.option_b), utils.to_markdown(q.option_c), utils.to_markdown(q.option_d)],
+            "question": q.question,
+            "options": [q.option_a,q.option_b,q.option_c, q.option_d],
         }
         for q in quiz_questions
     ]
@@ -220,9 +221,9 @@ def check_answers(request, chapter_code):
 
         for item in results:
             # 確保題目被解析 (解決出現 ` 的問題)
-            item['question'] = utils.to_markdown(item.get('question', ''))
+            item['question'] = item.get('question', '')
             # 確保詳解也被解析
-            item['explanation'] = utils.to_markdown(item.get('explanation', ''))
+            item['explanation'] = item.get('explanation', '')
             
         # 回傳 Response
         return JsonResponse({

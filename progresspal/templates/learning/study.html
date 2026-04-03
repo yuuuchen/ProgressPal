@@ -41,12 +41,14 @@
                         <h3 class="h5 mt-4 text-secondary">{{ chapter.chapter_number }}-{{ unit.unit_number }} {{ unit.title }}</h3>
 
                         <div class="card-text content-spacing">
-                            {{ teaching | safe }}
+                            <h4 class="card-title fw-bold">觀念導讀</h4>
+                            <div class="markdown-render">{{ teaching}}</div>
                         </div>
 
                         {% if example %}
                         <div class="card-text mt-3">
-                            {{ example | safe }}
+                            <h4 class="card-title fw-bold">範例</h4>
+                            <div class="markdown-render">{{ example }}</div>
                         </div>
                         {% endif %}
 
@@ -75,7 +77,10 @@
                 <!-- 歷史對話 -->
                 <div id="chat-history" class="card-body bg-light p-3 overflow-auto">
                     <div class="message assistant-message">
-                        <strong>延伸提問：</strong><br>{{ extended_question|safe }}<br>
+                        <strong>延伸提問：</strong>
+                        <div class="initial-extended-question">
+                            {{ extended_question }}
+                        </div>
                     </div>
                 </div>
                 
