@@ -36,9 +36,10 @@ def display_materials(chapter_id, unit_id, engagement, role):
     result = clean_text_tutoring(resp_text)  
     print(f"[Debug] 教材生成原始回應: {resp_text}")  
     return {
-        "teaching": result.get("teaching"),
+        "guide": result.get("guide"),
+        "core": result.get("core"),
         "example": result.get("example"),
-        "extended_questions": result.get("extended_question")
+        "extended_question": result.get("extended_question")
     }
 
 def validate_user_input(question):

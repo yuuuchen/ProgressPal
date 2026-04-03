@@ -9,11 +9,11 @@ def clean_text_tutoring(raw_text: str) -> dict:
     import re
     """
     將 Markdown 格式 (觀念導讀、核心解析、範例、引導提問) 轉成 dict
-    並將「觀念導讀 + 核心解析」合併為 teaching
     """
 
     sections = {
-        "teaching": "",
+        "guide": "",
+        "core": "",
         "example": "",
         "extended_question": ""
     }
@@ -23,13 +23,14 @@ def clean_text_tutoring(raw_text: str) -> dict:
     pattern = r"###\s*(觀念導讀|核心解析|範例|引導提問)\s*[:：]?\s*([\s\S]*?)(?=\n###|\Z)"
     matches = re.findall(pattern, raw_text)
 
-    teaching_parts = []
-
     for title, content in matches:
         content = content.strip()
 
-        if title in ["觀念導讀", "核心解析"]:
-            teaching_parts.append(content)
+        if title == "觀念導讀":
+            sections["guide"] = content
+        
+        elif title == "核心解析":
+            sections["core"] = content
 
         elif title == "範例":
             sections["example"] = content
@@ -37,12 +38,12 @@ def clean_text_tutoring(raw_text: str) -> dict:
         elif title == "引導提問":
             sections["extended_question"] = content
 
-    # 合併教學內容
-    sections["teaching"] = "\n\n".join(teaching_parts)
-
     # fallback
-    if not sections["teaching"]:
-        sections["teaching"] = "（模型未輸出教學內容）"
+    if not sections["guide"]:
+        sections["guide"] = "（模型未輸出觀念導讀）"
+
+    if not sections["core"]:
+        sections["core"] = "（模型未輸出核心解析）"
 
     if not sections["extended_question"]:
         sections["extended_question"] = "模型未輸出問題"

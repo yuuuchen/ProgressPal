@@ -140,7 +140,7 @@
 
 /* 2. 表頭 (thead) 樣式 */
 #material-card .card-body th {
-    background-color: #09384e !important; /* 使用與 Python 標籤一致的深藍色 */
+    background-color: #264773 !important; /* 使用與 Python 標籤一致的深藍色 */
     color: #ffffff !important;
     font-weight: 600;
     padding: 12px 15px;

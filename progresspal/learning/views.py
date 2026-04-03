@@ -56,7 +56,7 @@ def generate_materials_view(request, chapter_code, unit_code):
     try:
         # 呼叫教材生成
         result = main.display_materials(chapter_code, unit_code, engagement, role)
-        print(f"DEBUG: 範例內容為: {result.get('example')}")
+
     except RuntimeError as e:
         # 捕捉 "所有 Groq API Key 的流量都已耗盡" 的錯誤
         if "耗盡" in str(e) or "quota" in str(e).lower():
@@ -66,7 +66,7 @@ def generate_materials_view(request, chapter_code, unit_code):
             # 如果是其他未知的 RuntimeError，則重新拋出或做其他處理
             raise e
         
-    extended_question = result.get("extended_questions", "")
+    extended_question = result.get("extended_question", "")
     request.session["current_extended_question"] = extended_question
     request.session.modified = True
     # 建立學習記錄(起點)並傳給前端以便後續更新結束時間
@@ -86,7 +86,8 @@ def generate_materials_view(request, chapter_code, unit_code):
         "previous_unit": previous_unit,
         "next_unit": next_unit,
         "role": role,
-        "teaching": result.get("teaching"),
+        "guide": result.get("guide"),
+        "core": result.get("core"),
         "example": result.get("example"),
         "extended_question": extended_question, 
         "current_emotion": current_emotion,
