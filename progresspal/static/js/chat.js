@@ -12,6 +12,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // 儲存使用者選擇的問題類型
     let selectedQuestionType = null;
 
+    // 解析頁面載入時的初始延伸提問 
+    const initialQuestionDiv = document.querySelector('.initial-extended-question');
+    if (initialQuestionDiv) {
+        const rawText = initialQuestionDiv.textContent.trim();
+        if (rawText) {
+            initialQuestionDiv.innerHTML = marked.parse(rawText);
+        }
+    }
     // 問題類型：直接提問
     directQuestionBtn.addEventListener('click', () => {
         selectedQuestionType = 'direct'; 
@@ -135,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 將完成的訊息加到歷史紀錄(sender:user/assistant/error)
     function appendMessage(text, sender, extraClass = null) {
         const messageElement = createMessageElement(sender, extraClass);
-        messageElement.innerHTML = text;
+        messageElement.innerHTML = marked.parse(text);
         chatHistory.appendChild(messageElement);
         chatHistory.scrollTop = chatHistory.scrollHeight;
 

@@ -2,7 +2,6 @@
 # utils.py
 import textwrap
 import re
-from markdown import markdown
 
 """格式整理工具"""
 
@@ -83,6 +82,8 @@ def clean_text_qa(raw_text: str) -> dict:
   return sections
 
 def to_markdown(text):
-  text = text.replace('•', '  *')
-  html_output = markdown(text, extensions=['fenced_code', 'nl2br', 'tables','mdx_math'])
-  return html_output
+  if not text:
+        return ""
+  # 統一將特殊的中圓點替換為標準 Markdown 符號，方便前端解析
+  text = text.replace('•', '*') 
+  return text.strip()

@@ -124,15 +124,59 @@
 }
 
 /* 針對 Markdown 產生的 <table> */
+/* --- 教材表格美化 --- */
+
+/* 1. 表格容器：確保可以水平捲動且不會擠壓 */
 #material-card .card-body table {
-    /* 讓表格在需要時可以水平捲動*/
-    display: block;
+    display: table; /* 恢復標準表格佈局 */
     width: 100%;
-    overflow-x: auto;
-    white-space: nowrap; /* 讓表格內容盡量保持在同一行 */
+    margin: 1.5rem 0;
+    border-collapse: collapse; /* 合併邊框 */
+    font-size: 0.95rem;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05); /* 輕微陰影 */
+    border-radius: 8px;
+    overflow: hidden; /* 確保圓角效果 */
 }
 
-/* --- 修正後的程式碼區塊樣式 --- */
+/* 2. 表頭 (thead) 樣式 */
+#material-card .card-body th {
+    background-color: #09384e !important; /* 使用與 Python 標籤一致的深藍色 */
+    color: #ffffff !important;
+    font-weight: 600;
+    padding: 12px 15px;
+    text-align: left;
+    border: none;
+}
+
+/* 3. 單元格 (td) 樣式 */
+#material-card .card-body td {
+    padding: 10px 15px;
+    border-bottom: 1px solid #eeeeee;
+    color: #444;
+}
+
+/* 4. 斑馬紋效果 (偶數行變色) */
+#material-card .card-body tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+/* 5. 滑鼠懸停效果 (提升互動感) */
+#material-card .card-body tr:hover {
+    background-color: #f1f4f9;
+    transition: background-color 0.2s ease;
+}
+
+/* 6. 響應式：如果表格太寬，自動出現捲軸（需包在一個 div 內或維持 block 屬性） */
+/* 注意：Markdown 產生的 table 直接設為 block 可能會跑版，
+   如果發現寬度不對，請確保 Python 渲染出的 table 外層有一個 div */
+@media (max-width: 768px) {
+    #material-card .card-body table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}
+
 
 /* 1. 針對外層容器 pre */
 #material-card pre {
@@ -169,6 +213,19 @@
     border-radius: 0 0 5px 5px;
     font-weight: bold;
     z-index: 10;
+}
+/* --- 修正對話框多餘空白 --- */
+
+/* 1. 移除訊息內所有 p 標籤的底邊距 */
+.message p {
+    margin-bottom: 0 !important;
+    display: inline; /* 建議設為 inline，讓它不要強行換行 */
+}
+
+/* 2. 針對代碼塊，如果訊息裡有代碼，可以保留一點點間距 */
+.message pre {
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
 }
 
 
