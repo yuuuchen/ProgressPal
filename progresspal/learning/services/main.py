@@ -25,7 +25,7 @@ from . import utils
 def display_materials(chapter_id, unit_id, engagement, role):
     """教材顯示"""
     unit = get_unit(chapter_id, unit_id)
-    prompt = generate_materials(engagement, unit)    
+    prompt = generate_materials(role, engagement, unit)    
     system_instruction = set_system_prompt(role)
     client = get_rotational_client()
     messages = [
@@ -33,7 +33,8 @@ def display_materials(chapter_id, unit_id, engagement, role):
         {"role": "user", "content": prompt}
     ]    
     resp_text = client.generate_materials_content(model=model_materials, messages=messages)
-    result = clean_text_tutoring(resp_text)    
+    result = clean_text_tutoring(resp_text)  
+    print(f"[Debug] 教材生成原始回應: {resp_text}")  
     return {
         "teaching": result.get("teaching"),
         "example": result.get("example"),
