@@ -15,8 +15,22 @@
                 <li class="nav-item">
                     <a class="nav-link" href="/lesson">課程列表</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/user/study">學生中心</a>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="studentCenterDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        學生中心
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="studentCenterDropdown">
+                        <li>
+                            <a class="dropdown-item" href="/user/study">
+                                學習儀表板
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="/user/study/quiz/">
+                                測驗儀表板
+                            </a>
+                        </li>
+                    </ul>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="/user/profile">個人資料</a>

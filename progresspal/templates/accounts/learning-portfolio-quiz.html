@@ -1,0 +1,208 @@
+{% extends 'base_scroll.html' %}
+{% load static %}
+
+{% block title %}測驗中心 | ProgressPal{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <h2>學習歷程總覽</h2>
+
+    <!-- ========================= -->
+    <!-- 1. Learning Records -->
+    <!-- ========================= -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>學習紀錄</strong>
+        </div>
+        <div class="card-body">
+            <ul>
+                {% for lr in learning_records %}
+                <li>{{ lr.start_time|date:"Y-m-d H:i" }} - {{ lr.chapter_code }} - {{ lr.description }}</li>
+                {% empty %}
+                <li>尚無學習紀錄</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- ========================= -->
+    <!-- 2. Learning Curve -->
+    <!-- ========================= -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>章節學習曲線</strong>
+        </div>
+        <div class="card-body">
+            <canvas id="learningCurveChart" height="150"></canvas>
+        </div>
+    </div>
+
+    <!-- ========================= -->
+    <!-- 3. Stacked Bar: 難度分布 -->
+    <!-- ========================= -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>錯題難度分布</strong>
+        </div>
+        <div class="card-body">
+            <canvas id="stackedBarChart" height="150"></canvas>
+        </div>
+    </div>
+
+    <!-- ========================= -->
+    <!-- 4. Top Keywords -->
+    <!-- ========================= -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>Top 錯題關鍵字</strong>
+        </div>
+        <div class="card-body">
+            {% if top_keyword_labels %}
+            <ul>
+                {% for label, value in top_keywords_combined %}
+                <li>{{ label }} : {{ value }} 次錯誤</li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>目前沒有明顯的關鍵字錯題。</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ========================= -->
+    <!-- 5. Guidance -->
+    <!-- ========================= -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>學習建議</strong>
+        </div>
+        <div class="card-body">
+            <p>{{ guidance_text }}</p>
+            {% if guidance_url %}
+            <a href="{{ guidance_url }}" class="btn btn-primary">前往章節</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ========================= -->
+    <!-- 6. 錯題列表（折疊章節） -->
+    <!-- ========================= -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <strong>錯題列表</strong>
+        </div>
+        <div class="card-body">
+            {% regroup wrong_questions by quiz_result.chapter_code as chapter_list %}
+            
+            <div class="accordion" id="wrongQuestionsAccordion">
+                {% for chapter in chapter_list %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                        <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="collapse{{ forloop.counter }}">
+                            CH{{ chapter.grouper|default:"未知" }} （{{ chapter.list|length }} 題錯誤）
+                        </button>
+                    </h2>
+                    <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#wrongQuestionsAccordion">
+                        <div class="accordion-body p-0">
+                            <table class="table table-bordered table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>題目</th>
+                                        <th>難度</th>
+                                        <th>你的答案</th>
+                                        <th>正確答案</th>
+                                        <th>日期</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for wq in chapter.list %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}</td>
+                                        <td>{{ wq.question.question }}</td>
+                                        <td>{{ wq.question.difficulty }}</td>
+                                        <td>{{ wq.selected_choice|default:"未作答" }}</td>
+                                        <td>{{ wq.question.correct_choice }}</td>
+                                        <td>{{ wq.quiz_result.created_at|date:"Y-m-d H:i" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <p>目前沒有錯題。</p>
+                {% endfor %}
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- ========================= -->
+<!-- Chart.js -->
+<!-- ========================= -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Learning Curve
+    const learningCurveData = JSON.parse('{{ learning_curve_data|default:"[]"|escapejs }}');
+    const learningCurveCtx = document.getElementById('learningCurveChart').getContext('2d');
+
+    const datasetsLC = learningCurveData.map(ch => ({
+        label: ch.chapter,
+        data: ch.scores,
+        fill: false,
+        tension: 0.1,
+    }));
+
+    const attempts = learningCurveData[0] ? learningCurveData[0].attempts : [];
+
+    new Chart(learningCurveCtx, {
+        type: 'line',
+        data: {
+            labels: attempts,
+            datasets: datasetsLC
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } },
+            scales: {
+                y: { beginAtZero: true, max: 100, title: { display: true, text: '分數' } },
+                x: { title: { display: true, text: '嘗試次數' } }
+            }
+        }
+    });
+
+    // Stacked Bar: 難度分布
+    const stackedBarLabels = JSON.parse('{{ stacked_bar_labels|default:"[]"|escapejs }}');
+    const easyData = JSON.parse('{{ easy_data|default:"[]"|escapejs }}');
+    const mediumData = JSON.parse('{{ medium_data|default:"[]"|escapejs }}');
+    const hardData = JSON.parse('{{ hard_data|default:"[]"|escapejs }}');
+
+    const stackedBarCtx = document.getElementById('stackedBarChart').getContext('2d');
+    new Chart(stackedBarCtx, {
+        type: 'bar',
+        data: {
+            labels: stackedBarLabels,
+            datasets: [
+                { label: 'Easy', data: easyData, backgroundColor: '#7cb342' },
+                { label: 'Medium', data: mediumData, backgroundColor: '#ffa000' },
+                { label: 'Hard', data: hardData, backgroundColor: '#e53935' },
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } },
+            scales: {
+                x: { stacked: true },
+                y: { stacked: true, beginAtZero: true, title: { display: true, text: '錯題數量' } }
+            }
+        }
+    });
+</script>
+
+{% endblock %}

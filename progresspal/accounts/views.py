@@ -6,11 +6,14 @@ from django.db.models.functions import TruncDate  # 導入日期截斷函式
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
-from .models import LearningRecord, QuestionLog, QuizResult
+from .models import LearningRecord, QuestionLog, QuizResult, QuizResultQuestion
 from accounts.models import CustomUser
 from django.utils import timezone
 from .forms import RegisterForm, LoginForm, ProfileUpdateForm, PasswordChangeForm, AddMaterialForm
 import json
+from collections import Counter, defaultdict # 用於關鍵字分析
+from learning.services.utils import KeywordAnalyzer # 用於錯題關鍵字分析
+
 
 User = get_user_model()
 
@@ -207,51 +210,150 @@ def learning_portfolio(request, username=None):
 
     return render(request, 'accounts/learning-portfolio.html', context)
 
-
-# 新增假資料頁面（僅 superuser 可用）
-@user_passes_test(lambda u: u.is_superuser)
-def add_material(request):
-    """Superuser 新增假資料頁面"""
-    if request.method == 'POST':
-        form = AddMaterialForm(request.POST)
-        if form.is_valid():
-            data_type = form.cleaned_data['data_type']
-            user = form.cleaned_data['username']
-            chapter_code = form.cleaned_data['chapter_code']
-            unit_code = form.cleaned_data['unit_code']
-
-            if data_type == 'learning':
-                LearningRecord.objects.create(
-                    user=user,
-                    chapter_code=chapter_code,
-                    unit_code=unit_code,
-                    start_time=timezone.now(),
-                    end_time=timezone.now() + timezone.timedelta(minutes=30),
-                )
-                messages.success(request, f"成功新增學習紀錄給 {user.username}")
-
-            elif data_type == 'question':
-                QuestionLog.objects.create(
-                    user=user,
-                    chapter_code=chapter_code,
-                    unit_code=unit_code,
-                    question=form.cleaned_data['question'],
-                    answer=form.cleaned_data['answer'],
-                    engagement=form.cleaned_data['engagement'],
-                )
-                messages.success(request, f"成功新增提問紀錄給 {user.username}")
-
-            elif data_type == 'quiz':
-                QuizResult.objects.create(
-                    user=user,
-                    chapter_code=chapter_code,
-                    unit_code=unit_code,
-                    score=form.cleaned_data['score'],
-                )
-                messages.success(request, f"成功新增測驗結果給 {user.username}")
-
-            return redirect('add-material')
+@login_required(login_url='login')
+def learning_portfolio_quiz(request, username=None):
+    # =========================
+    # 1️. 基本資料
+    # =========================
+    if username:
+        if not request.user.is_superuser:
+            messages.error(request, "您沒有權限查看其他使用者的學習歷程。")
+            return redirect('learning-portfolio-quiz-self')
+        target_user = get_object_or_404(CustomUser, username=username)
     else:
-        form = AddMaterialForm()
+        target_user = request.user
 
-    return render(request, 'accounts/addMaterial.html', {'form': form})
+    learning_records = LearningRecord.objects.filter(user=target_user).order_by('-start_time')
+    question_logs = QuestionLog.objects.filter(user=target_user).order_by('-created_at')
+    quiz_results = QuizResult.objects.filter(user=target_user).order_by('-created_at')
+
+    # =========================
+    # 2. Learning Curve（章節學習曲線）
+    # =========================
+    chapter_attempts = defaultdict(list)
+
+    quizzes_ordered = QuizResult.objects.filter(user=target_user).order_by('created_at')
+
+    for q in quizzes_ordered:
+        ch = q.chapter_code or "未知"
+        chapter_attempts[ch].append(q.score)
+
+    learning_curve_data = []
+
+    for ch, scores in chapter_attempts.items():
+        learning_curve_data.append({
+            "chapter": f"CH{ch}",
+            "scores": scores,
+            "attempts": list(range(1, len(scores) + 1))
+        })
+
+    # =========================
+    # 3. 錯題（用於分析）
+    # =========================
+    wrong_questions = QuizResultQuestion.objects.filter(
+        quiz_result__user=target_user,
+        is_correct=False
+    ).select_related('question', 'quiz_result')
+
+    # =========================
+    # 4. Stacked Bar（章節 × 難度）
+    # =========================
+    difficulty_map = defaultdict(lambda: {'easy': 0, 'medium': 0, 'hard': 0})
+
+    for wq in wrong_questions:
+        ch = wq.quiz_result.chapter_code or "未知"
+        diff = wq.question.difficulty
+        difficulty_map[ch][diff] += 1
+
+    stacked_bar_labels = []
+    easy_data = []
+    medium_data = []
+    hard_data = []
+
+    for ch, diffs in difficulty_map.items():
+        stacked_bar_labels.append(f"CH{ch}")
+        easy_data.append(diffs['easy'])
+        medium_data.append(diffs['medium'])
+        hard_data.append(diffs['hard'])
+
+    # =========================
+    # 5. Top 錯題（關鍵字 mapping）
+    # =========================
+
+    keyword_counter = Counter()
+
+    for wq in wrong_questions:
+        q_text = wq.question.question
+        keywords = KeywordAnalyzer.extract_keywords(q_text)  # ← 用 class method
+
+        for kw in keywords:
+            keyword_counter[kw] += 1
+
+    top_keywords = keyword_counter.most_common(5)
+
+    top_keyword_labels = [k for k, _ in top_keywords]
+    top_keyword_values = [v for _, v in top_keywords]
+    top_keywords_combined = list(zip(top_keyword_labels, top_keyword_values))
+    # =========================
+    # 6. 學習指引（導回章節）
+    # =========================
+    difficulty_wrong = {'easy': 0, 'medium': 0, 'hard': 0}
+    chapter_wrong = Counter()
+
+    for wq in wrong_questions:
+        diff = wq.question.difficulty
+        ch = wq.quiz_result.chapter_code or "未知"
+
+        difficulty_wrong[diff] += 1
+        chapter_wrong[ch] += 1
+
+    guidance_text = ""
+    guidance_url = ""
+    weakest_chapter = None
+
+    if chapter_wrong:
+        weakest_chapter = chapter_wrong.most_common(1)[0][0]
+
+        if difficulty_wrong['easy'] >= max(difficulty_wrong['medium'], difficulty_wrong['hard']):
+            guidance_text = f"你在 CH{weakest_chapter} 的基礎題錯誤較多，建議先回到該章節重新閱讀核心概念。"
+
+        elif difficulty_wrong['medium'] >= difficulty_wrong['hard']:
+            guidance_text = f"你在 CH{weakest_chapter} 的中等難度題目表現不穩定，建議回到範例題區重新理解解題流程。"
+
+        else:
+            guidance_text = f"你在 CH{weakest_chapter} 的進階題目較容易出錯，建議重新完整學習該章節內容並再練習。"
+
+        guidance_url = f"/learning/chapter/{weakest_chapter}/"
+
+    else:
+        guidance_text = "目前沒有明顯錯題，請持續學習新的章節！"
+
+    # =========================
+    # 7. Context
+    # =========================
+    context = {
+        'learning_records': learning_records,
+        'question_logs': question_logs,
+        'quiz_results': quiz_results,
+
+        # Learning Curve
+        'learning_curve_data': json.dumps(learning_curve_data),
+
+        # Stacked Bar
+        'stacked_bar_labels': json.dumps(stacked_bar_labels),
+        'easy_data': json.dumps(easy_data),
+        'medium_data': json.dumps(medium_data),
+        'hard_data': json.dumps(hard_data),
+
+        # Top keyword
+        'top_keyword_labels': json.dumps(top_keyword_labels),
+        'top_keyword_values': json.dumps(top_keyword_values),
+        'top_keywords_combined': top_keywords_combined,  # 給前端顯示用
+
+        # Guidance
+        'guidance_text': guidance_text,
+        'guidance_url': guidance_url,
+        'weakest_chapter': weakest_chapter,
+    }
+
+    return render(request, 'accounts/learning-portfolio-quiz.html', context)
