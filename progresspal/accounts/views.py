@@ -248,13 +248,13 @@ def learning_portfolio_quiz(request, username=None):
         })
 
     # =========================
-    # 3. 錯題（用於分析）
+    # 3. 錯題（用於分析與列表）
     # =========================
+    # 加上排序 .order_by('quiz_result__chapter_code') 確保 regroup 正常
     wrong_questions = QuizResultQuestion.objects.filter(
         quiz_result__user=target_user,
         is_correct=False
-    ).select_related('question', 'quiz_result')
-
+    ).select_related('question', 'quiz_result').order_by('quiz_result__chapter_code', '-quiz_result__created_at')
     # =========================
     # 4. Stacked Bar（章節 × 難度）
     # =========================
@@ -332,9 +332,8 @@ def learning_portfolio_quiz(request, username=None):
     # 7. Context
     # =========================
     context = {
-        'learning_records': learning_records,
-        'question_logs': question_logs,
         'quiz_results': quiz_results,
+        'wrong_questions': wrong_questions,
 
         # Learning Curve
         'learning_curve_data': json.dumps(learning_curve_data),
@@ -346,8 +345,6 @@ def learning_portfolio_quiz(request, username=None):
         'hard_data': json.dumps(hard_data),
 
         # Top keyword
-        'top_keyword_labels': json.dumps(top_keyword_labels),
-        'top_keyword_values': json.dumps(top_keyword_values),
         'top_keywords_combined': top_keywords_combined,  # 給前端顯示用
 
         # Guidance
