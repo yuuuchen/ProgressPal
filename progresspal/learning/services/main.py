@@ -34,7 +34,7 @@ def display_materials(chapter_id, unit_id, engagement, role):
     ]    
     resp_text = client.generate_materials_content(model=model_materials, messages=messages)
     result = clean_text_tutoring(resp_text)  
-    print(f"[Debug] 教材生成原始回應: {resp_text}")  
+    #print(f"[Debug] 教材生成原始回應: {resp_text}")  
     return {
         "guide": result.get("guide"),
         "core": result.get("core"),
