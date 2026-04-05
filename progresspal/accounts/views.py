@@ -333,7 +333,7 @@ def learning_portfolio_quiz(request, username=None):
         else:
             guidance_text = f"你在 CH{weakest_chapter} 的進階題目較容易出錯，建議重新完整學習該章節內容並再練習。"
 
-        guidance_url = f"/learning/chapter/{weakest_chapter}/"
+        guidance_url = f"/lesson/{weakest_chapter}/1/study"
 
     else:
         guidance_text = "目前沒有明顯錯題，請持續學習新的章節！"
