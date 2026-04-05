@@ -1,7 +1,7 @@
 {% extends 'base_scroll.html' %}
 {% load static %}
 
-{% block title %}學生中心 | ProgressPal{% endblock %}
+{% block title %}學習中心 | ProgressPal{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
@@ -14,30 +14,45 @@
     {% endif %}
   </h2>
 
-  <div class="row">
-    <!-- 各章節學習時間 -->
+  <div class="row mb-4 align-items-stretch">
     <div class="col-md-6 mb-4">
-      <h5>各章節學習時間</h5>
-      <canvas id="timeChart"></canvas>
+      <div class="card border-0 shadow-sm p-4 h-100 d-flex flex-column">
+        <h5 class="fw-bold border-bottom pb-3 mb-3">總學習時數</h5>
+        <div class="d-flex flex-column justify-content-center align-items-center flex-grow-1 text-center">
+            <h1 class="fw-bold text-primary mb-0" style="font-size: 5rem; line-height: 1;">
+                {{ total_hours|default:"0.0" }}
+            </h1>
+            <span class="text-muted fs-5 mt-2">小時</span>
+        </div>
+      </div>
     </div>
-    <!-- 提問參與度趨勢 -->
+    
     <div class="col-md-6 mb-4">
-      <h5>提問參與度趨勢</h5>
-      <canvas id="engagementChart"></canvas>
+      <div class="card border-0 shadow-sm p-4 h-100">
+        <h5 class="fw-bold border-bottom pb-3 mb-3">各章節學習時間</h5>
+        <div style="position: relative; height:300px;">
+          <canvas id="timeChart"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="row">
-    <!-- 參與度 vs 學習時間 -->
+  <div class="row mb-4">
     <div class="col-md-6 mb-4">
-      <h5>參與度 vs 學習時間</h5>
-      <canvas id="scatterChart"></canvas>
+      <div class="card border-0 shadow-sm p-4 h-100">
+        <h5 class="fw-bold border-bottom pb-3 mb-3">提問參與度趨勢</h5>
+        <div style="position: relative; height:300px;">
+          <canvas id="engagementChart"></canvas>
+        </div>
+      </div>
     </div>
-  
-  <!-- 測驗成績趨勢 -->
     <div class="col-md-6 mb-4">
-      <h5>測驗成績趨勢 (最近 10 次)</h5>
-      <canvas id="quizChart"></canvas>
+      <div class="card border-0 shadow-sm p-4 h-100">
+        <h5 class="fw-bold border-bottom pb-3 mb-3">參與度 vs 學習時間</h5>
+        <div style="position: relative; height:300px;">
+          <canvas id="scatterChart"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -114,7 +129,6 @@
             {% endif %}
         </div>
     </div>
-
 </div>
 
 <!-- Chart.js -->
@@ -220,7 +234,7 @@
     type: 'scatter',
     data: {
       datasets: [{
-        label: '章節參與度與學習時間',
+        label: '章節學習時間與參與度',
         data: scatterData, // 這裡現在接收的是 [{x: 分鐘, y: 參與度數值}, ...]
         backgroundColor: '#FF6384'
       }],
