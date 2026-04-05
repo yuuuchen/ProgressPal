@@ -137,10 +137,21 @@ def learning_portfolio(request, username=None):
     learning_records = LearningRecord.objects.filter(user=target_user).order_by('-start_time')
     question_logs = QuestionLog.objects.filter(user=target_user).order_by('-created_at')
 
-    # 2. 測驗成績趨勢 (最近 10 次，由舊到新)
-    recent_quizzes = QuizResult.objects.filter(user=target_user).order_by('-created_at')[:10][::-1]
-    quiz_labels = [q.created_at.strftime('%m/%d') + f" CH({q.chapter_code})" for q in recent_quizzes]
-    quiz_scores = [q.score for q in recent_quizzes]
+    # 1. 總學習時數
+    # 計算所有紀錄的總時間差 (不分章節)
+    total_duration_result = (
+        LearningRecord.objects.filter(user=target_user, end_time__isnull=False)
+        .aggregate(total=Sum(F('end_time') - F('start_time')))
+    )
+
+    # 提取總時間並轉換為小時
+    total_duration = total_duration_result['total']
+
+    if total_duration:
+        # 將 timedelta 物件轉為秒數後除以 3600，並四捨五入到小數點後第一位
+        total_hours = round(total_duration.total_seconds() / 3600, 1)
+    else:
+        total_hours = 0.0
 
     # 3. 各章節學習時間 (Bar Chart)
     # 計算每個章節的總學習時數（分鐘）
@@ -196,11 +207,10 @@ def learning_portfolio(request, username=None):
 
     context = {
         'target_user': target_user,
+        'total_hours': total_hours,
         'learning_records': learning_records,
         'question_logs': question_logs,
         # 必須傳入以下變數，圖表才會有資料
-        'quiz_labels': json.dumps(quiz_labels),
-        'quiz_scores': json.dumps(quiz_scores),
         'chapter_labels': json.dumps(chapter_labels),
         'chapter_times': json.dumps(chapter_times),
         'engagement_labels': json.dumps(engagement_labels),
