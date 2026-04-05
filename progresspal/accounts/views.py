@@ -342,6 +342,7 @@ def learning_portfolio_quiz(request, username=None):
     # 7. Context
     # =========================
     context = {
+        'target_user': target_user,
         'quiz_results': quiz_results,
         'wrong_questions': wrong_questions,
 
