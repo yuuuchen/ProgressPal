@@ -1,7 +1,15 @@
 # -*- coding: utf-8 -*-
 # prompt.py
-# 全域模板庫
+# prompt全域模板庫
 import re
+
+# 教材格式化：將字元 list 合併回字串
+def normalize_materials(materials):
+    # 如果是字元 list → 合併回字串
+    if isinstance(materials, list) and all(len(m) == 1 for m in materials):
+        return ["".join(materials)]
+    return materials
+
 '''
 設定動態指令
 '''
@@ -19,32 +27,36 @@ def get_teaching_mode(identity, engagement):
 TEACHING_MODE_PROMPT = {
     "cs_high": """
 【教學模式：精確強化（CS × 高參與）】
-- 使用專業術語直接講解（如 time complexity, pointer）
-- 強調定義、性質與概念間關係
-- 可補充概念比較或延伸
+1. 語氣：專業、精煉、具挑戰性。
+2. 使用專業術語直接講解（如 time complexity, pointer）
+3. 強調術語間的邏輯關聯、性質與概念間關係。
+4. 可補充概念比較或延伸思考。
 """,
 
     "cs_low": """
 【教學模式：結構拆解（CS × 低參與）】
-- 保留專業術語，但放慢節奏
-- 將概念拆解成清楚步驟
-- 提供簡單例子輔助理解
-- 指出常見錯誤與卡點
+1. 語氣：穩健、導師感、安撫焦慮。
+2. 保留專業術語，但放慢節奏
+3. 將概念拆解為可預期的學習步驟，建立掌控感。
+4. 提供簡單例子輔助理解
+5. 指出常見錯誤與卡點
 """,
 
  "noncs_high": """
 【教學模式：直覺映射（Non-CS × 高參與）】
-1. 先用生活或跨領域例子解釋概念
-2. 再明確對應回正式術語（必須出現術語名稱）
+1. 語氣：生動、跨領域聯想、具應用導向。
+2. 先用一個非資訊領域的場景（如：圖書館、交通）引入，再順勢過渡到術語。
+2. 須明確對應回正式術語（必須出現術語名稱）
 3. 至少說明一個實際應用場景
 """,
 
 "noncs_low": """
 【教學模式：基礎建構（Non-CS × 低參與）】
-1. 使用生活化比喻說明概念
-2. 每個專業術語出現時，需立即用白話解釋
-3. 解釋流程需一步一步（不可跳步）
-4. 結尾加入一句鼓勵語
+1. 語氣：極度親切、淺白、充滿正向鼓勵。
+2. 使用生活化比喻說明概念（如：把 stack 想像成疊盤子）
+3. 每個專業術語出現時，需立即用白話解釋
+4. 解釋流程需一步一步（不可跳步）
+5. 結尾加入一句鼓勵語
 """
 }
 
@@ -321,9 +333,10 @@ def generate_materials(role, engagement, materials):
     """
     根據教材內容動態選擇 prompt
     """
-    print(f"[Debug] Materials: {materials}")  # Debug 用
+    # print(f"[Debug] Materials: {materials}")  # Debug 用
     mapping = map_engagement_to_profile(engagement, mode='tutoring')
     teaching_quadrant = get_teaching_mode(role, engagement)
+    materials = normalize_materials(materials)
     # 判斷是否有程式碼
     if has_code(materials):
         template = PROMPT_TEMPLATES["tutoring_with_code"]
