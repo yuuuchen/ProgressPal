@@ -4,205 +4,263 @@
 {% block title %}測驗中心 | ProgressPal{% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'css/portfolio.css' %}">
 
-<div class="container mt-4">
-
-    <h2>學習歷程總覽</h2>
-
-    <!-- ========================= -->
-    <!-- 1. Learning Records -->
-    <!-- ========================= -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <strong>學習紀錄</strong>
-        </div>
-        <div class="card-body">
-            <ul>
-                {% for lr in learning_records %}
-                <li>{{ lr.start_time|date:"Y-m-d H:i" }} - {{ lr.chapter_code }} - {{ lr.description }}</li>
-                {% empty %}
-                <li>尚無學習紀錄</li>
-                {% endfor %}
-            </ul>
-        </div>
-    </div>
-
-    <!-- ========================= -->
-    <!-- 2. Learning Curve -->
-    <!-- ========================= -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <strong>章節學習曲線</strong>
-        </div>
-        <div class="card-body">
-            <canvas id="learningCurveChart" height="150"></canvas>
-        </div>
-    </div>
-
-    <!-- ========================= -->
-    <!-- 3. Stacked Bar: 難度分布 -->
-    <!-- ========================= -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <strong>錯題難度分布</strong>
-        </div>
-        <div class="card-body">
-            <canvas id="stackedBarChart" height="150"></canvas>
-        </div>
-    </div>
-
-    <!-- ========================= -->
-    <!-- 4. Top Keywords -->
-    <!-- ========================= -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <strong>Top 錯題關鍵字</strong>
-        </div>
-        <div class="card-body">
-            {% if top_keyword_labels %}
-            <ul>
-                {% for label, value in top_keywords_combined %}
-                <li>{{ label }} : {{ value }} 次錯誤</li>
-                {% endfor %}
-            </ul>
+<div class="dashboard-wrapper">
+    <div class="container py-4">
+        
+        <h2 class="mb-4 text-center dashboard-title">
+            {{ target_user.nickname }} 的測驗儀表板
+            {% if target_user == request.user %}
+              <span class="text-muted"></span>
             {% else %}
-            <p>目前沒有明顯的關鍵字錯題。</p>
+              <span class="text-danger">【由管理員檢視】</span>
             {% endif %}
-        </div>
-    </div>
+        </h2>
 
-    <!-- ========================= -->
-    <!-- 5. Guidance -->
-    <!-- ========================= -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <strong>學習建議</strong>
-        </div>
-        <div class="card-body">
-            <p>{{ guidance_text }}</p>
-            {% if guidance_url %}
-            <a href="{{ guidance_url }}" class="btn btn-primary">前往章節</a>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- ========================= -->
-    <!-- 6. 錯題列表（折疊章節） -->
-    <!-- ========================= -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <strong>錯題列表</strong>
-        </div>
-        <div class="card-body">
-            {% regroup wrong_questions by quiz_result.chapter_code as chapter_list %}
-            
-            <div class="accordion" id="wrongQuestionsAccordion">
-                {% for chapter in chapter_list %}
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="heading{{ forloop.counter }}">
-                        <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="collapse{{ forloop.counter }}">
-                            CH{{ chapter.grouper|default:"未知" }} （{{ chapter.list|length }} 題錯誤）
-                        </button>
-                    </h2>
-                    <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#wrongQuestionsAccordion">
-                        <div class="accordion-body p-0">
-                            <table class="table table-bordered table-sm mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>題目</th>
-                                        <th>難度</th>
-                                        <th>你的答案</th>
-                                        <th>正確答案</th>
-                                        <th>日期</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for wq in chapter.list %}
-                                    <tr>
-                                        <td>{{ forloop.counter }}</td>
-                                        <td>{{ wq.question.question }}</td>
-                                        <td>{{ wq.question.difficulty }}</td>
-                                        <td>{{ wq.selected_choice|default:"未作答" }}</td>
-                                        <td>{{ wq.question.correct_choice }}</td>
-                                        <td>{{ wq.quiz_result.created_at|date:"Y-m-d H:i" }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+        <div class="row g-4">
+            <div class="col-lg-8 animate-up">
+                <!-- ========================= -->
+                <!-- 1. Learning Curve -->
+                <!-- ========================= -->
+                <div class="card stat-card mb-4">
+                    
+                    <div class="card-header">
+                        <i class="bi bi-graph-up me-2"></i>章節學習曲線
+                    </div>
+                    <div class="card-body">
+                        <canvas id="learningCurveChart"></canvas>
                     </div>
                 </div>
-                {% empty %}
-                <p>目前沒有錯題。</p>
-                {% endfor %}
+                <!-- ========================= -->
+                <!-- 2. Stacked Bar: 難度分布 -->
+                <!-- ========================= -->
+                <div class="card stat-card mb-4">
+                    <div class="card-header">
+                        <i class="bi bi-layers-half me-2"></i>錯題難度分布
+                    </div>
+                    <div class="card-body">
+                        <canvas id="stackedBarChart"></canvas>
+                    </div>
+                </div>
             </div>
+            <div class="col-lg-4 animate-up" style="animation-delay: 0.1s;">
+                <!-- ========================= -->
+                <!-- 3. Top Keywords -->
+                <!-- ========================= -->
+                <div class="card stat-card mb-4">
+                    <div class="card-header">
+                        <i class="bi bi-tags me-2"></i>Top 錯題關鍵字
+                    </div>
+                    <div class="card-body">
+                        {% if top_keywords_combined %}
+                        <div class="keyword-cloud">
+                            {% for label, value in top_keywords_combined %}
+                            <div class="keyword-tag">
+                                {{ label }} <span class="tag-count">{{ value }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted">目前沒有明顯的關鍵字錯題。</p>
+                        {% endif %}
+                    </div>
+                </div>
 
+                <div class="card stat-card mb-4 guidance-accent">
+                     <!-- ========================= -->
+                    <!-- 4. Guidance -->
+                    <!-- ========================= -->
+                    <div class="card-header border-0 bg-transparent">
+                        <i class="bi bi-robot me-2"></i>學習建議
+                    </div>
+                    <div class="card-body pt-0">
+                        <p class="guidance-text">{{ guidance_text }}</p>
+                        {% if guidance_url %}
+                        <a href="{{ guidance_url }}" class="btn btn-theme w-100 rounded-pill">
+                            前往章節複習 <i class="bi bi-arrow-right-short"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- ========================= -->
+        <!-- 5. 錯題紀錄 -->
+        <!-- ========================= -->
+        <div class="card stat-card mb-5 animate-up" style="animation-delay: 0.2s;">
+            <div class="card-header header-danger">
+                <i class="bi bi-clipboard-x me-2"></i>錯題詳細記錄
+            </div>
+            <div class="card-body">
+                {% regroup wrong_questions by quiz_result.chapter_code as chapter_list %}
+                
+                <div class="accordion accordion-custom" id="wrongQuestionsAccordion">
+                    {% for chapter in chapter_list %}
+                    <div class="accordion-item mb-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}">
+                                <span>CH{{ chapter.grouper|default:"未知" }}</span>
+                                <span class="badge badge-pill-danger ms-2">{{ chapter.list|length }} 題錯誤</span>
+                            </button>
+                        </h2>
+                        <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" data-bs-parent="#wrongQuestionsAccordion">
+                            <div class="accordion-body">
+                                {% for wq in chapter.list %}
+                                <div class="wrong-q-item border rounded p-3 mb-3 bg-white shadow-sm">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="q-number">Q{{ forloop.counter }}</span>
+                                        <small class="text-muted">{{ wq.quiz_result.created_at|date:"Y-m-d H:i" }}</small>
+                                    </div>
+                                    <p class="question-title">{{ wq.question.question }}</p>
+                                    
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-md-6">
+                                            <div class="opt-box {% if wq.question.answer == 'A' %}correct{% elif wq.selected_answer == 'A' %}wrong{% endif %}">
+                                                (A) {{ wq.question.option_a }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="opt-box {% if wq.question.answer == 'B' %}correct{% elif wq.selected_answer == 'B' %}wrong{% endif %}">
+                                                (B) {{ wq.question.option_b }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="opt-box {% if wq.question.answer == 'C' %}correct{% elif wq.selected_answer == 'C' %}wrong{% endif %}">
+                                                (C) {{ wq.question.option_c }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="opt-box {% if wq.question.answer == 'D' %}correct{% elif wq.selected_answer == 'D' %}wrong{% endif %}">
+                                                (D) {{ wq.question.option_d }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="explanation-box">
+                                        <strong><i class="bi bi-info-circle"></i> 解析：</strong> {{ wq.question.explanation }}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-check-circle text-success display-4"></i>
+                        <p class="text-muted mt-3">恭喜！目前沒有錯題記錄。</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
     </div>
-
 </div>
 
-<!-- ========================= -->
-<!-- Chart.js -->
-<!-- ========================= -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Learning Curve
+    // 1. 先宣告通用動畫與數據
+    const drawAnimation = {
+        duration: 2500,
+        easing: 'easeOutQuart'
+    };
+
+    // 2. 獲取數據
     const learningCurveData = JSON.parse('{{ learning_curve_data|default:"[]"|escapejs }}');
-    const learningCurveCtx = document.getElementById('learningCurveChart').getContext('2d');
-
-    const datasetsLC = learningCurveData.map(ch => ({
-        label: ch.chapter,
-        data: ch.scores,
-        fill: false,
-        tension: 0.1,
-    }));
-
-    const attempts = learningCurveData[0] ? learningCurveData[0].attempts : [];
-
-    new Chart(learningCurveCtx, {
-        type: 'line',
-        data: {
-            labels: attempts,
-            datasets: datasetsLC
-        },
-        options: {
-            responsive: true,
-            plugins: { legend: { position: 'bottom' } },
-            scales: {
-                y: { beginAtZero: true, max: 100, title: { display: true, text: '分數' } },
-                x: { title: { display: true, text: '嘗試次數' } }
-            }
-        }
-    });
-
-    // Stacked Bar: 難度分布
     const stackedBarLabels = JSON.parse('{{ stacked_bar_labels|default:"[]"|escapejs }}');
-    const easyData = JSON.parse('{{ easy_data|default:"[]"|escapejs }}');
-    const mediumData = JSON.parse('{{ medium_data|default:"[]"|escapejs }}');
-    const hardData = JSON.parse('{{ hard_data|default:"[]"|escapejs }}');
+    
+    // 定義活力配色陣列
+    const vibrantColors = [
+        { border: '#42A5F5', bg: 'rgba(66, 165, 245, 0.2)' }, // 活力藍
+        { border: '#AB47BC', bg: 'rgba(171, 71, 188, 0.2)' }, // 活力紫
+        { border: '#FFA726', bg: 'rgba(255, 167, 38, 0.2)' }, // 活力橘
+        { border: '#66BB6A', bg: 'rgba(102, 187, 106, 0.2)' }  // 活力綠
+    ];
 
-    const stackedBarCtx = document.getElementById('stackedBarChart').getContext('2d');
-    new Chart(stackedBarCtx, {
-        type: 'bar',
-        data: {
-            labels: stackedBarLabels,
-            datasets: [
-                { label: 'Easy', data: easyData, backgroundColor: '#7cb342' },
-                { label: 'Medium', data: mediumData, backgroundColor: '#ffa000' },
-                { label: 'Hard', data: hardData, backgroundColor: '#e53935' },
-            ]
-        },
-        options: {
-            responsive: true,
-            plugins: { legend: { position: 'bottom' } },
-            scales: {
-                x: { stacked: true },
-                y: { stacked: true, beginAtZero: true, title: { display: true, text: '錯題數量' } }
+    // =========================
+    // 1. Learning Curve 初始化
+    // =========================
+    const curveCanvas = document.getElementById('learningCurveChart');
+    if (curveCanvas) {
+        const learningCurveCtx = curveCanvas.getContext('2d');
+        
+        const datasetsLC = learningCurveData.map((ch, i) => {
+            const color = vibrantColors[i % vibrantColors.length];
+            return {
+                label: ch.chapter,
+                data: ch.scores,
+                borderColor: color.border,
+                backgroundColor: color.bg,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 5,
+                pointBackgroundColor: '#ffffff',
+                pointBorderWidth: 2,
+                borderWidth: 3
+            };
+        });
+
+        new Chart(learningCurveCtx, {
+            type: 'line',
+            data: {
+                labels: learningCurveData[0] ? learningCurveData[0].attempts : [],
+                datasets: datasetsLC
+            },
+            options: {
+                animation: drawAnimation,
+                responsive: true,
+                plugins: { 
+                    legend: { 
+                        position: 'bottom',
+                        labels: { usePointStyle: true, padding: 20 } 
+                    } 
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true, 
+                        max: 10,               // 修正為 10 分制
+                        ticks: { 
+                            stepSize: 1,
+                            precision: 0
+                        },
+                        title: { display: true, text: '得分 (0-10)' },
+                        grid: { color: '#f0f0f0' } 
+                    },
+                    x: { 
+                        title: { display: true, text: '嘗試次數' },
+                        grid: { display: false } 
+                    }
+                }
             }
-        }
-    });
-</script>
+        });
+    }
 
+    // =========================
+    // 2. Stacked Bar 初始化
+    // =========================
+    const barCanvas = document.getElementById('stackedBarChart');
+    if (barCanvas) {
+        const stackedBarCtx = barCanvas.getContext('2d');
+        new Chart(stackedBarCtx, {
+            type: 'bar',
+            data: {
+                labels: stackedBarLabels,
+                datasets: [
+                    { label: 'Easy', data: JSON.parse('{{ easy_data|default:"[]"|escapejs }}'), backgroundColor: 'rgba(102, 187, 106, 0.7)' },   // 活力綠
+                    { label: 'Medium', data: JSON.parse('{{ medium_data|default:"[]"|escapejs }}'), backgroundColor: 'rgba(66, 165, 245, 0.7)' }, // 活力藍
+                    { label: 'Hard', data: JSON.parse('{{ hard_data|default:"[]"|escapejs }}'), backgroundColor: 'rgba(255, 112, 67, 0.7)' },   // 活力橘紅
+                ]
+            },
+            options: {
+                animation: drawAnimation,
+                responsive: true,
+                plugins: { legend: { position: 'bottom' } },
+                scales: {
+                    x: { stacked: true, grid: { display: false } },
+                    y: { stacked: true, beginAtZero: true, title: { display: true, text: '題數' } }
+                }
+            }
+        });
+    }
+</script>
 {% endblock %}
