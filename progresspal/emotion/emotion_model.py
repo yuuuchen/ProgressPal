@@ -11,7 +11,7 @@ class InputShapeError(Exception):
 # 模型檔案路徑
 MODEL_PATH = os.path.join(
     os.path.dirname(__file__),
-    "finetuned_model_mix_v2.keras"
+    "finetuned_model_mix_v4.2.h5"
 )
 
 EMOTION_LABELS = ["挫折", "困惑", "無聊", "喜悅", "投入", "驚訝"]
@@ -23,7 +23,7 @@ def load_emotion_model():
     global model
     if model is None:
         try:
-            model = keras.models.load_model(MODEL_PATH)
+            model = keras.models.load_model(MODEL_PATH,compile=False)
             print("模型載入成功 (Grayscale Mode)")
         except Exception as e:
             print(f"模型載入失敗: {e}")
