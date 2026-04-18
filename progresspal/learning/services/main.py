@@ -34,7 +34,7 @@ def display_materials(chapter_id, unit_id, engagement, role):
     ]    
     resp_text = client.generate_materials_content(model=model_materials, messages=messages)
     result = clean_text_tutoring(resp_text)  
-    #print(f"[Debug] 教材生成原始回應: {resp_text}")  
+    # print(f"[Debug] 教材生成原始回應: {resp_text}")  
     return {
         "guide": result.get("guide"),
         "core": result.get("core"),
@@ -69,7 +69,6 @@ def expand_query_with_hyde(question, chapter_id, unit_id):
     unit = Unit.objects.get(chapter=chapter, unit_number=unit_id)
     chapter_name = chapter.title
     unit_name = unit.title
-    # Debug 用：確認傳入的名稱是否有意義
     # print(f"[Debug] HyDE Context: Chapter={chapter_name}, Unit={unit_name}")
 
     messages = [

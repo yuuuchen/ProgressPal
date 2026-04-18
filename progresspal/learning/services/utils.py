@@ -20,7 +20,8 @@ def clean_text_tutoring(raw_text: str) -> dict:
 
     raw_text = raw_text.strip() + "\n"
 
-    pattern = r"###\s*(觀念導讀|核心解析|範例|引導提問)\s*[:：]?\s*([\s\S]*?)(?=\n###|\Z)"
+    # 這樣 #### 核心觀點 或是其他次級標題就會被當作內文完整保留。
+    pattern = r"###\s*(觀念導讀|核心解析|範例|引導提問)\s*[:：]?\s*([\s\S]*?)(?=\n###\s*(?:觀念導讀|核心解析|範例|引導提問)|\Z)"
     matches = re.findall(pattern, raw_text)
 
     for title, content in matches:
@@ -46,8 +47,8 @@ def clean_text_tutoring(raw_text: str) -> dict:
         sections["core"] = "（模型未輸出核心解析）"
 
     if not sections["extended_question"]:
-        sections["extended_question"] = "模型未輸出問題"
-
+        sections["extended_question"] = "模型未輸出問題" 
+    # print(f"[Debug] clean_text_tutoring 解析結果: {sections}")
     return sections
 
 def clean_text_qa(raw_text: str) -> dict:

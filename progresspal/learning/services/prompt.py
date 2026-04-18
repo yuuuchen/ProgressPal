@@ -15,15 +15,15 @@ def normalize_materials(materials):
 '''
 # 定義 四象限對照
 def get_teaching_mode(identity, engagement):
-    if identity in ["資訊領域大學生", "mis_student"] and engagement == "high":
+    if identity in ["high"] and engagement == "high":
         return "cs_high"
-    elif identity in ["資訊領域大學生", "mis_student"]:
+    elif identity in ["high"]:
         return "cs_low"
     elif engagement == "high":
         return "noncs_high"
     else:
         return "noncs_low"
-    
+
 TEACHING_MODE_PROMPT = {
     "cs_high": """
 【教學模式：精確強化（CS × 高參與）】
@@ -101,10 +101,11 @@ PROMPT_TEMPLATES = {
 學生參與度: {engagement}
 【輸出格式（必須包含：### 觀念導讀、### 核心解析、### 範例、### 引導提問）】
 ### 觀念導讀
-- 先用一個自然段落說明概念（像在對學生說話）
-- **必須輸出**在上述段落後，緊接著換行使用 #### {hint}： 並條列 2~3 點本章關鍵詞
-- 說明「這個概念在資料結構中的角色或用途」
-- 不可引入教材未出現的新名詞
+- 聚焦於「大方向」：用一個自然段落說明此概念解決了什麼問題，或在現實生活中的直覺對應。
+- **嚴禁提及**：具體的演算法步驟、詳細定義、或任何教材中的技術細節（這些留給核心解析）。
+- **長度限制**：文字需精煉，建議 2-3 句話即可。
+- **必須輸出**：在上述段落後，緊接著換行使用 #### {hint}： 並條列 2~3 點本章關鍵詞
+- 說明「這個概念在資料結構中的角色（例如：它是為了提升搜尋效率還是節省空間？）」
 
 ### 核心解析
 - 依照教材逐步解釋核心概念，請包含「所有」重點
@@ -138,10 +139,11 @@ PROMPT_TEMPLATES = {
 【輸出格式（必須包含：### 觀念導讀、### 核心解析、### 引導提問）】
 
 ### 觀念導讀
-- 先用一個自然段落說明概念（像在對學生說話）
-- **必須輸出**在上述段落後，緊接著換行使用 #### {hint}： 並條列 2~3 點本章關鍵詞
-- 說明「這個概念在資料結構中的角色或用途」
-- 不可引入教材未出現的新名詞
+- 聚焦於「大方向」：用一個自然段落說明此概念解決了什麼問題，或在現實生活中的直覺對應。
+- **嚴禁提及**：具體的演算法步驟、詳細定義、或任何教材中的技術細節（這些留給核心解析）。
+- **長度限制**：文字需精煉，建議 2-3 句話即可。
+- **必須輸出**：在上述段落後，緊接著換行使用 #### {hint}： 並條列 2~3 點本章關鍵詞
+- 說明「這個概念在資料結構中的角色（例如：它是為了提升搜尋效率還是節省空間？）」
 
 ### 核心解析
 - 依照教材逐步解釋核心概念，請包含「所有」重點
@@ -221,21 +223,21 @@ SYSTEM_PROMPT = """
 當 user 提供「教學模式」時，請以 user 指令為優先
 """
 
-def set_system_prompt(identity='資訊領域大學生'):
+def set_system_prompt(knowledge_level='high'):
   '''
-  input: identity
+  input: knowledge_level ('high' or 'low')
   return: new Systemprompt
   '''
   mapping = {
-  '資訊領域大學生': '具備基礎程式與資料結構背景',
-        '非資訊領域大學生': '無資料結構背景，需要從基礎理解',
-        'mis_student': '具備基礎程式與資料結構背景',
-        'normal_student': '無資料結構背景，需要從基礎理解',
+      'high': '具備基礎程式與資料結構背景，能理解專業術語與邏輯推導',
+      'low': '無資料結構基礎，需要透過生活化比喻與步驟拆解來理解概念',
   }
-  background = mapping.get(identity, "請根據學生程度調整教學方式。")
-  return SYSTEM_PROMPT.format(identity=identity, background=background)
 
-#print(set_system_prompt("非資訊領域大學生"))
+  background = mapping.get(knowledge_level, "請根據學生程度調整教學方式。")
+
+  return SYSTEM_PROMPT.format(identity=f"{knowledge_level}先備知識學生", background=background)
+
+#print(set_system_prompt("low"))
 
 
 # 映射方法：參與度 → 語氣 + 教學策略
@@ -269,20 +271,24 @@ def map_engagement_to_profile(engagement: str, mode: str = 'qa') -> dict:
     }
     hint = {
         "high": "本章亮點",
-        "low": "核心觀點"
+        "low": "你將學會"
     }
 
-    # 定義提問策略 (Question Strategies) 區分為教學與問答
+    # 定義提問策略 區分為教學與問答
     strategies = {
-        # 教學模式 (Tutoring)
+        # 教學模式
         "tutoring": {
             "high": "提出不需實作的高層次理解檢核問題，請學生思考概念在不同條件下的變化或其設計理由，避免要求實際操作",
-            "low": "提出認知鷹架式的理解確認問題，協助學生回顧教材中的基礎概念，例如詢問是否理解關鍵名詞、流程中每一步的作用，或請學生選出目前最容易混淆的部分，避免要求推論、比較或延伸應用"
+            "low": """提出一個簡單的「是非題」或「二選一選擇題」來進行基礎理解確認。
+    問題需針對教材中的核心名詞或流程步驟設計（例如：根據剛才的說明，XX 步驟是為了 YY 嗎？）。以此降低心理門檻並提升成就感。"""
         },
-        # 問答/回應模式 (QA & Extended Answer)
+
+        # 問答/回應模式
         "qa": {
             "high": "提出「延伸或變形」的理解檢核問題。問題需圍繞原概念，可帶有一點挑戰性，但避免離題",
-            "low": "提出「理解斷點確認」。例如詢問：「哪一步不確定？」或「是否理解關鍵名詞？」。請勿延伸或跳入新概念"
+            "low": """提出「理解斷點確認」的封閉式問題（是非題或二選一）。
+    例如詢問：『剛才提到的 A 概念，你覺得比較像生活中的 (1) 狀況 X 還是 (2) 狀況 Y？』或『到這一步為止，你覺得邏輯是清楚的嗎？』。
+    重點在於讓學生透過簡單選擇來確認目前的理解狀態，嚴禁要求學生進行長篇文字描述。"""
         }
     }
 
@@ -301,7 +307,7 @@ def map_engagement_to_profile(engagement: str, mode: str = 'qa') -> dict:
     }
 
 ### 判斷教材中是否包含程式碼區塊
-def has_code(materials: list) -> bool:    
+def has_code(materials: list) -> bool:
     code_pattern = r"```[\s\S]*?```"
 
     return bool(re.search(code_pattern, materials)) \
@@ -345,7 +351,7 @@ def generate_materials(role, engagement, materials):
         template = PROMPT_TEMPLATES["tutoring_no_code"]
         # print(f"[Debug] 教材不包含程式碼，使用 tutoring_no_code 模板")
 
-        
+
     prompt_text = template.format(
         engagement=engagement,
         materials=materials,

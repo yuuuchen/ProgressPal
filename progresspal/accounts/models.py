@@ -11,8 +11,8 @@ class CustomUser(AbstractUser):
     - 新增身份與年級欄位
     """
     ROLE_CHOICES = [
-        ('mis_student', '資訊領域大學生'),
-        ('normal_student', '非資訊領域大學生'),
+        ('high_prior_student', '高先備知識學生'),
+        ('low_prior_student', '低先備知識學生'),
     ]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student') #身分
     grade = models.CharField(max_length=10, blank=True, null=True) #年級
