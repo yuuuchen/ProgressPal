@@ -1,163 +1,174 @@
 {% extends 'base_scroll.html' %}
 {% load static %}
 
-{% block title %}學習中心 | ProgressPal{% endblock %}
+{% block title %}學習儀表板 | ProgressPal{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <h2 class="mb-4 text-center">
-    {{ target_user.nickname }} 的學習儀表板
-    {% if target_user == request.user %}
-      <span class="text-muted"></span>
-    {% else %}
-      <span class="text-danger">【由管理員檢視】</span>
-    {% endif %}
-  </h2>
+<link rel="stylesheet" href="{% static 'css/portfolio.css' %}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
-  <div class="row mb-4 align-items-stretch">
-    <div class="col-md-6 mb-4">
-      <div class="card border-0 shadow-sm p-4 h-100 d-flex flex-column">
-        <h5 class="fw-bold border-bottom pb-3 mb-3">總學習時數</h5>
-        <div class="d-flex flex-column justify-content-center align-items-center flex-grow-1 text-center">
-            <h1 class="fw-bold text-primary mb-0" style="font-size: 5rem; line-height: 1;">
-                {{ total_hours|default:"0.0" }}
-            </h1>
-            <span class="text-muted fs-5 mt-2">小時</span>
-        </div>
-      </div>
-    </div>
+<style>
+    /* 複製測驗儀表板的專屬微調 */
+    .dashboard-wrapper {
+        font-family: 'Inter', -apple-system, sans-serif;
+        background-color: #ffffff;
+        padding-bottom: 5rem;
+    }
+    .stat-overview-card {
+        background: white;
+        border-radius: 1.25rem;
+        padding: 1.5rem;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s;
+    }
+    .stat-overview-card:hover { transform: translateY(-3px); }
+    .stat-value { font-size: 2.2rem; font-weight: 800; color: #2196F3; } /* 保持學習時數的藍色 */
+    .stat-label { font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 0.5rem; }
     
-    <div class="col-md-6 mb-4">
-      <div class="card border-0 shadow-sm p-4 h-100">
-        <h5 class="fw-bold border-bottom pb-3 mb-3">各章節學習時間</h5>
-        <div style="position: relative; height:300px;">
-          <canvas id="timeChart"></canvas>
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #334155;
+        margin-bottom: 1.2rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    /* 動畫效果 */
+    .animate-up {
+        opacity: 0;
+        transform: translateY(20px);
+        animation: fadeInUp 0.6s ease-out forwards;
+    }
+    @keyframes fadeInUp {
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<div class="dashboard-wrapper">
+    <div class="container py-4">
+        
+        <div class="container mt-2 mb-5">
+            <h2 class="text-center fw-bold">
+                {{ target_user.nickname }} 的學習儀表板
+                {% if target_user != request.user %}
+                <span class="text-danger fs-5">【由管理員檢視】</span>
+                {% endif %}
+            </h2>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <div class="row mb-4">
-    <div class="col-md-6 mb-4">
-      <div class="card border-0 shadow-sm p-4 h-100">
-        <h5 class="fw-bold border-bottom pb-3 mb-3">提問參與度趨勢</h5>
-        <div style="position: relative; height:300px;">
-          <canvas id="engagementChart"></canvas>
+        <div class="row g-4 mb-5">
+            <div class="col-md-6 animate-up" style="animation-delay: 0.1s;">
+                <div class="stat-overview-card text-center h-100 d-flex flex-column justify-content-center">
+                    <div class="stat-label"><i class="bi bi-clock-history me-1"></i> 總學習時數</div>
+                    <div class="stat-value">{{ total_hours|default:"0.0" }} <small class="fs-6 text-muted">小時</small></div>
+                </div>
+            </div>
+            <div class="col-md-6 animate-up" style="animation-delay: 0.2s;">
+                <div class="stat-overview-card text-center h-100 d-flex flex-column justify-content-center">
+                    <div class="stat-label"><i class="bi bi-chat-dots me-1"></i> 累積提問次數</div>
+                    <div class="stat-value" style="color: #00bcd4;">{{ question_logs.count }} <small class="fs-6 text-muted">次</small></div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-    <div class="col-md-6 mb-4">
-      <div class="card border-0 shadow-sm p-4 h-100">
-        <h5 class="fw-bold border-bottom pb-3 mb-3">參與度 vs 學習時間</h5>
-        <div style="position: relative; height:300px;">
-          <canvas id="scatterChart"></canvas>
+
+        <div class="row g-4 mb-5">
+            <div class="col-12 animate-up" style="animation-delay: 0.3s;">
+                <h5 class="section-title"><i class="bi bi-bar-chart-steps text-primary me-2"></i>各章節學習時間 (分鐘)</h5>
+                <div class="card border-0 shadow-sm p-4 rounded-4">
+                    <div style="position: relative; height:350px;">
+                        <canvas id="timeChart"></canvas>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <div class="row">
-  <!-- 提問紀錄 -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-            <h5 class="card-title text-warning">提問紀錄</h5>
-            {% if question_logs %}
-            <div class="table-responsive">
-              <table class="table table-hover table-bordered align-middle">
-                  <thead class="table-dark">
-                      <tr>
-                          <th style="width: 12%;">類型</th>
-                          <th style="width: 15%;">章節 / 單元</th>
-                          <th style="width: 35%;">對話內容</th> <th style="width: 25%;">系統最終回覆</th>
-                          <th style="width: 13%;">紀錄時間</th>
-                      </tr>
-                  </thead>
-                  <tbody>
-                      {% for q in question_logs %}
-                      <tr>
-                          <td>
-                              {% if q.type == 'question' %}
-                                  <span class="badge bg-primary">學生提問</span>
-                              {% elif q.type == 'answer_extend_question' %}
-                                  <span class="badge bg-info text-dark">回應引導</span>
-                              {% endif %}
-                          </td>
+        <div class="row g-4 mb-5">
+            <div class="col-lg-6 animate-up" style="animation-delay: 0.4s;">
+                <h5 class="section-title"><i class="bi bi-graph-up text-success me-2"></i>提問參與度趨勢</h5>
+                <div class="card border-0 shadow-sm p-4 rounded-4">
+                    <div style="position: relative; height:300px;">
+                        <canvas id="engagementChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 animate-up" style="animation-delay: 0.5s;">
+                <h5 class="section-title"><i class="bi bi-dot text-danger me-2"></i>參與度 vs 學習時間</h5>
+                <div class="card border-0 shadow-sm p-4 rounded-4">
+                    <div style="position: relative; height:300px;">
+                        <canvas id="scatterChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                          <td>
-                              <div class="small text-muted">{{ q.chapter_code|default:"-" }}</div>
-                              <div class="fw-bold">{{ q.unit_code|default:"-" }}</div>
-                          </td>
-
-                          <td>
-                              {% if q.type == 'answer_extend_question' %}
-                                  <div class="mb-2">
-                                      <small class="text-primary fw-bold"><i class="material-symbols-outlined style-icon">psychology_alt</i> 系統引導問題：</small>
-                                      <div class="p-2 mt-1 bg-light border-start border-primary border-3 small text-secondary italic">
-                                          {{ q.system_question }}
+        <div class="row animate-up" style="animation-delay: 0.6s;">
+            <div class="col-12">
+                <h5 class="section-title"><i class="bi bi-journal-text text-warning me-2"></i>詳細提問紀錄回顧</h5>
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                    <div class="table-responsive">
+                      <table class="table table-hover mb-0 align-middle">
+                          <thead class="bg-light">
+                              <tr class="text-secondary small text-uppercase fw-bold">
+                                  <th class="px-4 py-3" style="width: 8%;">類型</th>
+                                  <th class="py-3" style="width: 8%;">單元</th>
+                                  <th class="py-3" style="width: 34%;">對話內容</th> 
+                                  <th class="py-3" style="width: 40%;">系統回覆</th> <th class="py-3" style="width: 10%;">時間</th>
+                              </tr>
+                          </thead>
+                          <tbody class="border-top-0">
+                              {% for q in question_logs %}
+                              <tr>
+                                  <td class="px-4">
+                                      {% if q.type == 'question' %}
+                                          <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle px-2">提問</span>
+                                      {% elif q.type == 'answer_extend_question' %}
+                                          <span class="badge rounded-pill bg-info-subtle text-info border border-info-subtle px-2">回應延伸提問</span>
+                                      {% endif %}
+                                  </td>
+                                  <td class="fw-semibold text-dark">{{ q.unit_code|default:"-" }}</td>
+                                  <td>
+                                      {% if q.system_question %}
+                                          <div class="p-2 mb-2 bg-light rounded-3 border-start border-primary border-3 small">
+                                              <span class="text-primary fw-bold">延伸問題：</span>{{ q.system_question }}
+                                          </div>
+                                      {% endif %}
+                                      <div class="text-break small">{{ q.stu_input|linebreaksbr }}</div>
+                                  </td>
+                                  <td>
+                                      <div class="answer-wrapper p-3 bg-light rounded-3 text-secondary" 
+                                          style="max-height: 300px; overflow-y: auto; font-size: 0.9rem; line-height: 1.6;">
+                                          {{ q.answer|safe|linebreaksbr }}
                                       </div>
-                                  </div>
-                                  <small class="text-success fw-bold">學生的回應：</small>
-                              {% endif %}
-                              
-                              <div class="mt-1">{{ q.stu_input|linebreaksbr }}</div>
-                          </td>
-
-                          <td>
-                              <div class="text-dark border-start ps-2" style="max-height: 120px; overflow-y: auto; font-size: 0.95rem;">
-                                  {{ q.answer|default:"<span class='text-muted italic'>處理中...</span>"|safe|linebreaksbr }}
-                              </div>
-                          </td>
-
-                          <td class="text-nowrap">
-                              {{ q.created_at|date:"Y-m-d" }}<br>
-                              <small class="text-muted">{{ q.created_at|date:"H:i" }}</small>
-                          </td>
-                      </tr>
-                      {% empty %}
-                      <tr>
-                          <td colspan="5" class="text-center py-5 text-muted">
-                              <i class="material-symbols-outlined d-block mb-2" style="font-size: 3rem;">history_edu</i>
-                              目前尚無任何提問紀錄
-                          </td>
-                      </tr>
-                      {% endfor %}
-                  </tbody>
-              </table>
-          </div>
-            {% else %}
-            <p class="text-muted">目前尚無提問紀錄。</p>
-            {% endif %}
+                                  </td>
+                                  <td class="text-secondary small">{{ q.created_at|date:"m/d H:i" }}</td>
+                              </tr>
+                              {% empty %}
+                              <tr><td colspan="5" class="text-center py-5 text-muted">目前尚無提問紀錄</td></tr>
+                              {% endfor %}
+                          </tbody>
+                      </table>
+                  </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  // 1. 將變數定義在最外層，確保整個 script 都讀得到
-  let quizLabels = [];
-  let quizScores = [];
-
-  try {
-    // 使用 JSON.parse 解析 Django 傳入的字串
-    // 注意：變數名稱需與 views.py 傳入的 context key 一致
-    quizLabels = JSON.parse('{{ quiz_labels|default:"[]"|escapejs }}');
-    quizScores = JSON.parse('{{ quiz_scores|default:"[]"|escapejs }}');
-    
-    console.log("Parsed Labels:", quizLabels);
-    console.log("Parsed Scores:", quizScores);
-  } catch (error) {
-    console.error("Error parsing quiz data:", error);
-  }
-
-  // 2. 其他現有的變數解析
+  // ... (保留你原本 script 中所有的 JSON.parse 與 Chart 初始化代碼) ...
   const chapterLabels = JSON.parse('{{ chapter_labels|default:"[]"|escapejs }}');
   const chapterTimes = JSON.parse('{{ chapter_times|default:"[]"|escapejs }}');
   const engagementLabels = JSON.parse('{{ engagement_labels|default:"[]"|escapejs }}');
   const engagementValues = JSON.parse('{{ engagement_values|default:"[]"|escapejs }}');
   const scatterData = JSON.parse('{{ scatter_data|default:"[]"|escapejs }}');
 
-  // === 各章節學習時間 (Bar Chart) ===
+  const chartOptions = { responsive: true, maintainAspectRatio: false };
+
+  // 各章節學習時間
   new Chart(document.getElementById('timeChart'), {
     type: 'bar',
     data: {
@@ -165,17 +176,14 @@
       datasets: [{
         label: '學習時間 (分鐘)',
         data: chapterTimes,
-        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+        backgroundColor: 'rgba(33, 150, 243, 0.7)',
+        borderRadius: 8
       }]
     },
-    options: {
-      responsive: true,
-      scales: { y: { beginAtZero: true } }
-    }
+    options: chartOptions
   });
 
-  // === 提問參與度趨勢 (Line Chart) ===
-  // === 提問參與度趨勢 ===
+  // 提問參與度趨勢
   new Chart(document.getElementById('engagementChart'), {
     type: 'line',
     data: {
@@ -183,53 +191,20 @@
       datasets: [{
         label: '參與度',
         data: engagementValues,
-        borderColor: '#42A5F5',
-        backgroundColor: 'rgba(66, 165, 245, 0.2)',
+        borderColor: '#4CAF50',
+        backgroundColor: 'rgba(76, 175, 80, 0.1)',
         fill: true,
-        tension: 0, // 參與度建議用直線 (0)，呈現切換感，或者 0.2 稍微平滑
-        stepped: true, // 選項：如果想呈現像開關一樣的階梯圖，可開啟這行
-        pointRadius: 6,
-        pointBackgroundColor: '#42A5F5'
+        stepped: true,
+        pointRadius: 4
       }]
     },
     options: {
-      responsive: true,
-      scales: {
-        y: {
-          min: 0,
-          max: 1,
-          ticks: {
-            stepSize: 1,
-            // 關鍵：將數字轉回文字顯示
-            callback: function(value) {
-              if (value === 1) return '高 (High)';
-              if (value === 0) return '低 (Low)';
-              return '';
-            }
-          },
-          title: {
-            display: true,
-            text: '參與層級'
-          }
-        }
-      },
-      plugins: {
-        tooltip: {
-          callbacks: {
-            // 讓滑鼠移上去時也顯示文字而不是數字
-            label: function(context) {
-              let label = context.dataset.label || '';
-              if (label) { label += ': '; }
-              label += (context.parsed.y === 1 ? '高' : '低');
-              return label;
-            }
-          }
-        }
-      }
+      ...chartOptions,
+      scales: { y: { min: 0, max: 1, ticks: { callback: v => v === 1 ? '高' : '低' } } }
     }
   });
 
-  // === 參與度 vs 學習時間 (Scatter Chart) ===
+  // 參與度 vs 學習時間
   new Chart(document.getElementById('scatterChart'), {
     type: 'scatter',
     data: {
@@ -244,38 +219,6 @@
       scales: {
         x: { title: { display: true, text: '學習時間 (分鐘)' } },
         y: { title: { display: true, text: '平均參與度' } }
-      }
-    }
-  });
-
-  // === 測驗成績趨勢 (Line Chart) ===
-  // 修正點：使用上面定義好的 quizLabels 和 quizScores
-  new Chart(document.getElementById('quizChart'), {
-    type: 'line',
-    data: {
-      labels: quizLabels, 
-      datasets: [{
-        label: '得分',
-        data: quizScores,
-        fill: true,
-        backgroundColor: 'rgba(142, 36, 170, 0.1)',
-        borderColor: '#8E24AA',
-        borderWidth: 2,
-        pointBackgroundColor: '#8E24AA',
-        tension: 0.3
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: {
-          beginAtZero: true,
-          max: 10,
-          ticks: { stepSize: 1 },
-          title: { display: true, text: '得分' }
-        },
-        x: { title: { display: true, text: '日期 / 章節' } }
       }
     }
   });
