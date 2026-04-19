@@ -34,3 +34,4 @@ protobuf==3.20.3
 # 影像辨識
 keras==3.12.0
 tensorflow==2.19.1
+tf-keras
