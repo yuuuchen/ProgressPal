@@ -21,7 +21,7 @@ def clean_text_tutoring(raw_text: str) -> dict:
     raw_text = raw_text.strip() + "\n"
 
     # 這樣 #### 核心觀點 或是其他次級標題就會被當作內文完整保留。
-    pattern = r"###\s*(觀念導讀|核心解析|範例|引導提問)\s*[:：]?\s*([\s\S]*?)(?=\n###\s*(?:觀念導讀|核心解析|範例|引導提問)|\Z)"
+    pattern = r"###\s*(觀念導讀|核心解析|範例|引導提問|提示)\s*[:：]?\s*([\s\S]*?)(?=\n###\s*(?:觀念導讀|核心解析|範例|引導提問|提示)|\Z)"
     matches = re.findall(pattern, raw_text)
 
     for title, content in matches:
@@ -38,6 +38,9 @@ def clean_text_tutoring(raw_text: str) -> dict:
 
         elif title == "引導提問":
             sections["extended_question"] = content
+
+        elif title == "提示":
+            sections["hint"]= content
 
     # fallback
     if not sections["guide"]:
@@ -65,15 +68,17 @@ def clean_text_qa(raw_text: str) -> dict:
   raw_text = raw_text.strip() + "\n"
 
   # 匹配兩個區塊
-  pattern = r"###\s*(回答問題|引導提問)\s*([\s\S]*?)(?=\n###|\Z)"
+  pattern = r"###\s*(回答問題|引導提問|提示)\s*([\s\S]*?)(?=\n###|\Z)"
   matches = re.findall(pattern, raw_text)
 
   for title, content in matches:
-      content = content.strip()
-      if title == "回答問題":
-          sections["answer"] = content
-      elif title == "引導提問":
-          sections["extended_question"] = content
+    content = content.strip()
+    if title == "回答問題":
+        sections["answer"] = content
+    elif title == "引導提問":
+        sections["extended_question"] = content
+    elif title == "提示":
+        sections["hint"]= content
 
   if not sections["answer"]:
       sections["answer"] = "（模型未輸出回答）"
