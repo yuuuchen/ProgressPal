@@ -1,5 +1,9 @@
+import csv
+import os
+import re
 from django.core.management.base import BaseCommand
-from learning.models import Chapter, Unit
+from django.conf import settings
+from learning.models import Chapter, Unit,QuizQuestion
 
 class Command(BaseCommand):
     help = '根據教材編排圖片同步單元資料庫'
@@ -56,7 +60,7 @@ class Command(BaseCommand):
             }
         ]
 
-        self.stdout.write("正在同步單元資料...")
+        self.stdout.write("=== 開始同步單元資料 ===")
 
         for data in course_structure:
             try:
@@ -78,4 +82,82 @@ class Command(BaseCommand):
             except Chapter.DoesNotExist:
                 self.stdout.write(self.style.ERROR(f"錯誤：找不到章節編號 {data['chapter_num']}，請先確保章節已建立。"))
 
-        self.stdout.write(self.style.SUCCESS("\n單元同步作業完成！"))
+        self.stdout.write(self.style.SUCCESS("\n=== 開始匯入測驗題目 ==="))
+        self.import_quizzes()
+        self.stdout.write(self.style.SUCCESS("\n單元與測驗同步作業完成！"))
+
+
+    def import_quizzes(self):
+        """掃描 resources 資料夾並處理 CSV"""
+        resources_dir = os.path.join(settings.BASE_DIR, 'learning', 'resources')
+        
+        if not os.path.exists(resources_dir):
+            self.stdout.write(self.style.WARNING("錯誤: 找不到資源目錄"))
+            return
+
+        csv_files = [f for f in os.listdir(resources_dir) if f.endswith('.csv')]
+        
+        for filename in csv_files:
+            file_path = os.path.join(resources_dir, filename)
+            self.process_quiz_csv(file_path)
+
+    def process_quiz_csv(self, file_path):
+        """讀取 CSV 並更新資料庫"""
+        # 偵測編碼
+        used_encoding = 'utf-8-sig'
+        for enc in ['utf-8-sig', 'utf-8', 'big5', 'cp950']:
+            try:
+                with open(file_path, 'r', encoding=enc) as f:
+                    f.readline()
+                used_encoding = enc
+                break
+            except UnicodeDecodeError:
+                continue
+
+        with open(file_path, 'r', encoding=used_encoding) as csvfile:
+            reader = csv.DictReader(csvfile)
+            rows = list(reader)
+            
+            # 取得 CSV 中所有的章節編號
+            target_chapters = set()
+            for row in rows:
+                c_num = row.get('chapter', '').strip()
+                if c_num:
+                    target_chapters.add(c_num)
+
+            # 更新策略：先刪除 CSV 中涉及章節的舊題目
+            if target_chapters:
+                QuizQuestion.objects.filter(chapter__chapter_number__in=target_chapters).delete()
+                self.stdout.write(f"  - 清空章節 {', '.join(target_chapters)} 的舊題目以便更新敘述")
+
+            questions_to_create = []
+            for row in rows:
+                try:
+                    chapter_num = int(row['chapter'].strip())
+                    chapter_obj = Chapter.objects.get(chapter_number=chapter_num)
+
+                    # 處理說明文字的引號問題
+                    raw_explanation = row.get('explanation', '').strip()
+                    if raw_explanation.startswith('"') and raw_explanation.endswith('"'):
+                        clean_explanation = raw_explanation[1:-1]
+                    else:
+                        clean_explanation = raw_explanation
+
+                    # 建立題目物件
+                    questions_to_create.append(QuizQuestion(
+                        chapter=chapter_obj,
+                        difficulty=row.get('difficulty', 'easy').strip(),
+                        question=row.get('question', '').strip(),
+                        option_a=row.get('option_A', '').strip(),
+                        option_b=row.get('option_B', '').strip(),
+                        option_c=row.get('option_C', '').strip(),
+                        option_d=row.get('option_D', '').strip(),
+                        answer=row.get('answer', '').strip(),
+                        explanation=clean_explanation
+                    ))
+                except Exception as e:
+                    self.stdout.write(self.style.ERROR(f"  - 跳過錯誤行: {e}"))
+
+            if questions_to_create:
+                QuizQuestion.objects.bulk_create(questions_to_create)
+                self.stdout.write(f"  - 檔案 {os.path.basename(file_path)}: 成功匯入 {len(questions_to_create)} 筆題目")
