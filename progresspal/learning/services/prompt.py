@@ -15,26 +15,26 @@ def normalize_materials(materials):
 '''
 # 定義 四象限對照
 def get_teaching_mode(identity, engagement):
-    if identity in ["high"] and engagement == "high":
-        return "cs_high"
-    elif identity in ["high"]:
-        return "cs_low"
+    if identity in ["high_prior_student"] and engagement == "high":
+        return "hpk_high"
+    elif identity in ["high_prior_student"]:
+        return "hpk_low"
     elif engagement == "high":
-        return "noncs_high"
+        return "lpk_high"
     else:
-        return "noncs_low"
+        return "lpk_low"
 
 TEACHING_MODE_PROMPT = {
-    "cs_high": """
-【教學模式：精確強化（CS × 高參與）】
+    "hpk_high": """
+【教學模式：精確強化（HPK × 高參與）】
 1. 語氣：專業、精煉、具挑戰性。
 2. 使用專業術語直接講解（如 time complexity, pointer）
 3. 強調術語間的邏輯關聯、性質與概念間關係。
 4. 可補充概念比較或延伸思考。
 """,
 
-    "cs_low": """
-【教學模式：結構拆解（CS × 低參與）】
+    "hpk_low": """
+【教學模式：結構拆解（HPK × 低參與）】
 1. 語氣：穩健、導師感、安撫焦慮。
 2. 保留專業術語，但放慢節奏
 3. 將概念拆解為可預期的學習步驟，建立掌控感。
@@ -42,16 +42,16 @@ TEACHING_MODE_PROMPT = {
 5. 指出常見錯誤與卡點
 """,
 
- "noncs_high": """
-【教學模式：直覺映射（Non-CS × 高參與）】
+ "lpk_high": """
+【教學模式：直覺映射（LPK × 高參與）】
 1. 語氣：生動、跨領域聯想、具應用導向。
 2. 先用一個非資訊領域的場景（如：圖書館、交通）引入，再順勢過渡到術語。
 2. 須明確對應回正式術語（必須出現術語名稱）
 3. 至少說明一個實際應用場景
 """,
 
-"noncs_low": """
-【教學模式：基礎建構（Non-CS × 低參與）】
+"lpk_low": """
+【教學模式：基礎建構（LPK × 低參與）】
 1. 語氣：極度親切、淺白、充滿正向鼓勵。
 2. 使用生活化比喻說明概念（如：把 stack 想像成疊盤子）
 3. 每個專業術語出現時，需立即用白話解釋
@@ -70,6 +70,7 @@ PROMPT_TEMPLATES = {
 - 每個標題都必須出現
   - 「### 回答問題」：針對學生問題進行解答
   - 「### 引導提問」：{extended_question}，一題即可。
+  - 「### 提示」：針對引導提問提供提示，提供具關聯性的暗示或線索，讓學生能迅速聯想到答案，但嚴禁直接公布答案內容。（40字內）
 - 根據學生參與度調整語氣與解釋深度
 【輸出格式（必須完全一致）】
 ### 回答問題
@@ -78,6 +79,9 @@ PROMPT_TEMPLATES = {
 ### 引導提問
 {extended_question}
 （僅輸出一題，不要加入說明）
+
+### 提示
+(直接輸出提示內容)
 
 【回答風格設定】
 回應風格: {style}
@@ -99,7 +103,7 @@ PROMPT_TEMPLATES = {
 
 【回答風格設定】
 學生參與度: {engagement}
-【輸出格式（必須包含：### 觀念導讀、### 核心解析、### 範例、### 引導提問）】
+【輸出格式（必須包含：### 觀念導讀、### 核心解析、### 範例、### 引導提問、### 提示）】
 ### 觀念導讀
 - 聚焦於「大方向」：用一個自然段落說明此概念解決了什麼問題，或在現實生活中的直覺對應。
 - **嚴禁提及**：具體的演算法步驟、詳細定義、或任何教材中的技術細節（這些留給核心解析）。
@@ -125,6 +129,9 @@ PROMPT_TEMPLATES = {
 {extended_question}
 （僅輸出一題，不要加入說明）
 
+### 提示
+針對引導提問提供提示，提供具關聯性的暗示或線索，讓學生能迅速聯想到答案，但嚴禁直接公布答案內容。（40字內）
+
 【教材】{materials}
 """,
 
@@ -136,7 +143,7 @@ PROMPT_TEMPLATES = {
 - 總字數必須 ≤ 800 字（超出視為錯誤）
 【回答風格設定】
 學生參與度: {engagement}
-【輸出格式（必須包含：### 觀念導讀、### 核心解析、### 引導提問）】
+【輸出格式（必須包含：### 觀念導讀、### 核心解析、### 引導提問、### 提示）】
 
 ### 觀念導讀
 - 聚焦於「大方向」：用一個自然段落說明此概念解決了什麼問題，或在現實生活中的直覺對應。
@@ -159,6 +166,9 @@ PROMPT_TEMPLATES = {
 {extended_question}
 （僅輸出一題，不要加入說明）
 
+### 提示
+針對引導提問提供提示，提供具關聯性的暗示或線索，讓學生能迅速聯想到答案，但嚴禁直接公布答案內容。（40字內）
+
 【教材】{materials}
 """,
     # 行為 3:回應學生對於題目的回答
@@ -170,6 +180,7 @@ PROMPT_TEMPLATES = {
 - 每個標題都必須出現
   - 「### 回答問題」：針對學生問題進行解答
   - 「### 引導提問」：{extended_question}，一題即可。
+  - 「### 提示」：針對引導提問提供提示，幫助學生思考答案（40字內）
 - 根據學生參與度調整語氣與解釋深度
 【輸出格式（必須完全一致）】
 - 輸出需依照以下結構：
@@ -179,6 +190,9 @@ PROMPT_TEMPLATES = {
 ### 引導提問
 {extended_question}
 （僅輸出一題，不要加入說明）
+
+### 提示
+針對引導提問提供提示，提供具關聯性的暗示或線索，讓學生能迅速聯想到答案，但嚴禁直接公布答案內容。（40字內）
 
 【回答風格設定】
 回應風格: {style}
@@ -223,21 +237,21 @@ SYSTEM_PROMPT = """
 當 user 提供「教學模式」時，請以 user 指令為優先
 """
 
-def set_system_prompt(knowledge_level='high'):
+def set_system_prompt(knowledge_level='high_prior_student'):
   '''
-  input: knowledge_level ('high' or 'low')
+  input: knowledge_level ('high_prior_student' or 'low_prior_student_prior_student')
   return: new Systemprompt
   '''
   mapping = {
-      'high': '具備基礎程式與資料結構背景，能理解專業術語與邏輯推導',
-      'low': '無資料結構基礎，需要透過生活化比喻與步驟拆解來理解概念',
+      'high_prior_student': {"identity": '高先備知識學生', 'background': '具備基礎程式與資料結構背景，能理解專業術語與邏輯推導'},
+      'low_prior_student': {"identity": '低先備知識學生', 'background': '無資料結構基礎，需要透過生活化比喻與步驟拆解來理解概念'},
   }
 
   background = mapping.get(knowledge_level, "請根據學生程度調整教學方式。")
 
-  return SYSTEM_PROMPT.format(identity=f"{knowledge_level}先備知識學生", background=background)
+  return SYSTEM_PROMPT.format(identity=f"{mapping[knowledge_level]['identity']}", background=f"{mapping[knowledge_level]['background']}")
 
-#print(set_system_prompt("low"))
+#print(set_system_prompt("low_prior_student"))
 
 
 # 映射方法：參與度 → 語氣 + 教學策略

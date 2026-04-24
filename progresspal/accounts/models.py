@@ -10,9 +10,13 @@ class CustomUser(AbstractUser):
     - 繼承 AbstractUser（內含 username、password）
     - 新增身份與年級欄位
     """
+    # ROLE_CHOICES = [
+    #     ('high_prior_student', '高先備知識學生'),
+    #     ('low_prior_student', '低先備知識學生'),
+    # ]
     ROLE_CHOICES = [
-        ('high_prior_student', '高先備知識學生'),
-        ('low_prior_student', '低先備知識學生'),
+    ('high_prior_student', 'A'),
+    ('low_prior_student', 'B'),
     ]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student') #身分
     grade = models.CharField(max_length=10, blank=True, null=True) #年級
@@ -82,6 +86,7 @@ class QuestionLog(models.Model):
     stu_input = models.TextField() # 學生輸入
     system_question = models.TextField(blank=True, null=True) # 系統引導提問(當學生回應引導提問時會有內容)
     answer = models.TextField(blank=True, null=True) # 系統回覆
+    hint_is_used = models.BooleanField(default=False) # 系統提示(當學生點選使用系統提示時會改為True)
     engagement = models.CharField(max_length=20, blank=True, null=True)  # 參與度，例如：high、low
     created_at = models.DateTimeField(auto_now_add=True)
 
