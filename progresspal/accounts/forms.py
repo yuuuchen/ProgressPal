@@ -32,7 +32,8 @@ class RegisterForm(UserCreationForm):
         widget=forms.EmailInput(attrs={'placeholder': '請輸入 Email'})
     )
     role = forms.ChoiceField(
-        label='身分別',
+        label='組別',
+        # label="身分",
         choices=User.ROLE_CHOICES,
         widget=forms.Select(attrs={'class': 'form-select'})
     )
@@ -83,7 +84,8 @@ class ProfileUpdateForm(forms.ModelForm):
         labels = {
             'nickname': '暱稱',
             'email': '電子郵件',
-            'role': '身分別',
+            # 'role':"身分",
+            'role': '組別',
             'grade': '年級',
         }
 
