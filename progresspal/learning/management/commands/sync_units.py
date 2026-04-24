@@ -6,7 +6,7 @@ from django.conf import settings
 from learning.models import Chapter, Unit,QuizQuestion
 
 class Command(BaseCommand):
-    help = '根據教材編排圖片同步單元資料庫'
+    help = '初始化資料庫：建立章節、單元並匯入測驗題目'
 
     def handle(self, *args, **options):
         # 定義完整的教材單元資料
@@ -60,27 +60,25 @@ class Command(BaseCommand):
             }
         ]
 
-        self.stdout.write("=== 開始同步單元資料 ===")
+        # --- 第一階段：建立/更新章節與單元 ---
+        self.stdout.write("=== 正在初始化章節與單元結構 ===")
 
         for data in course_structure:
-            try:
-                # 根據章節編號抓取現有的章節物件
-                chapter = Chapter.objects.get(chapter_number=data["chapter_num"])
-                
-                for u_num, u_title in data["units"]:
-                    # 更新或建立單元
-                    # 注意：models.py 中 unit_number 是 CharField
-                    unit, created = Unit.objects.update_or_create(
-                        chapter=chapter,
-                        unit_number=u_num,
-                        defaults={'title': u_title}
-                    )
-                    
-                    status = "建立" if created else "更新"
-                    self.stdout.write(f"  - 章節 {data['chapter_num']} 單元 {u_num} {status}: {u_title}")
-                    
-            except Chapter.DoesNotExist:
-                self.stdout.write(self.style.ERROR(f"錯誤：找不到章節編號 {data['chapter_num']}，請先確保章節已建立。"))
+            chapter, ch_created = Chapter.objects.update_or_create(
+                chapter_number=data["chapter_num"],
+                defaults={'title': data["chapter_title"]}
+            )
+            ch_status = "建立" if ch_created else "更新"
+            self.stdout.write(f"章節 {data['chapter_num']} {ch_status}: {data['chapter_title']}")
+
+            for u_num, u_title in data["units"]:
+                unit, u_created = Unit.objects.update_or_create(
+                    chapter=chapter,
+                    unit_number=str(u_num),
+                    defaults={'title': u_title}
+                )
+                u_status = "建立" if u_created else "更新"
+                self.stdout.write(f"  - 單元 {u_num} {u_status}: {u_title}")
 
         self.stdout.write(self.style.SUCCESS("\n=== 開始匯入測驗題目 ==="))
         self.import_quizzes()

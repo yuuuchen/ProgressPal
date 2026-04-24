@@ -64,7 +64,7 @@
         <!--右側Emotion&對話框-->
         <div id="chat-section-wrapper" class="chat-section d-flex flex-column p-3 overflow-hidden">
             <!-- Emotion區塊 -->
-            <div id="emotion-display" class="emotion-float-card mb-3" data-initial-emotion="{{ current_emotion|default:'' }}">
+            <div id="emotion-display" class="emotion-float-card mb-2" data-initial-emotion="{{ current_emotion|default:'' }}">
                 <span class="text-muted">情緒偵測中...</span>
             </div>
                 <video id="webcam" autoplay playsinline muted style="position: absolute; opacity: 0; pointer-events: none; z-index: -1;"></video>
@@ -108,21 +108,21 @@
 </div>
 
     <!--切換單元-->
-    <div class="d-flex justify-content-center gap-3 my-2 mt-3 ">
+    <div id="unit-navigation" class="d-flex justify-content-center gap-3 my-2 mt-3 ">
         {% if previous_unit %}
         <a href="{% url 'learning' chapter_code=previous_unit.chapter.chapter_number unit_code=previous_unit.unit_number %}"
-        class="btn btn-secondary record-exit"> &larr; 上一單元
+        class="btn btn-sm btn-secondary record-exit"> &larr; 上一單元
         </a>
     {% endif %}
 
     {% if next_unit %}
         <a href="{% url 'learning' chapter_code=next_unit.chapter.chapter_number unit_code=next_unit.unit_number %}"
-        class="btn text-white record-exit" style="background-color: #09384e;"> 
+        class="btn btn-sm text-white record-exit" style="background-color: #09384e;"> 
             下一單元 &rarr;
         </a>
     {% else %}
         <a href="{% url 'quiz' chapter_code=unit.chapter.chapter_number %}"
-        class="btn text-white record-exit" style="background-color: #09384e;"> 
+        class="btn btn-sm text-white record-exit" style="background-color: #09384e;"> 
             進入測驗 &rarr;
         </a>
     {% endif %}
@@ -157,6 +157,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const chatSection = document.getElementById('chat-section-wrapper');
             const teachingSection = document.querySelector('.teaching-section');
+            const unitNav = document.getElementById('unit-navigation');
             const fsBtn = document.getElementById('fullscreen-toggle');
             const fsIcon = document.getElementById('fs-icon');
 
@@ -165,6 +166,11 @@
                     // 切換 CSS 類別
                     const isActive = chatSection.classList.toggle('fullscreen-active');
                     teachingSection.classList.toggle('is-hidden');
+                    
+                    // 隱藏下方的上一頁/下一頁按鈕 (使用 Bootstrap 的 d-none)
+                    if (unitNav) {
+                        unitNav.classList.toggle('d-none', isActive);
+                    }
                     
                     // 更新圖示
                     if (fsIcon) {

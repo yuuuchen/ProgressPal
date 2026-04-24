@@ -24,7 +24,7 @@
                         <li class="list-group-item bg-transparent">
                             <a href="{% url 'learning' chapter.chapter_number unit.unit_number %}" 
                             class="text-decoration-none text-dark d-block py-1 unit-link">
-                                <strong>{{ chapter.chapter_number }}.{{ unit.unit_number }}</strong> — {{ unit.title }}
+                                <strong>{{ chapter.chapter_number }}-{{ unit.unit_number }}</strong> — {{ unit.title }}
                             </a>
                         </li>
                         {% endfor %} 

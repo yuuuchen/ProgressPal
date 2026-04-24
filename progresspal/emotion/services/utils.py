@@ -58,7 +58,7 @@ def compute_engagement(emotions):
     #return sum(scores) / len(scores)
 
   #指數平滑法
-  alpha = 0.4  #越大越重視最近的情緒
+  alpha = 0.2  #越大越重視最近的情緒
   ema = scores[0]
   for x in scores[1:]:
     ema = alpha * x + (1 - alpha) * ema

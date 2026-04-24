@@ -90,6 +90,7 @@
 }
 
 
+
 /*--- 教材 --- */
 /*教材淡入*/
 #material-card {
@@ -232,17 +233,16 @@
 /*--- 情緒 --- */
 .emotion-float-card {
     background-color: #ffffff;
-    padding: 15px 20px;
-    border-radius: 16px;      /* [新增] 增加明顯圓角 */
+    padding: 6px 20px;
+    border-radius: 12px;      /* [新增] 增加明顯圓角 */
     box-shadow: 0 4px 12px rgba(0,0,0,0.05); /* 加入輕微陰影提升層次 */
     border: none !important;
 }
 
 /*--- 提問區 ---*/
 .chat-section {
-    padding: 20px !important;   
+    padding: 10px !important;   
     flex-direction: column;
-    gap: 20px;
 }
 
 #chat-container.card {
