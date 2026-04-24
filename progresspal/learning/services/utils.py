@@ -64,7 +64,7 @@ def clean_text_qa(raw_text: str) -> dict:
       "hint": "提示"
   }
   """
-  sections = {"answer": "", "extended_question": ""}
+  sections = {"answer": "", "extended_question": "", "hint": ""}
 
   # 確保最後有換行，避免最後一段抓不到
   raw_text = raw_text.strip() + "\n"
