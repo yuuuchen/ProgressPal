@@ -8,14 +8,15 @@ from collections import Counter
 
 def clean_text_tutoring(raw_text: str) -> dict:
     """
-    將 Markdown 格式 (觀念導讀、核心解析、範例、引導提問) 轉成 dict
+    將 Markdown 格式 (觀念導讀、核心解析、範例、引導提問、提示) 轉成 dict
     """
 
     sections = {
         "guide": "",
         "core": "",
         "example": "",
-        "extended_question": ""
+        "extended_question": "",
+        "hint": ""
     }
 
     raw_text = raw_text.strip() + "\n"
@@ -59,7 +60,8 @@ def clean_text_qa(raw_text: str) -> dict:
   將 QA 模式回應解析成 dict
   {
       "answer": "回答內容",
-      "extended_question": "引導提問"
+      "extended_question": "引導提問",
+      "hint": "提示"
   }
   """
   sections = {"answer": "", "extended_question": ""}
