@@ -110,6 +110,7 @@ def answer_question_view(request, chapter_code, unit_code):
     # 取得前端資料
     question_choice = data.get("question_choice", "direct")
     user_question = data.get("user_question", "")
+    hint_is_used = data.get("hint_is_used",False)
     user = request.user
     role = user.role
 
@@ -139,12 +140,13 @@ def answer_question_view(request, chapter_code, unit_code):
         extended_question_text = extended_q,
     )
     answer = result.get("answer", "請詢問與資料結構相關的問題。")
+    hint = result.get("hint", "")
     
     # 處理新的延伸提問
     new_extended_question = result.get("extended_question", "")
     request.session["current_extended_question"] = new_extended_question
     request.session.modified = True
-    
+
     # 儲存問答記錄
     QuestionLog.objects.create(
         user=user,
@@ -155,11 +157,13 @@ def answer_question_view(request, chapter_code, unit_code):
         system_question=extended_q,
         answer=answer,
         engagement=engagement,
+        hint_is_used=hint_is_used,
     )
     # 回傳 JSON
     return JsonResponse({
         "answer": answer,
-        "extended_questions": new_extended_question
+        "extended_questions": new_extended_question,
+        "hint": hint,
     })
 
 

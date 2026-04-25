@@ -176,7 +176,8 @@ def respond_to_question(prompt, engagement, role):
     result = clean_text_qa(resp_text)    
     return {
         "answer": result.get("answer"),
-        "extended_question": result.get("extended_question")
+        "extended_question": result.get("extended_question"),
+        "hint": result.get("hint"),
     }
 
 def get_exam_questions(chapter):
