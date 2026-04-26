@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const resultElement = document.getElementById('emotion-display'); // 情緒
     const context = canvasElement.getContext('2d');
     let lowEngagementCounter = 0;  // 追蹤低參與度
-    const PROACTIVE_THRESHOLD = 7; // 連續 7 次低參與度就觸發訊息
+    const PROACTIVE_THRESHOLD = 6; // 連續 6 次低參與度就觸發訊息
     //const unitStartTime = Date.now();  // 紀錄進入單元的初始時間
     window.unitStartTime = Date.now();  // 綁定到 window 變成全域變數
 
@@ -112,7 +112,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (data.engagement === "low") {
             lowEngagementCounter++;
             if (lowEngagementCounter === PROACTIVE_THRESHOLD) {
-                sendProactiveMessage(); // 觸發主動關懷
+                if (window.LATEST_HINT) {
+                    // 呼叫 chat.js 裡的顯示按鈕函式
+                    appendHintButton(window.LATEST_HINT);
+                    // 觸發後清除暫存，避免重複顯示同一個提示
+                    window.LATEST_HINT = null; 
+                }
                 lowEngagementCounter = 0;
             }
         } else {
@@ -142,7 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const imagePath = emotionImages[emotion];
     // 只有當 emotionImages 裡有定義該情緒，且該情緒不是 "偵測中" 時才生成 <img>
     if (emotion !== "偵測中" && emotion !== "未知" && imagePath) {
-        imageHTML = `<img src="${imagePath}" alt="${emotion}" style="width: 50px; height: 50px; flex-shrink: 0; border-radius: 50%;">`;
+        imageHTML = `<img src="${imagePath}" alt="${emotion}" style="width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%;">`;
     }
     const timerHTML = `<div id="live-study-timer" style="color: #09384e; font-size:16px; font-weight: bold; flex-grow: 1; text-align: right; padding-right: 20px;">
                         ${getFormattedDuration()}
@@ -160,27 +165,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }
 
-    // 主動傳送關懷訊息至問答區
-    function sendProactiveMessage() {
-        const chatHistory = document.getElementById('chat-history');
-        if (!chatHistory) return;
-
-        const phrases = [
-            "發現你好像有點累了，要不要休息 5 分鐘再繼續？休息是為了走更長遠的路喔！",
-            "這部分的內容可能比較艱深，如果感到挫折是正常的。別擔心慢慢來！",
-            "深呼吸一下，動一動脖子，補充水分能讓大腦更清醒喔！"
-        ];
-        const randomMessage = phrases[Math.floor(Math.random() * phrases.length)];
-
-        // 建立訊息元素
-        const msgDiv = document.createElement('div');
-        msgDiv.className = 'message assistant-message proactive-caring'; // 加入自定義類別以便後續美化
-        msgDiv.innerHTML = `<strong>💡小提醒：</strong><br>${randomMessage}`;
-
-        // 插入聊天室並自動捲動到底部
-        chatHistory.appendChild(msgDiv);
-        chatHistory.scrollTop = chatHistory.scrollHeight;
-    }
 
     // Django CSRF
     function getCookie(name) {

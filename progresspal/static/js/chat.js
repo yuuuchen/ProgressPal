@@ -115,6 +115,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 appendMessage(data.answer, 'assistant');
                 let extendedText = `<strong>延伸提問：</strong>\n${data.extended_questions}`;
                 appendMessage(extendedText, 'assistant', 'extended-mode');
+            
+            if (data.hint) {
+                window.LATEST_HINT = data.hint;
+                console.log("提示文字已暫存：", window.LATEST_HINT);
+            }
 
             } else {
                  throw new Error('從伺服器收到無效的回應');
@@ -212,4 +217,64 @@ document.addEventListener('DOMContentLoaded', () => {
             if (fsIcon) fsIcon.innerText = 'fullscreen_exit';
         }
     }
-});
+
+    // 監聽來自 camera.js 的低參與度觸發事件
+    window.addEventListener('show-learning-hint', (event) => {
+        const hintText = event.detail.hint;
+        if (hintText) {
+            appendHintButton(hintText);
+        }
+    });
+
+    // 產生「查看提示」按鈕
+    window.appendHintButton = function(hintText) {
+        const chatHistory = document.getElementById('chat-history');
+        
+        // 建立訊息外框 (套用 assistant 樣式)
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'message assistant-message hint-box animate-up'; 
+        
+        // 建立按鈕：讓使用者自主決定是否查看
+        const btn = document.createElement('button');
+        const primaryBlue = '#264773'; // 你系統定義的深藍色
+        const hoverBlue = '#1a3252';   // 更深一點的藍色
+        
+        btn.className = 'btn btn-sm w-100 fw-bold py-2';
+        btn.style.border = `2px solid ${primaryBlue}`;
+        btn.style.color = '#000000'; // 黑色字
+        btn.style.backgroundColor = 'transparent';
+        btn.style.transition = 'all 0.2s ease'; // 平滑過渡動畫
+        btn.innerHTML = '<span class="material-symbols-outlined fs-6 align-middle"></span> 需要幫助嗎？點擊查看提示';
+        
+        // 加入滑鼠懸停 (Hover) 效果
+        btn.onmouseenter = () => {
+            btn.style.backgroundColor = hoverBlue;
+            btn.style.color = '#ffffff'; // 變色時字體轉白以保持對比度
+        };
+        btn.onmouseleave = () => {
+            btn.style.backgroundColor = 'transparent';
+            btn.style.color = '#000000';
+        };
+        
+        // 建立隱藏的提示內容
+        const content = document.createElement('div');
+        content.className = 'mt-2 d-none text-dark';
+
+        // 使用 marked 解析 Markdown 格式
+        const hintPrefix = '<strong style="color: #264773;">💡延伸提問小提示：</strong>';
+        const parsedHint = typeof marked !== 'undefined' ? marked.parse(hintText) : hintText;
+    content.innerHTML = hintPrefix + parsedHint;
+        
+        // 點擊邏輯：HCI 自主權原則
+        btn.onclick = () => {
+            content.classList.remove('d-none');
+            btn.classList.add('d-none'); 
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        };
+
+        msgDiv.appendChild(btn);
+        msgDiv.appendChild(content);
+        chatHistory.appendChild(msgDiv);
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
+    });
