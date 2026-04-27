@@ -13,6 +13,7 @@ class Command(BaseCommand):
         course_structure = [
             {
                 "chapter_num": 1,
+                "chapter_title": "陣列 (Array)",
                 "units": [
                     (1, "陣列概論"),
                     (2, "陣列的宣告與初始化"),
@@ -26,6 +27,7 @@ class Command(BaseCommand):
             },
             {
                 "chapter_num": 2,
+                "chapter_title": "鏈結串列 (Linked List)",
                 "units": [
                     (1, "什麼是鏈結串列"),
                     (2, "鏈結串列的常用操作(上)"),
@@ -41,8 +43,9 @@ class Command(BaseCommand):
             },
             {
                 "chapter_num": 3,
+                "chapter_title": "堆疊 (Stack)",
                 "units": [
-                    (1, "什麼是堆疊 (Stack)"),
+                    (1, "什麼是堆疊"),
                     (2, "堆疊的實作方法(上)"),
                     (3, "堆疊的實作方法(下)"),
                     (4, "堆疊的應用"),
@@ -51,6 +54,7 @@ class Command(BaseCommand):
             },
             {
                 "chapter_num": 4,
+                "chapter_title": "佇列 (Queue)",
                 "units": [
                     (1, "佇列簡介"),
                     (2, "佇列的實作方式(上)"),
