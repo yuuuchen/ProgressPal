@@ -39,7 +39,8 @@ def display_materials(chapter_id, unit_id, engagement, role):
         "guide": result.get("guide"),
         "core": result.get("core"),
         "example": result.get("example"),
-        "extended_question": result.get("extended_question")
+        "extended_question": result.get("extended_question"),
+        "hint":result.get("hint"),
     }
 
 def validate_user_input(question):

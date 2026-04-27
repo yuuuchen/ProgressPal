@@ -67,6 +67,7 @@ def generate_materials_view(request, chapter_code, unit_code):
             raise e
         
     extended_question = result.get("extended_question", "")
+    hint = result.get("hint","")
     request.session["current_extended_question"] = extended_question
     request.session.modified = True
     # 建立學習記錄(起點)並傳給前端以便後續更新結束時間
@@ -90,6 +91,7 @@ def generate_materials_view(request, chapter_code, unit_code):
         "core": result.get("core"),
         "example": result.get("example"),
         "extended_question": extended_question, 
+        "hint":hint,
         "current_emotion": current_emotion,
         "form": StudyForm(),
         "record_id": record.id,   # 傳給前端用於關聯學習記錄
