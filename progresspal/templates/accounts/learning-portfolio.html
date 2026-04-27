@@ -132,7 +132,8 @@
                                   <td>
                                       {% if q.system_question %}
                                           <div class="p-2 mb-2 bg-light rounded-3 border-start border-primary border-3 small">
-                                              <span class="text-primary fw-bold">延伸問題：</span>{{ q.system_question }}
+                                              <span class="text-primary fw-bold">延伸問題：</span>
+                                              <span class="markdown-target">{{ q.system_question }}</span>
                                           </div>
                                       {% endif %}
                                       <div class="text-break small">{{ q.stu_input|linebreaksbr }}</div>
@@ -140,7 +141,7 @@
                                   <td>
                                       <div class="answer-wrapper p-3 bg-light rounded-3 text-secondary" 
                                           style="max-height: 300px; overflow-y: auto; font-size: 0.9rem; line-height: 1.6;">
-                                          {{ q.answer|safe|linebreaksbr }}
+                                          <span class="markdown-target">{{ q.answer|safe|linebreaksbr }}</span>
                                       </div>
                                   </td>
                                   <td class="text-secondary small">{{ q.created_at|date:"m/d H:i" }}</td>
@@ -221,6 +222,18 @@
         y: { title: { display: true, text: '平均參與度' } }
       }
     }
+  });
+</script>
+<script>
+  // Markdown 轉換邏輯
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.markdown-target').forEach(el => {
+        // 取得原始文字並用 marked 解析
+        const rawText = el.textContent.trim();
+        if (rawText) {
+            el.innerHTML = marked.parse(rawText);
+        }
+    });
   });
 </script>
 {% endblock %}
