@@ -187,6 +187,7 @@
         window.RECORD_ID = "{{ record_id|default:'' }}"; 
         window.END_URL = "{% url 'end-study' %}";
         window.HAS_SENT_RECORD = false;
+        window.LATEST_HINT = "{{ hint|escapejs }}";
 
         // 除錯用：進入頁面時先印出來看看
         console.log("初始化學習紀錄 - ID:", window.RECORD_ID, "URL:", window.END_URL);

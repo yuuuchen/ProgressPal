@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 連接問題類型按鈕
     const directQuestionBtn = document.getElementById('direct-question-btn');
     const extendQuestionBtn = document.getElementById('extend-question-btn');
+    
+    // 預設為未使用提示
+    window.HINT_USED = false;
 
     // 儲存使用者選擇的問題類型
     let selectedQuestionType = null;
@@ -95,6 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const payload = {
                 question_choice: questionType, // direct/extended
                 user_question: messageText,
+                hint_is_used: window.HINT_USED,
             };
 
             // fetch API發送請求
@@ -124,6 +128,9 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                  throw new Error('從伺服器收到無效的回應');
             }
+
+            // 成功傳送後重置狀態
+            window.HINT_USED = false;
 
         } catch (error) { // 捕捉錯誤
             console.error('聊天請求失敗:', error);
@@ -267,6 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 點擊邏輯：HCI 自主權原則
         btn.onclick = () => {
+            window.HINT_USED = true;  // <-- 【關鍵】記錄使用者已查看提示
             content.classList.remove('d-none');
             btn.classList.add('d-none'); 
             chatHistory.scrollTop = chatHistory.scrollHeight;
