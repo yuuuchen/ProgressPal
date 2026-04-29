@@ -5,9 +5,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatInput = document.getElementById('chat-input');
     const sendBtn = document.getElementById('send-btn');
     const chatSection = document.getElementById('chat-section-wrapper');
+    
     // 連接問題類型按鈕
     const directQuestionBtn = document.getElementById('direct-question-btn');
     const extendQuestionBtn = document.getElementById('extend-question-btn');
+    
     
     // 預設為未使用提示
     window.HINT_USED = false;
@@ -217,12 +219,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const chatSection = document.getElementById('chat-section-wrapper');
         const teachingSection = document.querySelector('.teaching-section');
         const fsIcon = document.getElementById('fs-icon');
+        const unitNav = document.getElementById('unit-navigation');
 
         if (chatSection && teachingSection) {
             chatSection.classList.add('fullscreen-active'); // 改為 add 確保一定是開啟
             teachingSection.classList.add('is-hidden');
-            if (fsIcon) fsIcon.innerText = 'fullscreen_exit';
+            // 隱藏下方的單元導覽按鈕
+            if (unitNav) {
+                        unitNav.classList.add('d-none');
+            }
+            // 更新全螢幕圖示
+            if (fsIcon){
+                fsIcon.innerText = 'fullscreen_exit';
+            } 
         }
+        
     }
 
     // 監聽來自 camera.js 的低參與度觸發事件

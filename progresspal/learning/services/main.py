@@ -51,8 +51,8 @@ def validate_user_input(question):
     if not text:
         return False, "輸入內容不能為空喔！請試著問我關於資料結構的問題。"
     # 2. 檢查字數是否過短 (至少要 2 個字，可依需求調整)
-    if len(text) < 2:
-        return False, "你的提問太簡短了，助教可能無法理解，再多寫一點點吧！"
+    # if len(text) < 2:
+    #     return False, "你的提問太簡短了，助教可能無法理解，再多寫一點點吧！"
     # 3. 檢查是否純粹為標點符號或特殊字元
     if not re.search(r'[\u4e00-\u9fa5a-zA-Z0-9]', text):
         return False, "請輸入有意義的文字，不要只傳標點符號或符號喔！"
