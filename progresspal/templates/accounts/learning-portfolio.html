@@ -130,7 +130,7 @@
                                   </td>
                                   <td class="fw-semibold text-dark">{{ q.unit_code|default:"-" }}</td>
                                   <td>
-                                      {% if q.system_question %}
+                                      {% if q.type == 'answer_extend_question' and q.system_question %}
                                           <div class="p-2 mb-2 bg-light rounded-3 border-start border-primary border-3 small">
                                               <span class="text-primary fw-bold">延伸問題：</span>
                                               <span class="markdown-target">{{ q.system_question }}</span>
