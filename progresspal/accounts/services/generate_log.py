@@ -33,7 +33,7 @@ def generate_user_log(username):
         user_id = user_data['id']
         role_group = user_data['role']
 
-        # 2. 查詢該使用者的所有 LearningRecord
+        # 2. 查詢該使用者的所有 LearningRecord (作為每個單元的閱讀起點)
         lr_query = "SELECT chapter_code, unit_code, start_time FROM accounts_learningrecord WHERE user_id = ? ORDER BY start_time ASC"
         cursor.execute(lr_query, (user_id,))
         lr_rows = cursor.fetchall()
@@ -75,11 +75,12 @@ def generate_user_log(username):
             print(f"使用者 {username} 目前沒有任何問答紀錄。")
             return
 
-        # 5. 準備寫入 CSV (★★★ 這裡調整了欄位順序 ★★★)
+        # 5. 準備寫入 CSV
         fieldnames = [
             'timestamp', 'student_id', 'role_group', 'chapter_code', 'unit_code', 'emotion', 
-            'engage_level', 'action_type', 'user_input', 'system_reply', 'extended_question', 
-            'hint_is_used', 'Task_Latency'  
+            'engage_level', 'CRT_Sequence', 'Total_Struggle_Time', 
+            'action_type', 'user_input', 'system_reply', 'extended_question',
+            'hint_is_used', 'Task_Latency'
         ]
 
         with open(output_filename, mode='w', newline='', encoding='utf-8-sig') as csvfile:
@@ -87,6 +88,7 @@ def generate_user_log(username):
             writer.writeheader()
 
             last_event_time = None
+            current_unit = None
 
             for row in rows:
                 raw_ts = row['timestamp']
@@ -95,13 +97,19 @@ def generate_user_log(username):
                     try:
                         q_time = datetime.strptime(raw_ts.split('.')[0], '%Y-%m-%d %H:%M:%S')
                     except Exception:
-                        pass
+                        continue
                 
                 unit = row['unit_code']
                 task_latency = 0.0
-                emotion_sequence = []
+                interval_emotions = []
+
+                # 如果進入了不同的單元，重置上一個事件時間，讓程式重新去抓學習紀錄起點
+                if unit != current_unit:
+                    last_event_time = None
+                    current_unit = unit
 
                 if q_time:
+                    # 尋找這個單元最近一次的閱讀開始時間
                     latest_start_time = None
                     for lr in lr_rows:
                         if lr['unit_code'] == unit:
@@ -112,28 +120,71 @@ def generate_user_log(username):
                             except Exception:
                                 pass
                     
+                    # 決定這個任務的起點時間 (last_event_time)
                     if latest_start_time:
                         if last_event_time is None or latest_start_time > last_event_time:
+                            # 這是該單元的第一題，或學生重新整理/離開後再次進入單元
                             last_event_time = latest_start_time
 
+                    # 如果完全找不到學習紀錄(極端情況防呆)，就以提問當下為起點
                     if last_event_time is None:
                         last_event_time = q_time
 
+                    # 過濾出該任務時間區間內的情緒紀錄
                     for em in user_emotions:
+                        # 擷取時間範圍：上個任務結尾時間 <= 發生時間 <= 本次提問時間
                         if last_event_time <= em['time'] <= q_time:
-                            emotion_sequence.append(em['emotion'])
+                            interval_emotions.append(em)
 
+                    # 計算 Task_Latency
                     task_latency = round((q_time - last_event_time).total_seconds(), 2)
+                    
+                    # === 任務結束：將本次提問時間設為下一個任務的起點 ===
                     last_event_time = q_time 
+
+                # === 開始計算 CRT_Sequence 與 Total_Struggle_Time ===
+                crt_sequence = []
+                in_confusion = False
+                confusion_start_time = None
+                
+                first_engagement_time = None
+                last_confusion_time = None
+
+                for em in interval_emotions:
+                    current_emotion = em['emotion']
+                    current_time = em['time']
+
+                    # 紀錄 Total_Struggle_Time 需要的兩個端點
+                    if current_emotion == 'engagement' and first_engagement_time is None:
+                        first_engagement_time = current_time
+                    if current_emotion == 'confusion':
+                        last_confusion_time = current_time
+
+                    # 計算 CRT_Sequence (從困惑到投入的轉變)
+                    if current_emotion == 'confusion' and not in_confusion:
+                        in_confusion = True
+                        confusion_start_time = current_time
+                    elif current_emotion == 'engagement' and in_confusion:
+                        crt = (current_time - confusion_start_time).total_seconds()
+                        crt_sequence.append(int(crt))
+                        in_confusion = False
+
+                # 計算 Total Struggle Time
+                total_struggle_time = 0.0
+                if first_engagement_time and last_confusion_time and (last_confusion_time > first_engagement_time):
+                    total_struggle_time = (last_confusion_time - first_engagement_time).total_seconds()
+
+                # === 格式轉換與寫入 ===
 
                 formatted_ts = raw_ts
                 if q_time:
                     local_dt = q_time + timedelta(hours=8)
                     formatted_ts = local_dt.strftime('%Y-%m-%d %H:%M:%S')
 
-                emotion_val = f"[{', '.join(emotion_sequence)}]" if emotion_sequence else "[]"
+                emotion_str_list = [em['emotion'] for em in interval_emotions]
+                emotion_val = f"[{', '.join(emotion_str_list)}]" if emotion_str_list else "[]"
+                crt_val = f"[{', '.join(map(str, crt_sequence))}]"
 
-                # 寫入資料時，雖然字典沒有順序問題，但也順手排整齊方便閱讀
                 writer.writerow({
                     'timestamp': formatted_ts,
                     'student_id': username,
@@ -142,6 +193,8 @@ def generate_user_log(username):
                     'unit_code': row['unit_code'],
                     'emotion': emotion_val,
                     'engage_level': row['engage_level'],
+                    'CRT_Sequence': crt_val,
+                    'Total_Struggle_Time': round(total_struggle_time, 2),
                     'action_type': row['action_type'],
                     'user_input': row['user_input'],
                     'system_reply': row['system_reply'],
