@@ -160,7 +160,6 @@ def answer_question_view(request, chapter_code, unit_code):
         answer=answer,
         engagement=engagement,
         hint_is_used=hint_is_used,
-        hint = hint,
     )
     # 回傳 JSON
     return JsonResponse({
