@@ -69,7 +69,6 @@ def generate_materials_view(request, chapter_code, unit_code):
     extended_question = result.get("extended_question", "")
     hint = result.get("hint","")
     request.session["current_extended_question"] = extended_question
-    request.session.modified = True
     # 建立學習記錄(起點)並傳給前端以便後續更新結束時間
     
     record = LearningRecord.objects.create(
@@ -122,6 +121,7 @@ def answer_question_view(request, chapter_code, unit_code):
 
     # 讀取 session 延伸提問
     extended_q = request.session.get("current_extended_question", "")
+    request.session.modified = True
     # print(f"[Debug] 從 session 讀取的延伸提問: {extended_q}")
     # 判斷是否為延伸提問
     is_extended = (question_choice == "extended")
@@ -160,6 +160,7 @@ def answer_question_view(request, chapter_code, unit_code):
         answer=answer,
         engagement=engagement,
         hint_is_used=hint_is_used,
+        hint = hint,
     )
     # 回傳 JSON
     return JsonResponse({
