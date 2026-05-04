@@ -139,7 +139,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (loadingElement && loadingElement.parentNode === chatHistory) {
                 chatHistory.removeChild(loadingElement);
             }
-            showError(`抱歉，發生錯誤: ${error.message}`);
+            showError(`抱歉，發生錯誤`);
+            console.log("發生錯誤：", error.message);
         }
     }
 
