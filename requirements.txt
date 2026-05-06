@@ -19,16 +19,8 @@ numpy==1.26.4
 
 opencv-python==4.9.0.80
 
-# PyTorch（自動選 CPU/GPU）
-torch==2.1.0
-torchvision==0.16.0
-torchaudio==2.1.0
-
-
 # Pillow 用於影像處理
 Pillow==10.1.0
-
-mediapipe==0.10.11
 protobuf==3.20.3
 
 # 影像辨識
