@@ -84,9 +84,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 處理回應
     function handleResponse(data) {
-        if (data.error || data.confidence < CONFIDENCE_THRESHOLD) return;
-           console.log(`後端已接收情緒：${data.emotion}, 參與度：${data.engagement}`);
+        if (data.error) return;
+        updateUI(data.emotion, data.engagement);
+        console.log(`後端已接收情緒：${data.emotion}, 參與度：${data.engagement}`);
         
+    }
+
+    // 更新學習時間
+    function updateUI(emotion, engagement,showTip = true) {
+
+    const timerHTML = `<div id="live-study-timer" style="color: #09384e; font-size:16px; font-weight: bold; flex-grow: 1; text-align: right; padding-right: 20px;">
+                        ${getFormattedDuration()}
+                        </div>`;
+
+    resultElement.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 15px; width: 100%;">
+            ${timerHTML}
+        </div>
+    `;
+
     }
 
 
@@ -129,6 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }, 1000);
 
+    updateUI();
     // 啟動程式
     initCamera();
 
