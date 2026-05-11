@@ -4,24 +4,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const canvasElement = document.getElementById('captureCanvas'); 
     const resultElement = document.getElementById('emotion-display'); // 情緒
     const context = canvasElement.getContext('2d');
-    let lowEngagementCounter = 0;  // 追蹤低參與度
-    const PROACTIVE_THRESHOLD = 4; // 連續 4 次低參與度就觸發訊息
     //const unitStartTime = Date.now();  // 紀錄進入單元的初始時間
     window.unitStartTime = Date.now();  // 綁定到 window 變成全域變數
 
     // 設定參數
     const INTERVAL_MS = 5000; // 5秒
     const CONFIDENCE_THRESHOLD = 0.5; // 信心門檻
-
-    //初始情緒
-    let initialEmotion = resultElement.getAttribute('data-initial-emotion');
-    console.log("偵測到初始情緒屬性值:", initialEmotion);
-
-    const startEmotion = (initialEmotion && initialEmotion !== "None" && initialEmotion !== "") 
-                         ? initialEmotion 
-                        : "偵測中";
-
-    updateUI(startEmotion, 0.5, false);
 
     // 啟動 Webcam
     async function initCamera() {
@@ -96,73 +84,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 處理回應
     function handleResponse(data) {
-        // 若後端回傳 error (如未偵測到臉)，不更新頁面
-        if (data.error) {
-            console.log("API message:", data.error); // 可在 Console 查看原因
-            return; 
-        }
-
-        // 信心分數低於門檻不更新
-        if (data.confidence < CONFIDENCE_THRESHOLD) {
-            console.log(`Confidence too low: ${data.confidence}`);
-            return;
-        }
-
-        // 計算低參與度次數
-        if (data.engagement === "low") {
-            lowEngagementCounter++;
-            if (lowEngagementCounter === PROACTIVE_THRESHOLD) {
-                if (window.LATEST_HINT) {
-                    // 呼叫 chat.js 裡的顯示按鈕函式
-                    appendHintButton(window.LATEST_HINT);
-                    // 觸發後清除暫存，避免重複顯示同一個提示
-                    window.LATEST_HINT = null; 
-                }
-                lowEngagementCounter = 0;
-            }
-        } else {
-            lowEngagementCounter = 0; // 觸發後重置次數
-        }
-
-        // 信心分數高於門檻更新 
-        console.log(`Engagement: ${data.engagement} `);
-        console.log(`lowEngagementCounter: ${lowEngagementCounter} `);
-        updateUI(data.emotion, data.engagement);
+        if (data.error || data.confidence < CONFIDENCE_THRESHOLD) return;
+           console.log(`後端已接收情緒：${data.emotion}, 參與度：${data.engagement}`);
         
-    }
-
-    // 更新情緒
-    function updateUI(emotion, engagement,showTip = true) {
-    const emotionImages = {
-        "喜悅": "/static/images/emotions/delight.png",
-        "困惑": "/static/images/emotions/confusion.png",
-        "無聊": "/static/images/emotions/boredom.png",
-        "挫折": "/static/images/emotions/frustration.png",
-        "投入": "/static/images/emotions/flow.png",
-        "驚訝": "/static/images/emotions/surprise.png",
-    };
-    
-    // 取得對應的圖片路徑
-    let imageHTML = ''; // 預設為空字串
-    const imagePath = emotionImages[emotion];
-    // 只有當 emotionImages 裡有定義該情緒，且該情緒不是 "偵測中" 時才生成 <img>
-    if (emotion !== "偵測中" && emotion !== "未知" && imagePath) {
-        imageHTML = `<img src="${imagePath}" alt="${emotion}" style="width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%;">`;
-    }
-    const timerHTML = `<div id="live-study-timer" style="color: #09384e; font-size:16px; font-weight: bold; flex-grow: 1; text-align: right; padding-right: 20px;">
-                        ${getFormattedDuration()}
-                        </div>`;
-
-    resultElement.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 15px; width: 100%;">
-            ${imageHTML}
-            <div style="color: black; font-size: 16px; font-weight: bold; white-space: nowrap;">
-                情緒：${emotion}
-            </div>
-            ${timerHTML}
-        </div>
-    `;
-
     }
 
 

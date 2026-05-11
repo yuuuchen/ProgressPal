@@ -123,8 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 appendMessage(extendedText, 'assistant', 'extended-mode');
             
             if (data.hint) {
-                window.LATEST_HINT = data.hint;
-                console.log("提示文字已暫存：", window.LATEST_HINT);
+                displayHintInline(data.hint);
             }
 
             } else {
@@ -237,16 +236,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
     }
 
-    // 監聽來自 camera.js 的低參與度觸發事件
-    window.addEventListener('show-learning-hint', (event) => {
-        const hintText = event.detail.hint;
-        if (hintText) {
-            appendHintButton(hintText);
-        }
-    });
-
     // 產生「查看提示」按鈕
-    window.appendHintButton = function(hintText) {
+    function displayHintInline(hintText) {
         const chatHistory = document.getElementById('chat-history');
         
         // 建立訊息外框 (套用 assistant 樣式)
@@ -286,7 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 點擊邏輯：HCI 自主權原則
         btn.onclick = () => {
-            window.HINT_USED = true;  // <-- 【關鍵】記錄使用者已查看提示
+            window.HINT_USED = true;  // 記錄使用者已查看提示
             content.classList.remove('d-none');
             btn.classList.add('d-none'); 
             chatHistory.scrollTop = chatHistory.scrollHeight;

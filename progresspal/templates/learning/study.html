@@ -25,9 +25,6 @@
                         {{ chapter.chapter_number }}-{{ u.unit_number }} {{ u.title|truncatechars:7 }}
                     </a>
                     {% endfor %}
-                    <a href="{% url 'quiz' chapter.chapter_number %}" class="list-group-item list-group-item-action small">
-                        {{ chapter.chapter_number }}-{{ chapter.get_units|length|add:"1" }} 第{{ chapter.chapter_number }}章測驗
-                    </a>
                 </div>
             </div>
         </nav>
@@ -64,9 +61,7 @@
         <!--右側Emotion&對話框-->
         <div id="chat-section-wrapper" class="chat-section d-flex flex-column p-3 overflow-hidden">
             <!-- Emotion區塊 -->
-            <div id="emotion-display" class="emotion-float-card mb-2" data-initial-emotion="{{ current_emotion|default:'' }}">
-                <span class="text-muted">情緒偵測中...</span>
-            </div>
+            <div id="emotion-display" class="emotion-float-card mb-2" data-initial-emotion="{{ current_emotion|default:'' }}"></div>
                 <video id="webcam" autoplay playsinline muted style="position: absolute; opacity: 0; pointer-events: none; z-index: -1;"></video>
                 <canvas id="captureCanvas" style="display: none;"></canvas>
 
@@ -119,11 +114,6 @@
         <a href="{% url 'learning' chapter_code=next_unit.chapter.chapter_number unit_code=next_unit.unit_number %}"
         class="btn btn-sm text-white record-exit" style="background-color: #09384e;"> 
             下一單元 &rarr;
-        </a>
-    {% else %}
-        <a href="{% url 'quiz' chapter_code=unit.chapter.chapter_number %}"
-        class="btn btn-sm text-white record-exit" style="background-color: #09384e;"> 
-            進入測驗 &rarr;
         </a>
     {% endif %}
         
