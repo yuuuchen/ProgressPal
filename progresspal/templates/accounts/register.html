@@ -71,7 +71,15 @@
             </div>
             {% endif %}
         </div>
-
+        <div class="form-group">
+            <label for="api_key">API Key</label>
+            {{ form.api_key }}
+            {% if form.api_key.errors %}
+            <div class="message warning">
+                {{ form.api_key.errors.0 }}
+            </div>
+            {% endif %}
+        </div>
         <div class="form-group">
             <label for="password1">密碼</label>
             {{ form.password1 }}

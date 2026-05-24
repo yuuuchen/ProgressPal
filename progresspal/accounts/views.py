@@ -1,18 +1,20 @@
 # accounts/views.py
+from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout, get_user_model, update_session_auth_hash
-from django.db.models import Sum, Avg, Count, F, DurationField
+from django.db.models import Sum, Avg, Count, F
 from django.db.models.functions import TruncDate  # 導入日期截斷函式
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
 from .models import LearningRecord, QuestionLog, QuizResult, QuizResultQuestion
 from accounts.models import CustomUser
-from django.utils import timezone
-from .forms import RegisterForm, LoginForm, ProfileUpdateForm, PasswordChangeForm, AddMaterialForm
+from .forms import RegisterForm, LoginForm, ProfileUpdateForm, PasswordChangeForm
+import os
 import json
 from collections import Counter, defaultdict # 用於關鍵字分析
 from learning.services.utils import KeywordAnalyzer # 用於錯題關鍵字分析
+from dotenv import set_key  # 引入 set_key 用來修改 .env
 
 
 User = get_user_model()
@@ -23,6 +25,19 @@ def register(request):
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
+
+            api_key = form.cleaned_data.get('api_key')
+            if api_key:
+                # 定位 .env 檔案的絕對路徑
+                env_path = os.path.join(settings.BASE_DIR, '.env')
+                
+                # 如果檔案不存在，先建立一個空的以免 set_key 報錯
+                if not os.path.exists(env_path):
+                    open(env_path, 'a').close()
+                
+                # 使用 set_key 安全地寫入或更新 GROQ_API_KEY1 的值
+                set_key(env_path, 'GROQ_API_KEY1', api_key, quote_mode="never")
+                
             login(request, user)
             messages.success(request, '註冊成功，已自動登入！')
             return redirect('/lesson/')

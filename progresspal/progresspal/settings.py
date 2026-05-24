@@ -21,7 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # 載入 .env
 env_path = os.path.join(BASE_DIR, '.env')
 if not os.path.exists(env_path):
-    print(f"--- [警告] 找不到 .env 檔案於: {env_path} ---")
+    print("--- [警告] 目前未建立 .env 檔案 ---")
 load_dotenv(env_path)
 
 # 從環境變數讀取設定
@@ -39,7 +39,8 @@ for i in range(1, 3):
         GROQ_API_KEYS.append(key)
 
 if not GROQ_API_KEYS:
-    raise ValueError("未設定任何 GROQ_API_KEY")
+    # raise ValueError("未設定任何 GROQ_API_KEY")
+    print("--- [警告] 目前未設定任何 GROQ_API_KEY，請透過註冊頁面設定或手動加入 .env ---")
 
 #教材路徑
 TEACHING_MATERIAL_DIR = os.path.join(BASE_DIR, 'teaching_material')
