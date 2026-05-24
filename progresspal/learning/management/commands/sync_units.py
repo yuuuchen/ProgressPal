@@ -6,9 +6,23 @@ from django.conf import settings
 from learning.models import Chapter, Unit
 
 class Command(BaseCommand):
-    help = '初始化資料庫：建立章節、單元'
+    help = '初始化資料庫：建立章節、單元，並初始化 .env 檔案'
 
     def handle(self, *args, **options):
+        # --- 新增：建立 .env 檔案邏輯 ---
+        # settings.BASE_DIR 預設指向 manage.py 所在的目錄
+        env_path = os.path.join(settings.BASE_DIR, '.env')
+        
+        if not os.path.exists(env_path):
+            try:
+                with open(env_path, 'w', encoding='utf-8') as f:
+                    f.write("GROQ_API_KEY1=\n")
+                self.stdout.write(self.style.SUCCESS(f"已成功建立預設的 .env 檔案於: {env_path}"))
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f"建立 .env 檔案時發生錯誤: {e}"))
+        else:
+            self.stdout.write(self.style.WARNING(f".env 檔案已存在於 {env_path}，略過建立以避免覆蓋。"))
+            
         self.stdout.write(self.style.WARNING("正在清除舊資料..."))
         Unit.objects.all().delete()    # 先刪除單元（因為外鍵關聯）
         Chapter.objects.all().delete() # 再刪除章節

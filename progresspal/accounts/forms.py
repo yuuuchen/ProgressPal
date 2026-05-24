@@ -42,6 +42,11 @@ class RegisterForm(UserCreationForm):
         required=False,
         widget=forms.TextInput(attrs={'placeholder': '例：大一、大二、大三'}),
     )
+    api_key = forms.CharField(
+        label='API Key',
+        required=True, # 設為必填
+        widget=forms.TextInput(attrs={'placeholder': '請輸入您的 GROQ API Key'}),
+    )
 
     class Meta:
         model = User
@@ -102,63 +107,3 @@ class PasswordChangeForm(PasswordChangeForm):
         label="確認新密碼",
         widget=forms.PasswordInput(attrs={'class': 'form-control'})
     )
-
-# 假資料新增表單
-class AddMaterialForm(forms.Form):
-    DATA_TYPE_CHOICES = [
-        ('learning', '學習紀錄'),
-        ('question', '提問紀錄'),
-        ('quiz', '測驗結果'),
-    ]
-
-    data_type = forms.ChoiceField(choices=DATA_TYPE_CHOICES, label="假資料類型")
-    username = forms.ModelChoiceField(
-        queryset=CustomUser.objects.all(),
-        label="學生帳號 (username)"
-    )
-    chapter_code = forms.CharField(max_length=50, required=False, label="章節代碼 (例: CH1)")
-    unit_code = forms.CharField(max_length=50, required=False, label="單元代碼 (例: CH1-U1)")
-
-    # 學習紀錄專用時間欄位
-    start_time = forms.DateTimeField(
-        required=False,
-        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-        label="開始時間"
-    )
-    end_time = forms.DateTimeField(
-        required=False,
-        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-        label="結束時間"
-    )
-
-    # 提問紀錄欄位
-    question = forms.CharField(widget=forms.Textarea, required=False, label="提問內容")
-    answer = forms.CharField(widget=forms.Textarea, required=False, label="系統回覆")
-    engagement = forms.ChoiceField(
-        choices=[('high', '高'), ('low', '低')],
-        required=False, label="參與度"
-    )
-
-    # 測驗紀錄欄位
-    score = forms.IntegerField(required=False, min_value=0, max_value=10, label="測驗分數 (0~10)")
-
-    def clean(self):
-        cleaned_data = super().clean()
-        data_type = cleaned_data.get('data_type')
-
-        # 驗證必填欄位
-        if data_type == 'learning':
-            if not cleaned_data.get('start_time'):
-                self.add_error('start_time', '學習紀錄需要填寫開始時間')
-            if not cleaned_data.get('end_time'):
-                self.add_error('end_time', '學習紀錄需要填寫結束時間')
-        elif data_type == 'question':
-            if not cleaned_data.get('question'):
-                self.add_error('question', '提問紀錄需要填寫問題內容')
-            if not cleaned_data.get('engagement'):
-                self.add_error('engagement', '提問紀錄需要填寫參與度')
-        elif data_type == 'quiz':
-            if cleaned_data.get('score') is None:
-                self.add_error('score', '測驗結果需要填寫分數')
-
-        return cleaned_data
