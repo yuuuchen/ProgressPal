@@ -51,6 +51,8 @@ urlpatterns = [
     path("lesson/end/", learning.end_study, name="end-study"),
 
     # 情緒相關
-    path("emotion/detect/", emotion.detect_emotion, name="emotion_detect"),
-
+    path("emotion/detect/", emotion.detect_emotion, name="emotion_detect"),\
+    
+    # 輸出csv 
+    path("output/", learning.csv_output(), name="csv_output"),
 ]

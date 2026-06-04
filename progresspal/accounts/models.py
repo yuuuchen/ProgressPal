@@ -87,6 +87,7 @@ class QuestionLog(models.Model):
     system_question = models.TextField(blank=True, null=True) # 系統引導提問(當學生回應引導提問時會有內容)
     answer = models.TextField(blank=True, null=True) # 系統回覆
     hint_is_used = models.BooleanField(default=False) # 系統提示(當學生點選使用系統提示時會改為True)
+    click_time = models.DateTimeField(blank=True, null=True) # 點擊時間
     engagement = models.CharField(max_length=20, blank=True, null=True)  # 參與度，例如：high、low
     created_at = models.DateTimeField(auto_now_add=True)
 
