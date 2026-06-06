@@ -13,7 +13,57 @@
             {% if user.is_authenticated %}
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item">
+                    <a class="nav-link" href="https://docs.google.com/document/d/1aqh6LLDBA2HHEx6jRACtCfgw5PjtDdnHFy-mSA9pL6s/edit?usp=sharing">實驗手冊</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="PreTestDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        知識前測與動機量表
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="PreTestDropdown">
+                        <li>
+                            <a class="dropdown-item" href="">
+                                前測
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="">
+                                MSLQ 量表前測
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="PostTestDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        知識後測與問卷
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="PostTestDropdown">
+                        <li>
+                            <a class="dropdown-item" href="">
+                                後測
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="">
+                                MSLQ 量表後測
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="">
+                                科技接受度問卷
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="">
+                                EvsD 學習參與與情緒不滿量表
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="/lesson">課程列表</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/output">輸出 csv</a>
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="studentCenterDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -41,6 +91,53 @@
             </ul>
             {% else %}
             <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="https://docs.google.com/document/d/1aqh6LLDBA2HHEx6jRACtCfgw5PjtDdnHFy-mSA9pL6s/edit?usp=sharing">實驗手冊</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="PreTestDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        知識前測與動機量表
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="PreTestDropdown">
+                        <li>
+                            <a class="dropdown-item" href="">
+                                前測
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="">
+                                MSLQ 量表前測
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="PostTestDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        知識後測與問卷
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="PostTestDropdown">
+                        <li>
+                            <a class="dropdown-item" href="">
+                                後測
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="">
+                                MSLQ 量表後測
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="">
+                                科技接受度問卷
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="">
+                                EvsD 學習參與與情緒不滿量表
+                            </a>
+                        </li>
+                    </ul>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link" href="/lesson">課程列表</a>
                 </li>
