@@ -9,10 +9,40 @@ document.addEventListener('DOMContentLoaded', () => {
     // 連接問題類型按鈕
     const directQuestionBtn = document.getElementById('direct-question-btn');
     const extendQuestionBtn = document.getElementById('extend-question-btn');
-    
+    const hintTopBtn = document.getElementById('hint-top-btn');
+    const hintIcon = document.getElementById('hint-icon');
     
     // 預設為未使用提示
     window.HINT_USED = false;
+
+    //儲存點擊提示的時間
+    let hintClickTime = null;
+
+    // 儲存當前最新問題的提示文字
+    let currentHintText = window.LATEST_HINT || '';
+
+    function setHintButtonEnabled(isEnabled) {
+        if (!hintTopBtn || !hintIcon) return;
+
+        if (isEnabled) {
+            hintTopBtn.disabled = false;
+            hintTopBtn.style.setProperty('background-color', '#ffffff');
+            hintTopBtn.style.color = '#000000'; // 啟用時，文字維持黑色
+            hintIcon.style.color = "#ffe46b"; // 可按
+        } else {
+            hintTopBtn.disabled = true;
+            hintTopBtn.style.setProperty('background-color', '#b2bec3', 'important');
+            hintTopBtn.style.color = '#6a6e70'; // 禁用時，文字變成灰色（配合按鈕背景）
+            hintIcon.style.color = "#6a6e70"; // 不可按
+        }
+    }
+    
+    // 初始化顯現按鈕
+    if (currentHintText && currentHintText.trim() !== '') {
+        setHintButtonEnabled(true);
+    } else {
+        setHintButtonEnabled(false);
+    }
 
     // 儲存使用者選擇的問題類型
     let selectedQuestionType = null;
@@ -40,6 +70,26 @@ document.addEventListener('DOMContentLoaded', () => {
         directQuestionBtn.classList.remove('active');
         clearError();
     });
+
+    // 點擊提示按鈕，將提示輸入對話中
+    if (hintTopBtn) {
+        hintTopBtn.addEventListener('click', () => {
+            if (!currentHintText) return;
+
+            // 1. 記錄使用者已查看提示（下次 fetch 會傳給後端）
+            window.HINT_USED = true;
+            // 當下擷取時間
+            hintClickTime = new Date().toISOString(); 
+            console.log("提示查看時間:", hintClickTime);
+
+            // 2. 建立提示區塊並利用系統現有的 appendMessage 刷進對話歷史紀錄中
+            const hintPrefix = '<strong style="color: #264773;">💡 延伸提問小提示：</strong><br>';
+            appendMessage(hintPrefix + currentHintText, 'assistant');
+
+            // 3. 點擊後將按鈕設為不可按狀態
+            setHintButtonEnabled(false);
+        });
+    }
 
     // 送出按鈕
     sendBtn.addEventListener('click', handleSendAttempt);
@@ -80,6 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 送出成功後的操作
         chatInput.value = ''; // 清空輸入框
         selectedQuestionType = null; 
+        hintClickTime = null;
 
         // 移除按鈕的 active 狀態
         directQuestionBtn.classList.remove('active');
@@ -101,6 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 question_choice: questionType, // direct/extended
                 user_question: messageText,
                 hint_is_used: window.HINT_USED,
+                click_time: hintClickTime,
             };
 
             // fetch API發送請求
@@ -115,6 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 收到回應
             chatHistory.removeChild(loadingElement); //移除回應中
+
             // Json解析為 JavaScript 物件
             const data = await response.json();
             if (data.answer) {
@@ -122,16 +175,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 let extendedText = `<strong>延伸提問：</strong>\n${data.extended_questions}`;
                 appendMessage(extendedText, 'assistant', 'extended-mode');
             
-            if (data.hint) {
-                displayHintInline(data.hint);
+                if (data.hint && data.hint.trim() !== '') {
+                    currentHintText = data.hint; 
+                    setHintButtonEnabled(true);  // 有提示，設為可按
+                } else {
+                    currentHintText = '';
+                    setHintButtonEnabled(false); // 沒提示，設為不可按
+                }
+                window.HINT_USED = false;
             }
-
-            } else {
-                 throw new Error('從伺服器收到無效的回應');
-            }
-
-            // 成功傳送後重置狀態
-            window.HINT_USED = false;
 
         } catch (error) { // 捕捉錯誤
             console.error('聊天請求失敗:', error);
@@ -236,56 +288,5 @@ document.addEventListener('DOMContentLoaded', () => {
         
     }
 
-    // 產生「查看提示」按鈕
-    function displayHintInline(hintText) {
-        const chatHistory = document.getElementById('chat-history');
-        
-        // 建立訊息外框 (套用 assistant 樣式)
-        const msgDiv = document.createElement('div');
-        msgDiv.className = 'message assistant-message hint-box animate-up'; 
-        
-        // 建立按鈕：讓使用者自主決定是否查看
-        const btn = document.createElement('button');
-        const primaryBlue = '#264773'; // 你系統定義的深藍色
-        const hoverBlue = '#1a3252';   // 更深一點的藍色
-        
-        btn.className = 'btn btn-sm w-100 fw-bold py-2';
-        btn.style.border = `2px solid ${primaryBlue}`;
-        btn.style.color = '#000000'; // 黑色字
-        btn.style.backgroundColor = 'transparent';
-        btn.style.transition = 'all 0.2s ease'; // 平滑過渡動畫
-        btn.innerHTML = '<span class="material-symbols-outlined fs-6 align-middle"></span> 需要幫助嗎？點擊查看提示';
-        
-        // 加入滑鼠懸停 (Hover) 效果
-        btn.onmouseenter = () => {
-            btn.style.backgroundColor = hoverBlue;
-            btn.style.color = '#ffffff'; // 變色時字體轉白以保持對比度
-        };
-        btn.onmouseleave = () => {
-            btn.style.backgroundColor = 'transparent';
-            btn.style.color = '#000000';
-        };
-        
-        // 建立隱藏的提示內容
-        const content = document.createElement('div');
-        content.className = 'mt-2 d-none text-dark';
 
-        // 使用 marked 解析 Markdown 格式
-        const hintPrefix = '<strong style="color: #264773;">💡延伸提問小提示：</strong>';
-        const parsedHint = typeof marked !== 'undefined' ? marked.parse(hintText) : hintText;
-    content.innerHTML = hintPrefix + parsedHint;
-        
-        // 點擊邏輯：HCI 自主權原則
-        btn.onclick = () => {
-            window.HINT_USED = true;  // 記錄使用者已查看提示
-            content.classList.remove('d-none');
-            btn.classList.add('d-none'); 
-            chatHistory.scrollTop = chatHistory.scrollHeight;
-        };
-
-        msgDiv.appendChild(btn);
-        msgDiv.appendChild(content);
-        chatHistory.appendChild(msgDiv);
-        chatHistory.scrollTop = chatHistory.scrollHeight;
-    }
     });

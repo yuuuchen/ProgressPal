@@ -69,9 +69,14 @@
             <div id="chat-container" class="card shadow-sm border-0 flex-grow-1 d-flex flex-column overflow-hidden" >
                 <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
                     <span class="fw-bold">【Chat】提問區域</span>
-                    <button id="fullscreen-toggle" class="btn btn-sm text-secondary border-0 d-flex align-items-center p-1">
-                        <span id="fs-icon" class="material-symbols-outlined">fullscreen</span>
-                    </button>
+                    <div class="d-flex align-items-center gap-2">
+                        <button id="hint-top-btn" class="btn btn-sm bg-white border-0 d-flex align-items-center p-1" title="查看提示" style="color: #000000;" disabled>
+                            <span id="hint-icon" class="material-symbols-outlined" style="font-size: 20px; color: #6a6e70;">lightbulb</span>查看提示
+                        </button>
+                        <button id="fullscreen-toggle" class="btn btn-sm text-secondary border-0 d-flex align-items-center p-1">
+                            <span id="fs-icon" class="material-symbols-outlined">fullscreen</span>
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- 歷史對話 -->
