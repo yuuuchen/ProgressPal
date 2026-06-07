@@ -386,7 +386,7 @@ def learning_portfolio_quiz(request, username=None):
 @login_required
 def csv_output(request):
     username = request.user.username
-    result = generate_user_csv_reports(username, system_type="control")
+    result = generate_user_csv_reports(username, system_type="adaptive")
 
     if result['status'] == 'success':
         cloud_url = "https://drive.google.com/drive/folders/1u_bDCZYu1Jgfs9bosYRl_cCme89yGeqS?usp=sharing"
