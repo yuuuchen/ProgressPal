@@ -112,9 +112,9 @@ def answer_question_view(request, chapter_code, unit_code):
     question_choice = data.get("question_choice", "direct")
     user_question = data.get("user_question", "")
     hint_is_used = data.get("hint_is_used",False)
+    click_time = data.get("click_time",None)
     user = request.user
     role = user.role
-
     # Engagement
     emotions = user.recent_emotion_history
     engagement = compute_engagement(emotions)
@@ -160,6 +160,7 @@ def answer_question_view(request, chapter_code, unit_code):
         answer=answer,
         engagement=engagement,
         hint_is_used=hint_is_used,
+        click_time=click_time,
     )
     # 回傳 JSON
     return JsonResponse({
