@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const resultElement = document.getElementById('emotion-display'); // 情緒
     const context = canvasElement.getContext('2d');
     let lowEngagementCounter = 0;  // 追蹤低參與度
-    const PROACTIVE_THRESHOLD = 4; // 連續 4 次低參與度就觸發訊息
+    const PROACTIVE_THRESHOLD = 3; // 連續 3 次低參與度就觸發訊息
     //const unitStartTime = Date.now();  // 紀錄進入單元的初始時間
     window.unitStartTime = Date.now();  // 綁定到 window 變成全域變數
 
