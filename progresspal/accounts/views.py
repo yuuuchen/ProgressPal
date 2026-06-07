@@ -15,6 +15,8 @@ import json
 from collections import Counter, defaultdict # 用於關鍵字分析
 from learning.services.utils import KeywordAnalyzer # 用於錯題關鍵字分析
 from dotenv import set_key  # 引入 set_key 用來修改 .env
+from django.http import JsonResponse
+from .services.generate_csv import generate_user_csv_reports
 
 
 User = get_user_model()
@@ -380,3 +382,28 @@ def learning_portfolio_quiz(request, username=None):
     }
 
     return render(request, 'accounts/learning-portfolio-quiz.html', context)
+
+@login_required
+def csv_output(request):
+    username = request.user.username
+    result = generate_user_csv_reports(username, system_type="control")
+
+    if result['status'] == 'success':
+        cloud_url = "https://drive.google.com/drive/folders/1u_bDCZYu1Jgfs9bosYRl_cCme89yGeqS?usp=sharing"
+        
+        # 動態定義要在訊息中顯示的資料夾名稱
+        folder_name = f"{username}_data"
+        
+        messages.success(
+            request, 
+            f"<strong>🎉 報表輸出成功！</strong><br>"
+            f"系統已在 progresspal/{folder_name} 生成相關 CSV 檔案。<br>"
+            f"<span style='color: red;'>⚠️ 提醒：請記得將整份 {folder_name} 資料夾上傳至雲端硬碟進行備份！</span><br><br>"
+            f"<a href='{cloud_url}' target='_blank' class='btn btn-success btn-sm'>👉 點我前往雲端硬碟</a>"
+        )
+    else:
+        # 加入失敗訊息
+        messages.error(request, f"<strong>❌ 報表輸出失敗</strong><br>原因：{result.get('message', '未知錯誤')}")
+    
+    # 重新導向回原本的頁面
+    return redirect(request.META.get('HTTP_REFERER', '/'))
