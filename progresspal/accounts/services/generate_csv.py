@@ -4,7 +4,7 @@ import os
 from datetime import datetime, timedelta
 from django.conf import settings
 
-def generate_user_csv_reports(username, system_type="control"):
+def generate_user_csv_reports(username, system_type="adaptive"):
     """
     負責從資料庫撈取特定使用者的學習與情緒紀錄，並生成三份 CSV 報表。
     回傳格式: dict 包含 status, message, files(若成功)
