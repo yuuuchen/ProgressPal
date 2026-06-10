@@ -204,32 +204,50 @@ def generate_user_csv_reports(username, system_type="adaptive"):
                     task_latency = round((q_time - last_event_time).total_seconds(), 2)
                     last_event_time = q_time 
 
+                # === 開始計算 CRT_Sequence 與 Total_Struggle_Time ===
+                
+                # 定義正/負向情緒集合 (保留 CRT_Sequence 的邏輯)
+                negative_emotions = {'boredom', 'frustration'}
+                positive_emotions = {'engagement', 'delight', 'surprise'}
+
                 crt_sequence = []
-                in_confusion = False
+                in_negative_state = False
+                negative_start_time = None
+                
+                # 初始化 Total_Struggle_Time (困惑總時長)
+                total_struggle_time = 0.0
                 confusion_start_time = None
-                first_engagement_time = None
-                last_confusion_time = None
 
                 for em in interval_emotions:
                     current_emotion = em['emotion']
                     current_time = em['time']
 
-                    if current_emotion == 'engagement' and first_engagement_time is None:
-                        first_engagement_time = current_time
-                    if current_emotion == 'confusion':
-                        last_confusion_time = current_time
-
-                    if current_emotion == 'confusion' and not in_confusion:
-                        in_confusion = True
-                        confusion_start_time = current_time
-                    elif current_emotion == 'engagement' and in_confusion:
-                        crt = (current_time - confusion_start_time).total_seconds()
+                    # 1. 計算 CRT_Sequence (從負向情緒到正向情緒的轉變)
+                    if current_emotion in negative_emotions and not in_negative_state:
+                        in_negative_state = True
+                        negative_start_time = current_time
+                    elif current_emotion in positive_emotions and in_negative_state:
+                        crt = (current_time - negative_start_time).total_seconds()
                         crt_sequence.append(int(crt))
-                        in_confusion = False
+                        in_negative_state = False
 
-                total_struggle_time = 0.0
-                if first_engagement_time and last_confusion_time and (last_confusion_time > first_engagement_time):
-                    total_struggle_time = (last_confusion_time - first_engagement_time).total_seconds()
+                    # 2. 計算 Total_Struggle_Time (累加處於 confusion 的總時間)
+                    if current_emotion == 'confusion':
+                        # 若尚未開始計時，代表剛進入困惑狀態，記下起點
+                        if confusion_start_time is None:
+                            confusion_start_time = current_time
+                    else:
+                        # 若情緒轉變為其他狀態，且之前有在計時，則結算這段時間差並將碼表歸零
+                        if confusion_start_time is not None:
+                            total_struggle_time += (current_time - confusion_start_time).total_seconds()
+                            confusion_start_time = None
+
+                # 任務時間結算：若直到該次問答結束(q_time)都還持續處於 confusion 狀態，將最後一段時間補上
+                if confusion_start_time is not None and q_time is not None:
+                    if q_time > confusion_start_time:
+                        total_struggle_time += (q_time - confusion_start_time).total_seconds()
+
+                # === 格式轉換與寫入 ===
 
                 formatted_ts = raw_ts
                 if q_time:
