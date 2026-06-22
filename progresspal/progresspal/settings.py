@@ -32,11 +32,15 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 # 讀取所有 Groq API Keys 到列表中
 GROQ_API_KEYS = []
-for i in range(1, 3):
-    # 修改環境變數名稱為 GROQ_API_KEY1, GROQ_API_KEY2...
+i = 1
+while True:
     key = os.getenv(f"GROQ_API_KEY{i}")
     if key:
         GROQ_API_KEYS.append(key)
+        i += 1
+    else:
+        # 如果抓不到下一號，就結束迴圈
+        break
 
 if not GROQ_API_KEYS:
     raise ValueError("未設定任何 GROQ_API_KEY")

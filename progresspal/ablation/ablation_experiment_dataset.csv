@@ -1,0 +1,61 @@
+﻿question_id,question_type,question_style,question,student_background,student_engagement
+1,definition,vague,如果把東西裝進一長排黏在一起的格子裡，而且每個格子都有編號，這在程式裡是叫什麼？,HPK,low
+2,definition,vague,要找到那一整排連續格子的第一個位置的位址，這個起點叫什麼名字？,LPK,low
+3,definition,clear,請解釋什麼是一維陣列以及它的時間複雜度為何是 O(1)？,HPK,high
+4,definition,clear,陣列儲存於連續記憶體區域的定義是什麼？,LPK,high
+5,definition,clear,多維陣列和一維陣列在記憶體中的存放方式有何不同？,HPK,low
+6,definition,vague,有一種資料結構像是玩尋寶遊戲，每找到一個才知道下一個藏在哪裡，不用全部擠在一起，那是什麼？,HPK,low
+7,definition,vague,在剛才說的尋寶遊戲裡，那個用來告訴你下一個藏寶箱在哪裡的紙條，專業名詞叫什麼？,LPK,low
+8,definition,vague,那個只有一個起點，然後一路找下去直到發現沒有下個提示為止的資料結構是什麼？,HPK,high
+9,definition,clear,請詳細說明鏈結串列中「節點（Node）」的組成元素有哪些？,HPK,high
+10,definition,clear,何謂環狀鏈結串列？其尾節點的特性為何？,LPK,low
+11,definition,vague,像洗盤子一樣，最後放上去的盤子一定會最先被拿起來洗，這在資料處理上叫什麼規則？,HPK,low
+12,definition,vague,把書一本一本疊上去，跟從最上面把書拿下來，這兩個動作的英文專有名詞是什麼？,LPK,low
+13,definition,clear,請定義何謂堆疊 (Stack) 以及其遵循的 LIFO 核心原則。,HPK,high
+14,definition,clear,在堆疊的操作中，Peek 與 Pop 有什麼決定性的不同？,LPK,high
+15,definition,clear,請解釋堆疊結構中 isEmpty 和 Size 操作的作用。,LPK,high
+16,definition,vague,就像去超市排隊一樣，先去排的人就可以先結帳離開，這是一種什麼樣的概念？,HPK,low
+17,definition,vague,最早進來等待的任務會最先被處理掉，這種講求先來後到的公平規則叫什麼？,LPK,high
+18,definition,vague,在排隊隊伍裡面，永遠只負責處理離開的人和負責加入新人的那兩端，分別叫什麼？,LPK,high
+19,definition,clear,請完整說明佇列 (Queue) 的定義以及 FIFO 原則。,HPK,high
+20,definition,clear,請解釋佇列的 Enqueue 與 Dequeue 操作分別代表什麼意義？,LPK,low
+21,comparative,vague,把東西全塞進一個連續的大格櫃，跟買很多個單獨散落的小盒子來裝，這兩種做法最大的差別在哪？,HPK,low
+22,comparative,vague,一條直線排隊的座位，跟像電影院那樣有排數又有座號的座位表，這兩種有什麼不一樣？,LPK,low
+23,comparative,vague,如果只是平常收集一些零散數據，跟要做大量科學運算，我該挑哪一種陣列工具比較適合？,LPK,high
+24,comparative,clear,請比較線性搜尋與二分搜尋在陣列中使用的時機與時間複雜度差異。,HPK,high
+25,comparative,clear,比較陣列在讀取元素與插入/刪除元素時的效能差異。,HPK,low
+26,comparative,vague,如果我常常需要隨時安插或踢掉排隊的人，跟一開始就買好固定長度的座位，哪一種做法比較有彈性？,HPK,low
+27,comparative,vague,只能一直往前走的單行道，跟可以隨時回頭看前一個走過路口的雙向道，用起來的差別是什麼？,LPK,low
+28,comparative,clear,請比較單向鏈結串列與雙向鏈結串列在節點結構與追蹤方向上的差異。,LPK,high
+29,comparative,clear,比較鏈結串列與陣列在記憶體連續性與擴展性上的不同之處。,HPK,high
+30,comparative,clear,在執行隨機存取時，為何陣列的效能優於鏈結串列？,LPK,low
+31,comparative,vague,拿現成的列表工具直接用，跟自己設計一個專門只處理疊盤子的模組，這兩種實作方法哪裡不一樣？,HPK,high
+32,comparative,vague,如果盤子越疊越高，是用固定容量的櫃子裝好，還是用一條可以隨便延伸的繩子綁著，哪種處理比較穩定？,LPK,high
+33,comparative,vague,如果資料超級多，從頭尾塞進去或拿出來時，哪一種內建的套件處理起來效能比較好？,HPK,high
+34,comparative,clear,請比較使用 Python 列表與使用鏈結串列來實作堆疊時，兩者的優缺點。,HPK,low
+35,comparative,clear,比較堆疊在文字編輯器 Undo 功能與瀏覽器歷史紀錄上的應用方式。,LPK,low
+36,comparative,vague,疊盤子總是從最上面拿，跟排隊買票總是由最前面的人先買到，這兩個最大的邏輯差異是什麼？,HPK,low
+37,comparative,vague,有一種排隊方式不是先來先贏，而是看誰比較重要或是誰比較急，這叫什麼？,LPK,high
+38,comparative,clear,請比較使用 Python 列表與鏈結串列實作佇列時，Dequeue 操作的時間複雜度差異。,HPK,high
+39,comparative,clear,比較 collections.deque 和 queue.Queue 在應用場景與執行緒安全上的差異。,LPK,low
+40,comparative,clear,比較佇列在 CPU 工作排程 (FCFS) 與印表機工作管理上的運作相似之處。,LPK,high
+41,application,vague,如果大家排成一列，我硬要插隊到中間某個位置，後面的人具體要怎麼移動來讓位給我？,HPK,low
+42,application,vague,如果要從一本已經按字母排好的字典裡找字，一直從中間翻開對半切來找的方法要怎麼寫？,LPK,low
+43,application,clear,如果要在 Python 的 list 索引 2 的位置插入數字 99，程式碼該如何撰寫？,HPK,high
+44,application,clear,請提供使用 NumPy 套件建立一個 2x2 二維陣列的具體寫法。,LPK,high
+45,application,clear,請問如何用迴圈或 enumerate 來遍歷陣列中的每一個元素？,HPK,low
+46,application,vague,如果我想讓尋寶遊戲跳過中間某個關卡，是不是只要把前一關的提示紙條改成指向下一關就好了？程式要怎麼改？,HPK,high
+47,application,vague,如果要記住最近看過的網頁，太久沒看的就忘掉，而且要能很快往前或往後翻，該用什麼結構兜出來比較好？,LPK,low
+48,application,vague,我要怎麼在程式裡創造一個包含自己身上的寶物，又帶有一張指向別人地址小紙條的物件？,LPK,high
+49,application,clear,請撰寫 Python 程式碼，示範如何在單向鏈結串列中查詢數值為 30 的節點索引。,HPK,high
+50,application,clear,若要在某個已知節點後方插入一個新節點，其指標修改的具體步驟為何？,LPK,low
+51,application,vague,如果我要紀錄使用者在文章裡打字的順序，方便他們按復原時可以一步步倒退，資料要怎麼存？,HPK,low
+52,application,vague,在拿最上面的盤子之前，我要怎麼寫程式確認桌上已經沒有半個盤子了？,LPK,high
+53,application,clear,請撰寫一段 Python 程式碼，使用類別 (Class) 封裝一個包含 push 和 pop 功能的堆疊。,HPK,high
+54,application,clear,若使用鏈結串列實作堆疊，請說明 push 新節點時指標該如何變更？,LPK,low
+55,application,clear,說明堆疊如何應用於程式語言中的函式呼叫堆疊 (Call Stack)？,LPK,high
+56,application,vague,如果我要做一個印表機的任務管理員，讓多個檔案可以照著送出的順序一個個印出來，該怎麼實作？,HPK,low
+57,application,vague,如果我把排隊最前面的人叫走，後面所有人都要往前走一步來補位，這樣做會造成什麼效能問題？,HPK,high
+58,application,vague,當隊伍最前面的人處理完畢要離開時，在程式碼裡要把他請出去並回傳他的資料，這個動作要怎麼寫？,LPK,low
+59,application,clear,請示範如何使用 Python 鏈結串列實作佇列的 Enqueue 操作，並更新 rear 指標。,HPK,low
+60,application,clear,廣度優先搜尋 (BFS) 演算法中為什麼必須使用佇列？請說明其機制。,LPK,high
