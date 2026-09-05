@@ -17,7 +17,8 @@ PERSIST_DIR = os.path.join(settings.TEACHING_MATERIAL_DIR, 'material_db')
 db_path = os.path.join(PERSIST_DIR, "chroma.sqlite3")
 
 #讀取資料夾裡的所有.md檔案
-md_files = [f for f in os.listdir(settings.TEACHING_MATERIAL_DIR) if f.endswith(".md")]
+target_file = "實驗用教材.md" 
+file_path = os.path.join(settings.TEACHING_MATERIAL_DIR, target_file)
 all_docs = []
 
 #定義標題層級
@@ -29,30 +30,27 @@ headers_to_split_on = [
 ]
 markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
 
-for file in md_files:
-  file_path = os.path.join(settings.TEACHING_MATERIAL_DIR, file)
+#讀取檔案
+loader = TextLoader(file_path, encoding="utf-8")
+docs = loader.load()
 
-  #讀取檔案
-  loader = TextLoader(file_path, encoding="utf-8")
-  docs = loader.load()
+for d in docs:
+  #MarkdownHeaderTextSplitter分段
+  md_header_splits = markdown_splitter.split_text(d.page_content)
 
-  for d in docs:
-    #MarkdownHeaderTextSplitter分段
-    md_header_splits = markdown_splitter.split_text(d.page_content)
+  for doc in md_header_splits:
+    header = doc.metadata.get("段落", "")
+    content_with_header = f"{header}\n{doc.page_content}" if header else doc.page_content
 
-    for doc in md_header_splits:
-      header = doc.metadata.get("段落", "")
-      content_with_header = f"{header}\n{doc.page_content}" if header else doc.page_content
-
-      all_docs.append(
-        Document(
-          page_content=content_with_header,
-          metadata={
-              **doc.metadata,   # 保留章節、小節資訊
-              "source": file    # 加上檔名來源
-          }
-        )
+    all_docs.append(
+      Document(
+        page_content=content_with_header,
+        metadata={
+            **doc.metadata,   # 保留章節、小節資訊
+            "source": target_file    # 加上檔名來源
+        }
       )
+    )
 
 #檢查資料庫是否已存在
 if not os.path.exists(db_path):
@@ -117,17 +115,18 @@ def get_unit(chapter, unit):
 
       # 在內容中保留段落資訊
       docs_dict[unit_num].append(f"{text}")
+      
 
   target_code = f"{chapter}-{unit}" #組合成目標單元編號
 
   combined = []
   for key in sorted(docs_dict.keys(), key=parse_unit_code):
     if key == target_code:
-      combined.append(f"=== {key} ===")
+      #combined.append(f"=== {key} ===")
       combined.extend(docs_dict[key])
 
   if combined:
-    return "\n".join(combined)
+    return "\n\n".join(combined)
   else:
     return None
 
