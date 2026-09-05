@@ -47,7 +47,7 @@ for d in docs:
         page_content=content_with_header,
         metadata={
             **doc.metadata,   # 保留章節、小節資訊
-            "source": file    # 加上檔名來源
+            "source": target_file    # 加上檔名來源
         }
       )
     )
