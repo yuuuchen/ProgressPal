@@ -39,23 +39,3 @@
 38,comparative,clear,請比較使用 Python 列表與鏈結串列實作佇列時，Dequeue 操作的時間複雜度差異。,HPK,high
 39,comparative,clear,比較 collections.deque 和 queue.Queue 在應用場景與執行緒安全上的差異。,LPK,low
 40,comparative,clear,比較佇列在 CPU 工作排程 (FCFS) 與印表機工作管理上的運作相似之處。,LPK,high
-41,application,vague,如果大家排成一列，我硬要插隊到中間某個位置，後面的人具體要怎麼移動來讓位給我？,HPK,low
-42,application,vague,如果要從一本已經按字母排好的字典裡找字，一直從中間翻開對半切來找的方法要怎麼寫？,LPK,low
-43,application,clear,如果要在 Python 的 list 索引 2 的位置插入數字 99，程式碼該如何撰寫？,HPK,high
-44,application,clear,請提供使用 NumPy 套件建立一個 2x2 二維陣列的具體寫法。,LPK,high
-45,application,clear,請問如何用迴圈或 enumerate 來遍歷陣列中的每一個元素？,HPK,low
-46,application,vague,如果我想讓尋寶遊戲跳過中間某個關卡，是不是只要把前一關的提示紙條改成指向下一關就好了？程式要怎麼改？,HPK,high
-47,application,vague,如果要記住最近看過的網頁，太久沒看的就忘掉，而且要能很快往前或往後翻，該用什麼結構兜出來比較好？,LPK,low
-48,application,vague,我要怎麼在程式裡創造一個包含自己身上的寶物，又帶有一張指向別人地址小紙條的物件？,LPK,high
-49,application,clear,請撰寫 Python 程式碼，示範如何在單向鏈結串列中查詢數值為 30 的節點索引。,HPK,high
-50,application,clear,若要在某個已知節點後方插入一個新節點，其指標修改的具體步驟為何？,LPK,low
-51,application,vague,如果我要紀錄使用者在文章裡打字的順序，方便他們按復原時可以一步步倒退，資料要怎麼存？,HPK,low
-52,application,vague,在拿最上面的盤子之前，我要怎麼寫程式確認桌上已經沒有半個盤子了？,LPK,high
-53,application,clear,請撰寫一段 Python 程式碼，使用類別 (Class) 封裝一個包含 push 和 pop 功能的堆疊。,HPK,high
-54,application,clear,若使用鏈結串列實作堆疊，請說明 push 新節點時指標該如何變更？,LPK,low
-55,application,clear,說明堆疊如何應用於程式語言中的函式呼叫堆疊 (Call Stack)？,LPK,high
-56,application,vague,如果我要做一個印表機的任務管理員，讓多個檔案可以照著送出的順序一個個印出來，該怎麼實作？,HPK,low
-57,application,vague,如果我把排隊最前面的人叫走，後面所有人都要往前走一步來補位，這樣做會造成什麼效能問題？,HPK,high
-58,application,vague,當隊伍最前面的人處理完畢要離開時，在程式碼裡要把他請出去並回傳他的資料，這個動作要怎麼寫？,LPK,low
-59,application,clear,請示範如何使用 Python 鏈結串列實作佇列的 Enqueue 操作，並更新 rear 指標。,HPK,low
-60,application,clear,廣度優先搜尋 (BFS) 演算法中為什麼必須使用佇列？請說明其機制。,LPK,high

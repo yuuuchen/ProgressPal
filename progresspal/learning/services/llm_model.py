@@ -69,5 +69,5 @@ class RotationalGroqClient:
 def get_rotational_client():
     return RotationalGroqClient()
 
-model_qa = "llama-3.3-70b-versatile"
+model_qa = "openai/gpt-oss-120b"
 model_materials = "openai/gpt-oss-120b"

@@ -53,12 +53,30 @@ def get_group_configuration(group_name, question, bg_level, eng_level):
     # 3. 根據四個消融組別，配置對應的指令
     if group_name == "1_General_LLM":
         # 全無：一般通用設定，不給 RAG，不給情緒 Prompt
-        sys_prompt = "你是一位資料結構助教，請清晰地回答學生的問題。"
+        sys_prompt = """
+        你是一位資料結構助教，請清晰地回答學生的問題。總字數必須 ≤ 350 字。
+        請務必嚴格依照以下結構與標題輸出：
+        ### 回答問題
+        （在此回答學生的問題）
+        ### 引導提問
+        （請針對剛剛的內容，提出一個延伸問題）
+        ### 提示
+        （請給予學生回答該問題的簡單提示，40字內）
+        """
         user_prompt = question
         
     elif group_name == "2_RAG_Only":
         # 只有 RAG：給予檢索教材，但完全「不使用」 prompt.py 的情緒渲染
-        sys_prompt = "你是一位資料結構助教，請「嚴格根據以下參考教材」回答問題，不要超出教材範圍。"
+        sys_prompt = """
+        你是一位資料結構助教，請「嚴格根據以下參考教材」回答問題，不要超出教材範圍。總字數必須 ≤ 350 字。
+        請務必嚴格依照以下結構與標題輸出：
+        ### 回答問題
+        （在此回答學生的問題）
+        ### 引導提問
+        （請針對剛剛的內容，提出一個延伸問題）
+        ### 提示
+        （請給予學生回答該問題的簡單提示，40字內）
+        """
         user_prompt = f"問題：{question}\n\n[參考教材]\n{retrieved_context}"
         
     elif group_name == "3_Prompt_Only":
