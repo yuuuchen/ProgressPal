@@ -5,7 +5,7 @@
 import os, re, textwrap, time, json,random
 
 from django.db import transaction
-from learning.services.llm_model import (model_qa,model_materials,get_rotational_client)
+from learning.services.llm_model import (model,get_rotational_client)
 from learning.services.prompt import (
     generate_prompt,
     generate_materials,
@@ -32,7 +32,7 @@ def display_materials(chapter_id, unit_id, engagement, role):
         {"role": "system", "content": system_instruction},
         {"role": "user", "content": prompt}
     ]    
-    resp_text = client.generate_materials_content(model=model_materials, messages=messages)
+    resp_text = client.generate_content(model=model, messages=messages)
     result = clean_text_tutoring(resp_text)  
     # print(f"[Debug] 教材生成原始回應: {resp_text}")  
     return {
@@ -80,7 +80,7 @@ def expand_query_with_hyde(question, chapter_id, unit_id):
             question=question
         )}
     ]    
-    expanded_query = client.generate_qa_content(model=model_qa, messages=messages, temperature=0.3)
+    expanded_query = client.generate_content(model=model, messages=messages, temperature=0.3)
     return expanded_query.strip()
 
 def generate_redirection_message(user_input, chapter_id, unit_id, error_msg=None):
@@ -105,7 +105,7 @@ def generate_redirection_message(user_input, chapter_id, unit_id, error_msg=None
     ]        
     try:
         # 呼叫 LLM (依據你的 client API 可能回傳字串或物件，此處假設與原版行為相同)
-        raw_response = client.generate_qa_content(model=model_qa, messages=messages, temperature=0.7)
+        raw_response = client.generate_content(model=model, messages=messages, temperature=0.7)
         
         # 確保轉為字串格式
         raw_text = raw_response if isinstance(raw_response, str) else str(raw_response)
@@ -173,7 +173,7 @@ def respond_to_question(prompt, engagement, role):
         {"role": "system", "content": system_instruction},
         {"role": "user", "content": prompt}
     ]    
-    resp_text = client.generate_qa_content(model=model_qa, messages=messages, temperature=temp)
+    resp_text = client.generate_content(model=model, messages=messages, temperature=temp)
     result = clean_text_qa(resp_text)    
     return {
         "answer": result.get("answer"),
