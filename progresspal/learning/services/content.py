@@ -16,9 +16,8 @@ from django.conf import settings
 PERSIST_DIR = os.path.join(settings.TEACHING_MATERIAL_DIR, 'material_db')
 db_path = os.path.join(PERSIST_DIR, "chroma.sqlite3")
 
-
-target_file = "實驗用教材.md" 
-file_path = os.path.join(settings.TEACHING_MATERIAL_DIR, target_file)
+#讀取資料夾裡的所有.md檔案
+md_files = [f for f in os.listdir(settings.TEACHING_MATERIAL_DIR) if f.endswith(".md")]
 all_docs = []
 
 #定義標題層級
@@ -30,27 +29,30 @@ headers_to_split_on = [
 ]
 markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
 
-#讀取檔案
-loader = TextLoader(file_path, encoding="utf-8")
-docs = loader.load()
+for file in md_files:
+  file_path = os.path.join(settings.TEACHING_MATERIAL_DIR, file)
 
-for d in docs:
-  #MarkdownHeaderTextSplitter分段
-  md_header_splits = markdown_splitter.split_text(d.page_content)
+  #讀取檔案
+  loader = TextLoader(file_path, encoding="utf-8")
+  docs = loader.load()
 
-  for doc in md_header_splits:
-    header = doc.metadata.get("段落", "")
-    content_with_header = f"{header}\n{doc.page_content}" if header else doc.page_content
+  for d in docs:
+    #MarkdownHeaderTextSplitter分段
+    md_header_splits = markdown_splitter.split_text(d.page_content)
 
-    all_docs.append(
-      Document(
-        page_content=content_with_header,
-        metadata={
-            **doc.metadata,   # 保留章節、小節資訊
-            "source": target_file    # 加上檔名來源
-        }
+    for doc in md_header_splits:
+      header = doc.metadata.get("段落", "")
+      content_with_header = f"{header}\n{doc.page_content}" if header else doc.page_content
+
+      all_docs.append(
+        Document(
+          page_content=content_with_header,
+          metadata={
+              **doc.metadata,   # 保留章節、小節資訊
+              "source": file    # 加上檔名來源
+          }
+        )
       )
-    )
 
 #檢查資料庫是否已存在
 if not os.path.exists(db_path):
@@ -58,13 +60,23 @@ if not os.path.exists(db_path):
         print("找不到任何 .md 檔案可供建立資料庫。")
     else:
         #將文本轉為向量
-        print("正在載入 embeddings 模型...")
-        embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        print("正在載入 Multilingual-E5 Embeddings 模型...")
+        embeddings = HuggingFaceEmbeddings(
+            model_name="intfloat/multilingual-e5-base",
+            model_kwargs={'device': 'cpu'},
+            encode_kwargs={'normalize_embeddings': True}
+        )
+
+        # 在存入 Chroma 時加上 "passage: " 前綴
+        chroma_docs = [
+            Document(page_content=f"passage: {d.page_content}", metadata=d.metadata)
+            for d in all_docs
+        ]
 
         #存入 Chroma 向量資料庫
         print("正在建立 Chroma 向量資料庫並儲存...")
         vectorstore = Chroma.from_documents(
-            documents=all_docs,
+            documents=chroma_docs,
             embedding=embeddings,
             persist_directory=PERSIST_DIR,
         )
