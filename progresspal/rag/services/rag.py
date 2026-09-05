@@ -6,7 +6,6 @@ from langchain_chroma import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.schema import Document
 from rank_bm25 import BM25Okapi
-from sklearn.preprocessing import MinMaxScaler
 from django.conf import settings
 from learning.services.content import all_docs
 
@@ -32,8 +31,12 @@ def get_vectorstore():
         print("請先執行建立資料庫。")
         return None
 
-    print("載入 HuggingFaceEmbeddings")
-    _embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    print("載入 Multilingual-E5 Embeddings")
+    _embeddings = HuggingFaceEmbeddings(
+        model_name="intfloat/multilingual-e5-base",
+        model_kwargs={'device': 'cpu'},
+        encode_kwargs={'normalize_embeddings': True}
+    )
 
     print("載入現有 Chroma 資料庫")
     _vectorstore = Chroma(
@@ -72,103 +75,104 @@ def get_bm25():
     print("BM25 索引建立完成。")
     return _bm25
 
-def retrieve_docs(query, top_k=3, weight_bm25=0.7, weight_vector=0.3):
+def _normalize_content_key(content):
+    """
+    剝離 Chroma 內部的 'passage: ' 前綴，確保與本地 all_docs 的文本能精確進行 RRF 字典聯集。
+    """
+    if content.startswith("passage: "):
+        return content[9:].strip()
+    return content.strip()
+
+def hybrid_search(query_for_vector, query_for_bm25, original_question=None, k=3, weight_bm25=0.3, weight_vector=0.7):
+    """
+    Step 1: 雙路放寬抓取 candidate_k=10 (高召回率廣積糧)
+    Step 2: 透過 RRF 數學公式融合兩路排名 (免疫 BM25 離群值與尺度干擾)
+    """
     vectorstore = get_vectorstore()
     bm25_model = get_bm25()
 
     if not vectorstore:
         print("向量資料庫未載入")
-        return [] # 回傳空列表
-  
-    # 設定候選數量
-    candidate_k = 10
-
-    # 向量搜尋 (Vector Search)
-    vec_results = vectorstore.similarity_search_with_score(query, k=candidate_k)
-    
-    # 關鍵字搜尋 (BM25)
-    # 前處理 Query
-    query_tokens = list(jieba.cut(query, cut_all=False))
-    stop_words = {'的', '是', '什麼', '甚麼', '嗎', '與', '和', '?', '定義', ' ', '。', '，'}
-    filtered_tokens = [t for t in query_tokens if t not in stop_words]
-    if not filtered_tokens: 
-        filtered_tokens = query_tokens
-    
-    # 計算 BM25 分數
-    if bm25_model:
-        bm25_scores = bm25_model.get_scores(filtered_tokens)
-        # 取得分數最高的 indices
-        top_bm25_indices = np.argsort(bm25_scores)[::-1][:candidate_k]
-    else:
-        top_bm25_indices = []
-        bm25_scores = []
-    
-    # 融合與標準化
-    candidates = {}
-    # 處理向量結果
-    for doc, distance in vec_results:
-        # 將距離轉為相似度分數
-        sim_score = 1 / (1 + distance) 
-        
-        candidates[doc.page_content] = {
-            "doc": doc,
-            "vec_score": sim_score,
-            "bm25_score": 0.0 # 先給預設值
-        }
-
-    # 處理 BM25 結果
-    for idx in top_bm25_indices:
-        score = bm25_scores[idx]
-        if score <= 0: continue
-        
-        doc = all_docs[idx] # 從全域 docs 找回 document 物件
-        
-        if doc.page_content in candidates:
-            # 如果已經在向量搜尋結果中，補上 BM25 分數
-            candidates[doc.page_content]["bm25_score"] = score
-        else:
-            # 如果是 BM25 獨有的結果，加入候選
-            candidates[doc.page_content] = {
-                "doc": doc,
-                "vec_score": 0.0, # 向量分數預設為 0
-                "bm25_score": score
-            }
-
-    # 轉為列表準備標準化
-    candidate_list = list(candidates.values())
-    if not candidate_list:
         return []
+
+    candidate_k = 10
     
-    # 提取分數陣列
-    vec_vals = np.array([x["vec_score"] for x in candidate_list])
-    bm25_vals = np.array([x["bm25_score"] for x in candidate_list])
+    # 1. 密集向量檢索 (傳入已帶有 "query: " 的語句)
+    vec_results = vectorstore.similarity_search_with_score(query_for_vector, k=candidate_k)
 
-    # 標準化
-    scaler = MinMaxScaler()
+    # 2. 稀疏關鍵字檢索 (BM25)
+    query_tokens = list(jieba.cut(query_for_bm25, cut_all=False))
+    stop_words = {'的', '是', '什麼', '甚麼', '嗎', '與', '和', '?', '定義', ' ', '\n', '有哪些','。'}
+    filtered_tokens = [t for t in query_tokens if t not in stop_words] or query_tokens
 
-    # 標準化 Vector 分數
-    if len(vec_vals) > 1 and np.std(vec_vals) > 1e-9:
-        vec_norm = scaler.fit_transform(vec_vals.reshape(-1, 1)).flatten()
+    if bm25_model:
+        bm25_scores_all = bm25_model.get_scores(filtered_tokens)
+        top_bm25_indices = np.argsort(bm25_scores_all)[::-1][:candidate_k]
     else:
-        vec_norm = vec_vals 
+        bm25_scores_all = []
+        top_bm25_indices = []
 
-    # 標準化 BM25 分數
-    if len(bm25_vals) > 1 and np.std(bm25_vals) > 1e-9:
-        bm25_norm = scaler.fit_transform(bm25_vals.reshape(-1, 1)).flatten()
-    else:
-        bm25_norm = bm25_vals
+    # 建立全局 Document 映射表與名次追蹤器
+    doc_map = {}
+
+    # 記錄向量軌道的排名位置
+    vec_ranks = {}
+    for rank_idx, (doc, _) in enumerate(vec_results):
+        # 將從 Chroma 撈出來的 content 進行前綴剝離，歸一化後再當做 Dict Key
+        norm_key = _normalize_content_key(doc.page_content)
+        doc.page_content = norm_key  # 順手將物件內的文本洗乾淨，防範任何字串洩漏到前端
+        doc_map[norm_key] = doc
+        vec_ranks[norm_key] = rank_idx + 1  # 1-indexed 名次
+
+    # 記錄 BM25 軌道的排名位置
+    bm25_ranks = {}
+    for rank_idx, idx in enumerate(top_bm25_indices):
+        if bm25_scores_all[idx] <= 0:
+            continue
+        content = all_docs[idx].page_content
+        norm_key = _normalize_content_key(content)
+        
+        # 確保映射表裡儲存的是已被清洗乾淨的 Document
+        all_docs[idx].page_content = norm_key
+        doc_map[norm_key] = all_docs[idx]
+        bm25_ranks[norm_key] = rank_idx + 1
+
+    # 執行 RRF (倒數排名融合) 演算法
+    rrf_results = []
+    all_candidates = set(vec_ranks.keys()).union(set(bm25_ranks.keys()))
+
+    for content in all_candidates:
+        r_vec = vec_ranks.get(content, 999)    # 若向量沒撈到，降級給予極低名次
+        r_bm25 = bm25_ranks.get(content, 999)  # 若 BM25 沒撈到，降級給予極低名次
+
+        # 改用 RRF 排名倒數融合公式，乘以指定的權重參數
+        rrf_score = (weight_vector / (60 + r_vec)) + (weight_bm25 / (60 + r_bm25))
+        
+        # 紀錄最終融合分數至 metadata 方便除錯與追蹤
+        doc_map[content].metadata["score"] = float(rrf_score)
+        rrf_results.append((doc_map[content], rrf_score))
+
+    # 依照 RRF 融合分數由高到低大排行
+    rrf_results.sort(key=lambda x: x[1], reverse=True)
+
+    # 回傳大排行表現最優的前 k 個純淨 Document 物件
+    results = [doc for doc, score in rrf_results[:k]]
+    return results if results else None
+
+def retrieve_docs(query, top_k=3, weight_bm25=0.3, weight_vector=0.7):
+    query_for_vector = f"query: {query}"
+    query_for_bm25 = query
     
-    # 計算加權總分
-    final_results = []
-    for i, item in enumerate(candidate_list):
-        final_score = (weight_vector * vec_norm[i]) + (weight_bm25 * bm25_norm[i])
-        item["doc"].metadata["score"] = final_score # 將分數寫入 metadata 方便除錯
-        final_results.append((item["doc"], final_score))
+    return hybrid_search(
+        query_for_vector=query_for_vector,
+        query_for_bm25=query_for_bm25,
+        original_question=query,
+        k=top_k,
+        weight_bm25=weight_bm25,
+        weight_vector=weight_vector
+    )
 
-    # 排序 (分數高到低)
-    final_results.sort(key=lambda x: x[1], reverse=True)
-
-    # 取出 Document 物件
-    results = [doc for doc, score in final_results[:top_k]]
-
-    return results if results else None #回傳結果list，[]為空則回傳None
+def clean_doc_content(item):
+    doc = item[0] if isinstance(item, tuple) else item
+    content = doc.page_content
+    return _normalize_content_key(content)
