@@ -19,7 +19,10 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # 載入 .env
-load_dotenv(os.path.join(BASE_DIR, '.env'))
+env_path = os.path.join(BASE_DIR, '.env')
+if not os.path.exists(env_path):
+    print(f"--- [警告] 找不到 .env 檔案於: {env_path} ---")
+load_dotenv(env_path)
 
 # 從環境變數讀取設定
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default')
@@ -27,19 +30,17 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default')
 # Debug 模式
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-# 讀取所有 Key 到列表中
-GOOGLE_API_KEYS = []
-for i in range(1, 8):
-    key = os.getenv(f"GOOGLE_API_KEY{i}")
+# 讀取所有 Groq API Keys 到列表中
+GROQ_API_KEYS = []
+for i in range(1, 3):
+    # 修改環境變數名稱為 GROQ_API_KEY1, GROQ_API_KEY2...
+    key = os.getenv(f"GROQ_API_KEY{i}")
     if key:
-        GOOGLE_API_KEYS.append(key)
+        GROQ_API_KEYS.append(key)
 
-if not GOOGLE_API_KEYS:
-    raise ValueError("未設定任何 GOOGLE_API_KEY")
+if not GROQ_API_KEYS:
+    raise ValueError("未設定任何 GROQ_API_KEY")
 
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
 #教材路徑
 TEACHING_MATERIAL_DIR = os.path.join(BASE_DIR, 'teaching_material')
 

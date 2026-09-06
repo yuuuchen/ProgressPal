@@ -11,8 +11,8 @@ class CustomUser(AbstractUser):
     - 新增身份與年級欄位
     """
     ROLE_CHOICES = [
-        ('mis_student', '資訊領域大學生'),
-        ('normal_student', '非資訊領域大學生'),
+        ('high_prior_student', '高先備知識學生'),
+        ('low_prior_student', '低先備知識學生'),
     ]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student') #身分
     grade = models.CharField(max_length=10, blank=True, null=True) #年級
@@ -22,23 +22,25 @@ class CustomUser(AbstractUser):
     def __str__(self):
         return f"{self.nickname} ({self.role})"
     
-EMOTION_MAP = {
-    "frustrated": "挫折",
-    "confused": "困惑",
-    "bored": "無聊",
-    "engaged": "投入",
-    "surprised": "驚訝",
-    "happy": "喜悅",
-}
+    EMOTION_MAP = {
+        "frustration":"挫折",
+        "confusion":"困惑",
+        "boredom":"無聊",
+        "engagement":"投入",
+        "surprise":"驚訝",
+        "delight":"喜悅",
+    }
 
-@property
-def recent_emotion_history(self):
-    """
-    取得最近 6 筆情緒（由遠→近）並回傳中文清單
-    """
-    records = self.emotion_records.order_by('-timestamp')[:6]  # 最新6筆
-    records = reversed(records)  # 由遠到近
-    return [self.EMOTION_MAP.get(rec.emotion, "未知") for rec in records]
+    @property
+    def recent_emotion_history(self):
+        """
+        取得最近 6 筆情緒（由遠→近）並回傳中文清單
+        """
+        records = self.emotion_records.order_by('-timestamp')[:6]  # 最新6筆
+        if not records.exists():
+            return ["None"]
+        records = reversed(records)  # 由遠到近
+        return [self.EMOTION_MAP.get(rec.emotion, "未知") for rec in records]
 
     
 # 學習紀錄
@@ -61,18 +63,26 @@ class LearningRecord(models.Model):
         return None
 
     def __str__(self):
-        return f"{self.user.username} - {self.unit_name}"
+        return f"{self.user.username} - {self.unit_code}"
     
 # 提問紀錄
-class QuestionLog(models.Model):
+class QuestionLog(models.Model): 
     """
     紀錄學生的每次提問與系統回覆
     """
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='question_logs')
+    TYPE_CHOICES = [
+    ('question', '學生提問'),
+    ('answer_extend_question', '學生回應引導提問'),
+]
+
+    type = models.CharField(max_length=30, choices=TYPE_CHOICES, default='question')
     chapter_code = models.CharField(max_length=50, blank=True, null=True)
     unit_code = models.CharField(max_length=50, blank=True, null=True)
-    question = models.TextField() # 學生提問
+    stu_input = models.TextField() # 學生輸入
+    system_question = models.TextField(blank=True, null=True) # 系統引導提問(當學生回應引導提問時會有內容)
     answer = models.TextField(blank=True, null=True) # 系統回覆
+    hint_is_used = models.BooleanField(default=False) # 系統提示(當學生點選使用系統提示時會改為True)
     engagement = models.CharField(max_length=20, blank=True, null=True)  # 參與度，例如：high、low
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -93,10 +103,8 @@ class QuizResult(models.Model):
     chapter_code = models.CharField(max_length=50, blank=True, null=True)
     score = models.IntegerField()  # 0~10 題得分
     created_at = models.DateTimeField(auto_now_add=True)
-
     def __str__(self):
-        return f"{self.user.username} - {self.chapter_code}-{self.unit_code}: {self.score}分"
-    
+        return f"{self.user.username} - {self.chapter_code or 'N/A'}: {self.score}分"
 
 class QuizResultQuestion(models.Model):
     """

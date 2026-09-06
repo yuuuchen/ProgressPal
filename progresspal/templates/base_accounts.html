@@ -1,36 +1,37 @@
-<!-- base_accounts.html 無header -->
-{% load static %}
+<!-- base_accounts.html -->
+ {% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/study.css' %}">
-    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet" crossorigin="anonymous">
-    <script src="{% static 'js/bootstrap.bundle.min.js' %}" crossorigin="anonymous"></script>
-    <!-- icon -->
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
     {% block head_extension %}{% endblock %}
 </head>
-<body>
-    <!--header-->
-    <!-- 之後左上角放icon -->
+<!-- 1. body 使用 min-vh-100 確保高度至少跟螢幕一樣高 -->
+<body class="d-flex flex-column min-vh-100 m-0">
+    
+    <!-- 2. Header 使用 flex-shrink-0 避免被擠壓變小 -->
+    <header class="flex-shrink-0">
+        {% include "includes/header.html" %}
+    </header>
 
-
-    <!--content-->
-    <div class="main-content">
+    <!-- 3. main-content 使用 flex-grow-1 佔滿剩餘空間，
+         並用 d-flex 讓裡面的 login-container 垂直水平置中 -->
+    <main class="main-content flex-grow-1 d-flex align-items-center justify-content-center">
         {% block content %}{% endblock %}
-    </div>
+    </main>
 
-
-    <!--footer-->
-    <div class="footer">
+    <!-- 4. Footer 自然會被推到最下面 -->
+    <footer class="footer bg-dark text-white text-center py-3 flex-shrink-0">
         <div class="container">
+            <p class="mb-0">&copy; 2025 ProgressPal Team. All Rights Reserved.</p>
         </div>
-    </div>
+    </footer>
 
-    <!--.js-->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // 更新介面文字
         currentQEl.innerText = currentQuestionIndex + 1;
-        questionTextEl.innerHTML = currentData.question;
+        questionTextEl.innerHTML = marked.parse(currentData.question);
         optionsContainer.innerHTML = ''; // 清空選項
 
         // 檢查這一題是否已經答過
@@ -82,13 +82,20 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // HTML 結構：圈圈 + 文字
-            btn.innerHTML = `<div class="circle"></div><div class="opt-text">${optionText}</div>`;
+            btn.innerHTML = `
+                <div class="circle"></div>
+                <div class="opt-text">${marked.parse(optionText)}</div>
+            `;
             
             // 綁定點擊事件
             btn.onclick = () => selectOption(qId, index);
             optionsContainer.appendChild(btn);
         });
 
+        if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
+            // 指定渲染題目文字與選項容器
+            MathJax.typesetPromise([questionTextEl, optionsContainer]).catch((err) => console.log(err));
+        }
         // 按鈕狀態控制：必須有選擇答案才能按「下一題」或「交卷」
         updateNavButtons(savedChoice !== undefined);
     }
@@ -210,7 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // 建立該題的 HTML 結構
             let htmlContent = `
                 <div class="review-question">
-                    <strong>第 ${idx + 1} 題：${item.question}</strong>
+                    <strong>第 ${idx + 1} 題：</strong>${marked.parse(item.question)}
                 </div>
                 <div class="review-options">
             `;
@@ -232,13 +239,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     classList += ' wrong';   // 紅色樣式
                 }
 
-                htmlContent += `<div class="${classList}">${opt}</div>`;
+                htmlContent += `<div class="${classList}">${marked.parse(opt)}</div>`;
             });
 
             htmlContent += `
                 </div>
                 <div class="review-explanation">
-                    <strong>詳解：</strong>${item.explanation}
+                    <strong>詳解：</strong>${marked.parse(item.explanation)}
                 </div>
                 <hr>
             `;
@@ -246,6 +253,10 @@ document.addEventListener("DOMContentLoaded", () => {
             reviewItem.innerHTML = htmlContent;
             reviewContainer.appendChild(reviewItem);
         });
+        
+        if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
+            MathJax.typesetPromise([reviewContainer]).catch((err) => console.log(err));
+        }
     }
 
     // 啟動程式

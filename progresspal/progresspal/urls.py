@@ -33,7 +33,9 @@ urlpatterns = [
     path('user/profile/', accounts.profile, name='profile'),  # 會員中心（需登入）
     path('user/delete/', accounts.delete_account, name='delete_account'),  # 刪除帳號（需登入）
     path('user/study/', accounts.learning_portfolio, name='learning-portfolio-self'),  # 學習歷程頁面(本人)
+    path('user/study/quiz/', accounts.learning_portfolio_quiz, name='learning-portfolio-quiz-self'),  # 學習歷程測驗頁面(本人)
     path('user/study/<str:username>', accounts.learning_portfolio, name='learning-portfolio'),  # 學習歷程頁面(管理)
+    path('user/study/<str:username>/quiz/', accounts.learning_portfolio_quiz, name='learning-portfolio-quiz'),  # 學習歷程測驗頁面(管理)
 
     # 學習相關
     path('lesson/', learning.lesson, name='lesson'),  # 學習章節列表頁面
@@ -46,10 +48,7 @@ urlpatterns = [
     path('lesson/<int:chapter_code>/quiz/check/api/', learning.check_answers, name='quiz-check-api'),
 
     # 結束學習並更新學習記錄
-    # path("lesson/end/", learning.end_study, name="end-study"),
-
-    # 測試用
-    path('user/add-material/', accounts.add_material, name='add-material'),
+    path("lesson/end/", learning.end_study, name="end-study"),
 
     # 情緒相關
     path("emotion/detect/", emotion.detect_emotion, name="emotion_detect"),

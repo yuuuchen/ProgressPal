@@ -31,8 +31,10 @@ def map_emotion_to_score(emotion):
         scores.append(0.5) #設為0.5
     else:
       if e not in EMOTION_TO_ENGAGEMENT:
-        raise ValueError(f"未知情緒: {e}")
-      scores.append(EMOTION_TO_ENGAGEMENT[e])
+          # 遇到 "未知"、"None" 或其他未知情緒時，不再報錯，而是給予預設的 0.5 分 (中性)
+          scores.append(0.5)
+      else:
+          scores.append(EMOTION_TO_ENGAGEMENT[e])
   return scores
 
 #輸入情緒序列，回傳參與度分數
@@ -46,7 +48,7 @@ def compute_engagement(emotions):
 
   #空序列
   if not emotions:
-    raise ValueError("情緒序列不可為空")
+    return "high"
 
   #情緒字串轉成數值分數
   scores = map_emotion_to_score(emotions)
@@ -56,7 +58,7 @@ def compute_engagement(emotions):
     #return sum(scores) / len(scores)
 
   #指數平滑法
-  alpha = 0.4  #越大越重視最近的情緒
+  alpha = 0.2  #越大越重視最近的情緒
   ema = scores[0]
   for x in scores[1:]:
     ema = alpha * x + (1 - alpha) * ema

@@ -4,10 +4,24 @@ document.addEventListener("DOMContentLoaded", () => {
     const canvasElement = document.getElementById('captureCanvas'); 
     const resultElement = document.getElementById('emotion-display'); // 情緒
     const context = canvasElement.getContext('2d');
+    let lowEngagementCounter = 0;  // 追蹤低參與度
+    const PROACTIVE_THRESHOLD = 4; // 連續 4 次低參與度就觸發訊息
+    //const unitStartTime = Date.now();  // 紀錄進入單元的初始時間
+    window.unitStartTime = Date.now();  // 綁定到 window 變成全域變數
 
     // 設定參數
     const INTERVAL_MS = 5000; // 5秒
     const CONFIDENCE_THRESHOLD = 0.5; // 信心門檻
+
+    //初始情緒
+    let initialEmotion = resultElement.getAttribute('data-initial-emotion');
+    console.log("偵測到初始情緒屬性值:", initialEmotion);
+
+    const startEmotion = (initialEmotion && initialEmotion !== "None" && initialEmotion !== "") 
+                         ? initialEmotion 
+                        : "偵測中";
+
+    updateUI(startEmotion, 0.5, false);
 
     // 啟動 Webcam
     async function initCamera() {
@@ -90,43 +104,67 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // 信心分數低於門檻不更新
         if (data.confidence < CONFIDENCE_THRESHOLD) {
-            console.log(`Confidence too low: ${data.confidence} (Ignored)`);
+            console.log(`Confidence too low: ${data.confidence}`);
             return;
         }
 
+        // 計算低參與度次數
+        if (data.engagement === "low") {
+            lowEngagementCounter++;
+            if (lowEngagementCounter === PROACTIVE_THRESHOLD) {
+                if (window.LATEST_HINT) {
+                    // 呼叫 chat.js 裡的顯示按鈕函式
+                    appendHintButton(window.LATEST_HINT);
+                    // 觸發後清除暫存，避免重複顯示同一個提示
+                    window.LATEST_HINT = null; 
+                }
+                lowEngagementCounter = 0;
+            }
+        } else {
+            lowEngagementCounter = 0; // 觸發後重置次數
+        }
+
         // 信心分數高於門檻更新 
-        updateUI(data.emotion, data.confidence);
+        console.log(`Engagement: ${data.engagement} `);
+        console.log(`lowEngagementCounter: ${lowEngagementCounter} `);
+        updateUI(data.emotion, data.engagement);
+        
     }
 
     // 更新情緒
-    function updateUI(emotion, confidence) {
+    function updateUI(emotion, engagement,showTip = true) {
     const emotionImages = {
         "喜悅": "/static/images/emotions/delight.png",
         "困惑": "/static/images/emotions/confusion.png",
         "無聊": "/static/images/emotions/boredom.png",
         "挫折": "/static/images/emotions/frustration.png",
         "投入": "/static/images/emotions/flow.png",
-        "驚訝": "/static/images/emotions/surprise.png"
+        "驚訝": "/static/images/emotions/surprise.png",
     };
-
+    
     // 取得對應的圖片路徑
-    const imagePath = emotionImages[emotion]
+    let imageHTML = ''; // 預設為空字串
+    const imagePath = emotionImages[emotion];
+    // 只有當 emotionImages 裡有定義該情緒，且該情緒不是 "偵測中" 時才生成 <img>
+    if (emotion !== "偵測中" && emotion !== "未知" && imagePath) {
+        imageHTML = `<img src="${imagePath}" alt="${emotion}" style="width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%;">`;
+    }
+    const timerHTML = `<div id="live-study-timer" style="color: #09384e; font-size:16px; font-weight: bold; flex-grow: 1; text-align: right; padding-right: 20px;">
+                        ${getFormattedDuration()}
+                        </div>`;
 
-    const displayScore = confidence.toFixed(2);
-
-    // 更新 HTML 內容，加入圖片顯示
-    // 這裡使用 flex 佈局讓圖片和文字排版更好看
     resultElement.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <img src="${imagePath}" alt="${emotion}" style="width: 50px; height: 50px; object-fit: contain; margin-left: 15px;" >
-            <div>
-                <span style="color: black; font-size:16;">情緒：${emotion}  <br> 信心分數：${displayScore} </span> 
+        <div style="display: flex; align-items: center; gap: 15px; width: 100%;">
+            ${imageHTML}
+            <div style="color: black; font-size: 16px; font-weight: bold; white-space: nowrap;">
+                情緒：${emotion}
             </div>
+            ${timerHTML}
         </div>
     `;
 
-    console.log(`UI Updated: ${emotion} (${confidence})`);
-}
+    }
+
 
     // Django CSRF
     function getCookie(name) {
@@ -144,6 +182,31 @@ document.addEventListener("DOMContentLoaded", () => {
         return cookieValue;
     }
 
+    // 轉換為 hh:mm:ss 格式的函式
+    function getFormattedDuration() {
+        //const diff = Date.now() - unitStartTime;
+        const diff = Date.now() - window.unitStartTime;
+        const seconds = Math.floor((diff / 1000) % 60);
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+
+        const h = hours > 0 ? `${hours.toString().padStart(2, '0')}:` : "";
+        const m = minutes.toString().padStart(2, '0');
+        const s = seconds.toString().padStart(2, '0');
+        
+        return `單元學習時間：${h}${m}:${s}`;
+    }
+
+    // 每秒更新一次計時器文字
+    setInterval(() => {
+        const timerElement = document.getElementById('live-study-timer');
+        if (timerElement) {
+            timerElement.innerText = getFormattedDuration();
+        }
+    }, 1000);
+
     // 啟動程式
     initCamera();
+
+
 });

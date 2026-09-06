@@ -21,7 +21,7 @@ class Chapter(models.Model):
     
 class Unit(models.Model):
     chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name='units', verbose_name="所屬章節")
-    unit_number = models.CharField(max_length=10, verbose_name="單元編號") 
+    unit_number = models.PositiveIntegerField(verbose_name="單元編號")
     title = models.CharField(max_length=50, verbose_name="單元標題")
 
     class Meta:

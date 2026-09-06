@@ -1,0 +1,21 @@
+{% extends "base.html" %} {% load static %}
+
+{% block title %}今日學習額度已滿{% endblock %}
+
+{% block content %}
+<div class="container d-flex flex-column align-items-center justify-content-center min-vh-100">
+    <div class="text-center p-5 rounded shadow bg-white" style="max-width: 500px;">
+        <span class="material-symbols-outlined text-warning mb-3" style="font-size: 64px;">
+            hourglass_empty
+        </span>
+        <h2 class="mb-4 text-dark">今日學習額度已滿！</h2>
+        <p class="text-muted mb-4">
+            你今天已經很棒了！系統的 AI 輔助額度已達上限。<br>
+            大腦也需要休息來消化新知識，請明天再來繼續你的學習旅程吧！
+        </p>
+        <a href="{% url 'homepage' %}" class="btn btn-primary px-4 py-2">
+            回首頁休息一下
+        </a>
+    </div>
+</div>
+{% endblock %}

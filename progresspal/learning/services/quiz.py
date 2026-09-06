@@ -108,6 +108,11 @@ def import_quiz_from_csv(file_path):
                         continue
 
                     # 3. 準備建立物件
+                    raw_explanation = row.get('explanation', '').strip()
+                    if len(raw_explanation) >= 2 and raw_explanation.startswith('"') and raw_explanation.endswith('"'):
+                            clean_explanation = raw_explanation[1:-1]  # 切片移除第一個和最後一個字元
+                    else:
+                        clean_explanation = raw_explanation
                     question = QuizQuestion(
                         chapter=chapter_obj,
                         difficulty=row.get('difficulty', 'easy').strip(),
@@ -117,7 +122,7 @@ def import_quiz_from_csv(file_path):
                         option_c=row.get('option_C', '').strip(),
                         option_d=row.get('option_D', '').strip(),
                         answer=row.get('answer', '').strip(),
-                        explanation=row.get('explanation', '').strip()
+                        explanation=clean_explanation
                     )
                     questions_to_create.append(question)
                     success_count += 1

@@ -20,4 +20,4 @@ html, body {
     flex-direction: column;
     overflow: hidden; /* 關鍵：確保內容被限制在這個區塊內 */
     height: 100%;     /* 繼承父元素高度 */
-}
+} 

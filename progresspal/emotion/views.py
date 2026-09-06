@@ -4,11 +4,20 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from .emotion_model import predict_emotion, InputShapeError
 from .services.preprocess import preprocess_frame, NoFaceDetectedError, InvalidImageError 
+from .services.utils import compute_engagement
 from .models import EmotionRecord
 import logging
 
 logger = logging.getLogger(__name__)
 
+REVERSE_EMOTION_CHOICES = {
+    "frustration": "挫折",
+    "confusion": "困惑",
+    "boredom": "無聊",
+    "engagement": "投入",
+    "surprise": "驚訝",
+    "delight": "喜悅",
+}
 
 @login_required
 def detect_emotion(request):
@@ -52,15 +61,37 @@ def detect_emotion(request):
     except Exception as e:
         print(f"Unexpected inference error: {e}")
         return JsonResponse({"error": "Failed to perform emotion detection"}, status=500)
-    '''
     # 3. 存進資料庫
     try:
+        EMOTION_CHOICES = {
+            "挫折": "frustration",
+            "困惑": "confusion",
+            "無聊": "boredom",
+            "投入": "engagement",
+            "驚訝": "surprise",
+            "喜悅": "delight",
+        }
         EmotionRecord.objects.create(
             user=request.user,
-            emotion=result["emotion"],
+            emotion=EMOTION_CHOICES[result["emotion"]],
             confidence=result["confidence"]
         )
     except Exception as e:
-        logger.error(f"Database save error: {e}")
-    '''
+        print(f"Database save error: {e}")
+    
+    # 4. 參與度計算
+    try:
+        recent_records = EmotionRecord.objects.filter(user=request.user).order_by('-timestamp')[:10]
+        emotion_sequence = [REVERSE_EMOTION_CHOICES[rec.emotion] for rec in reversed(recent_records)]
+        
+        # 計算參與度 (回傳 "high" 或 "low")
+        engagement_level = compute_engagement(emotion_sequence)
+        
+        # 將參與度加入要回傳給 camera.js 的結果中
+        result["engagement"] = engagement_level
+        
+    except Exception as e:
+        print(f"Engagement calculation error: {e}")
+        result["engagement"] = "unknown" # 若出錯則回傳未知
+
     return JsonResponse(result)

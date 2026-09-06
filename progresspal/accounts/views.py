@@ -1,15 +1,19 @@
 # accounts/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout, get_user_model, update_session_auth_hash
+from django.db.models import Sum, Avg, Count, F, DurationField
+from django.db.models.functions import TruncDate  # 導入日期截斷函式
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
-from django.db.models import Sum, F, ExpressionWrapper, DurationField
-from .models import LearningRecord, QuestionLog, QuizResult
+from .models import LearningRecord, QuestionLog, QuizResult, QuizResultQuestion
 from accounts.models import CustomUser
 from django.utils import timezone
 from .forms import RegisterForm, LoginForm, ProfileUpdateForm, PasswordChangeForm, AddMaterialForm
 import json
+from collections import Counter, defaultdict # 用於關鍵字分析
+from learning.services.utils import KeywordAnalyzer # 用於錯題關鍵字分析
+
 
 User = get_user_model()
 
@@ -121,14 +125,7 @@ def delete_account(request):
 
 @login_required(login_url='login')
 def learning_portfolio(request, username=None):
-    """
-    學習歷程頁面：
-    - 若未傳入 username → 顯示自己的學習歷程。
-    - 若傳入 username → 僅 superuser 可查看他人。
-    """
-    # 判斷目標使用者
     if username:
-        # 若不是 superuser 則拒絕存取他人資料
         if not request.user.is_superuser:
             messages.error(request, "您沒有權限查看其他使用者的學習歷程。")
             return redirect('learning-portfolio-self')
@@ -136,71 +133,235 @@ def learning_portfolio(request, username=None):
     else:
         target_user = request.user
 
-    # 取得該使用者的紀錄
+    # 1. 基礎紀錄 (用於表格)
     learning_records = LearningRecord.objects.filter(user=target_user).order_by('-start_time')
     question_logs = QuestionLog.objects.filter(user=target_user).order_by('-created_at')
-    quiz_results = QuizResult.objects.filter(user=target_user).order_by('-created_at')
 
-    # 統計章節與單元學習時間
-    chapter_data = (
-        learning_records.values('chapter_code')
-        .annotate(total_time=Sum('end_time') - Sum('start_time'))
+    # 1. 總學習時數
+    # 計算所有紀錄的總時間差 (不分章節)
+    total_duration_result = (
+        LearningRecord.objects.filter(user=target_user, end_time__isnull=False)
+        .aggregate(total=Sum(F('end_time') - F('start_time')))
     )
+
+    # 提取總時間並轉換為小時
+    total_duration = total_duration_result['total']
+
+    if total_duration:
+        # 將 timedelta 物件轉為秒數後除以 3600，並四捨五入到小數點後第一位
+        total_hours = round(total_duration.total_seconds() / 3600, 1)
+    else:
+        total_hours = 0.0
+
+    # 3. 各章節學習時間 (Bar Chart)
+    # 計算每個章節的總學習時數（分鐘）
+    chapter_stats = (
+        LearningRecord.objects.filter(user=target_user, end_time__isnull=False)
+        .values('chapter_code')
+        .annotate(total_time=Sum(F('end_time') - F('start_time')))
+        .order_by('chapter_code')
+    )
+    chapter_labels = []
+    chapter_times = []
+    for entry in chapter_stats:
+        chapter_labels.append(f"CH{entry['chapter_code']}" if entry['chapter_code'] else "未知")
+        chapter_times.append(round(entry['total_time'].total_seconds() / 60, 1))
+
+    # 4. 提問參與度趨勢 (按「日期」分組，解決 3/11 資料消失問題)
+    # 將參與度轉為數值：high=1, low=0，然後計算每天的平均值
+    daily_engagement = (
+        QuestionLog.objects.filter(user=target_user)
+        .annotate(date=TruncDate('created_at')) # 強制轉為日期 YYYY-MM-DD
+        .values('date')
+        .annotate(
+            avg_eng=Avg(F('engagement') == 'high'), # Django 的布林 Avg 會轉為 0~1 比例
+            count=Count('id')
+        )
+        .order_by('date')[:10] # 顯示最近 10 天
+    )
+    
+    # 如果 Avg 邏輯在你的 DB 報錯，可改用手動計算：
+    engagement_labels = []
+    engagement_values = []
+    for entry in daily_engagement:
+        # 重新計算比例 (high 的數量 / 總量)
+        day_logs = QuestionLog.objects.filter(user=target_user, created_at__date=entry['date'])
+        high_count = day_logs.filter(engagement='high').count()
+        total_count = day_logs.count()
+        
+        engagement_labels.append(entry['date'].strftime('%m/%d'))
+        engagement_values.append(round(high_count / total_count, 2) if total_count > 0 else 0)
+
+    # 5. 參與度 vs 學習時間 (Scatter Chart)
+    scatter_data = []
+    for i, ch_code in enumerate([item['chapter_code'] for item in chapter_stats]):
+        ch_questions = QuestionLog.objects.filter(user=target_user, chapter_code=ch_code)
+        if ch_questions.exists():
+            h_count = ch_questions.filter(engagement='high').count()
+            avg_eng = h_count / ch_questions.count()
+            scatter_data.append({
+                'x': chapter_times[i],
+                'y': round(avg_eng, 2),
+                'label': f"CH{ch_code}"
+            })
 
     context = {
         'target_user': target_user,
+        'total_hours': total_hours,
         'learning_records': learning_records,
         'question_logs': question_logs,
-        'quiz_results': quiz_results,
+        # 必須傳入以下變數，圖表才會有資料
+        'chapter_labels': json.dumps(chapter_labels),
+        'chapter_times': json.dumps(chapter_times),
+        'engagement_labels': json.dumps(engagement_labels),
+        'engagement_values': json.dumps(engagement_values),
+        'scatter_data': json.dumps(scatter_data),
     }
 
     return render(request, 'accounts/learning-portfolio.html', context)
 
-
-# 新增假資料頁面（僅 superuser 可用）
-@user_passes_test(lambda u: u.is_superuser)
-def add_material(request):
-    """Superuser 新增假資料頁面"""
-    if request.method == 'POST':
-        form = AddMaterialForm(request.POST)
-        if form.is_valid():
-            data_type = form.cleaned_data['data_type']
-            user = form.cleaned_data['username']
-            chapter_code = form.cleaned_data['chapter_code']
-            unit_code = form.cleaned_data['unit_code']
-
-            if data_type == 'learning':
-                LearningRecord.objects.create(
-                    user=user,
-                    chapter_code=chapter_code,
-                    unit_code=unit_code,
-                    start_time=timezone.now(),
-                    end_time=timezone.now() + timezone.timedelta(minutes=30),
-                )
-                messages.success(request, f"成功新增學習紀錄給 {user.username}")
-
-            elif data_type == 'question':
-                QuestionLog.objects.create(
-                    user=user,
-                    chapter_code=chapter_code,
-                    unit_code=unit_code,
-                    question=form.cleaned_data['question'],
-                    answer=form.cleaned_data['answer'],
-                    engagement=form.cleaned_data['engagement'],
-                )
-                messages.success(request, f"成功新增提問紀錄給 {user.username}")
-
-            elif data_type == 'quiz':
-                QuizResult.objects.create(
-                    user=user,
-                    chapter_code=chapter_code,
-                    unit_code=unit_code,
-                    score=form.cleaned_data['score'],
-                )
-                messages.success(request, f"成功新增測驗結果給 {user.username}")
-
-            return redirect('add-material')
+@login_required(login_url='login')
+def learning_portfolio_quiz(request, username=None):
+    # =========================
+    # 1️. 基本資料
+    # =========================
+    if username:
+        if not request.user.is_superuser:
+            messages.error(request, "您沒有權限查看其他使用者的學習歷程。")
+            return redirect('learning-portfolio-quiz-self')
+        target_user = get_object_or_404(CustomUser, username=username)
     else:
-        form = AddMaterialForm()
+        target_user = request.user
 
-    return render(request, 'accounts/addMaterial.html', {'form': form})
+    learning_records = LearningRecord.objects.filter(user=target_user).order_by('-start_time')
+    question_logs = QuestionLog.objects.filter(user=target_user).order_by('-created_at')
+    quiz_results = QuizResult.objects.filter(user=target_user).order_by('-created_at')
+
+    # =========================
+    # 2. Learning Curve（章節學習曲線）
+    # =========================
+    chapter_attempts = defaultdict(list)
+
+    quizzes_ordered = QuizResult.objects.filter(user=target_user).order_by('created_at')
+
+    for q in quizzes_ordered:
+        ch = q.chapter_code or "未知"
+        chapter_attempts[ch].append(q.score)
+
+    learning_curve_data = []
+
+    for ch, scores in chapter_attempts.items():
+        learning_curve_data.append({
+            "chapter": f"CH{ch}",
+            "scores": scores,
+            "attempts": list(range(1, len(scores) + 1))
+        })
+
+    # =========================
+    # 3. 錯題（用於分析與列表）
+    # =========================
+    # 加上排序 .order_by('quiz_result__chapter_code') 確保 regroup 正常
+    wrong_questions = QuizResultQuestion.objects.filter(
+        quiz_result__user=target_user,
+        is_correct=False
+    ).select_related('question', 'quiz_result').order_by('quiz_result__chapter_code', '-quiz_result__created_at')
+    # =========================
+    # 4. Stacked Bar（章節 × 難度）
+    # =========================
+    difficulty_map = defaultdict(lambda: {'easy': 0, 'medium': 0, 'hard': 0})
+
+    for wq in wrong_questions:
+        ch = wq.quiz_result.chapter_code or "未知"
+        diff = wq.question.difficulty
+        difficulty_map[ch][diff] += 1
+
+    stacked_bar_labels = []
+    easy_data = []
+    medium_data = []
+    hard_data = []
+
+    for ch, diffs in difficulty_map.items():
+        stacked_bar_labels.append(f"CH{ch}")
+        easy_data.append(diffs['easy'])
+        medium_data.append(diffs['medium'])
+        hard_data.append(diffs['hard'])
+
+    # =========================
+    # 5. Top 錯題（關鍵字 mapping）
+    # =========================
+
+    keyword_counter = Counter()
+
+    for wq in wrong_questions:
+        q_text = wq.question.question
+        keywords = KeywordAnalyzer.extract_keywords(q_text)  # ← 用 class method
+
+        for kw in keywords:
+            keyword_counter[kw] += 1
+
+    top_keywords = keyword_counter.most_common(5)
+
+    top_keyword_labels = [k for k, _ in top_keywords]
+    top_keyword_values = [v for _, v in top_keywords]
+    top_keywords_combined = list(zip(top_keyword_labels, top_keyword_values))
+    # =========================
+    # 6. 學習指引（導回章節）
+    # =========================
+    difficulty_wrong = {'easy': 0, 'medium': 0, 'hard': 0}
+    chapter_wrong = Counter()
+
+    for wq in wrong_questions:
+        diff = wq.question.difficulty
+        ch = wq.quiz_result.chapter_code or "未知"
+
+        difficulty_wrong[diff] += 1
+        chapter_wrong[ch] += 1
+
+    guidance_text = ""
+    guidance_url = ""
+    weakest_chapter = None
+
+    if chapter_wrong:
+        weakest_chapter = chapter_wrong.most_common(1)[0][0]
+
+        if difficulty_wrong['easy'] >= max(difficulty_wrong['medium'], difficulty_wrong['hard']):
+            guidance_text = f"你在 CH{weakest_chapter} 的基礎題錯誤較多，建議先回到該章節重新閱讀核心概念。"
+
+        elif difficulty_wrong['medium'] >= difficulty_wrong['hard']:
+            guidance_text = f"你在 CH{weakest_chapter} 的中等難度題目表現不穩定，建議回到範例題區重新理解解題流程。"
+
+        else:
+            guidance_text = f"你在 CH{weakest_chapter} 的進階題目較容易出錯，建議重新完整學習該章節內容並再練習。"
+
+        guidance_url = f"/lesson/{weakest_chapter}/1/study"
+
+    else:
+        guidance_text = "目前沒有明顯錯題，請持續學習新的章節！"
+
+    # =========================
+    # 7. Context
+    # =========================
+    context = {
+        'target_user': target_user,
+        'quiz_results': quiz_results,
+        'wrong_questions': wrong_questions,
+
+        # Learning Curve
+        'learning_curve_data': json.dumps(learning_curve_data),
+
+        # Stacked Bar
+        'stacked_bar_labels': json.dumps(stacked_bar_labels),
+        'easy_data': json.dumps(easy_data),
+        'medium_data': json.dumps(medium_data),
+        'hard_data': json.dumps(hard_data),
+
+        # Top keyword
+        'top_keywords_combined': top_keywords_combined,  # 給前端顯示用
+
+        # Guidance
+        'guidance_text': guidance_text,
+        'guidance_url': guidance_url,
+        'weakest_chapter': weakest_chapter,
+    }
+
+    return render(request, 'accounts/learning-portfolio-quiz.html', context)

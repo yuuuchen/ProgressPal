@@ -3,130 +3,198 @@
 {% block title %}
 {{chapter.chapter_number}}-{{unit.unit_number}} {{unit.title}}
 {% endblock %}
-{% block head %}<link rel="stylesheet" href="{% static 'css/study.css' %}">{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/study.css' %}">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+{% endblock %}
 {% block content %}
-<div class="container-fluid px-4 py-3 h-100 d-flex flex-column">
-    <div class="row g-4 flex-grow-1 overflow-hidden align-items-stretch pb-4"> 
+<div class="main-layout vh-100 d-flex flex-column">
+    <div class="d-flex flex-grow-1 overflow-hidden position-relative">
         <!--左側課程列表-->
-        <nav class="col-lg-2 col-md-2 d-flex flex-column h-100">
-            <div class="card d-flex flex-column w-100 flex-grow-1">
-                <div class="card-header fw-bold">
-                    CH{{ chapter.chapter_number }} 課程列表
-                </div>
-                <div class="card-body overflow-auto">
-                    <div class="list-group">
-                        {% for u in units %}
-                        <a href="{% url 'learning' chapter_code=u.chapter.chapter_number unit_code=u.unit_number %}" 
-                        class="list-group-item list-group-item-action">
-                            {{ chapter.chapter_number }}-{{u.unit_number}} {{u.title |truncatechars:7}}
-                        </a>
-                        {% endfor %}
-                        <a href="{% url 'quiz' chapter.chapter_number %} " class="list-group-item list-group-item-action">
-                            {{ chapter.chapter_number }}-{{ chapter.get_units|length|add:"1" }} 第{{ chapter.chapter_number }}章測驗
-                        </a>
-                    </div>
+        <nav id="sidebar" class="sidebar  border-end collapsed">
+            <div class="sidebar-header d-flex align-items-center px-3 py-2">
+                <button id="sidebar-toggle" class="btn btn-sm  border-0 me-2">☰</button>
+                <h6 class="fw-bold mb-0 sidebar-title">CH{{ chapter.chapter_number }} 課程列表</h6>
+            </div>
+
+            <div class="sidebar-content p-3 pt-0">
+                <div class="list-group list-group-flush rounded">
+                    {% for u in units %}
+                    <a href="{% url 'learning' u.chapter.chapter_number u.unit_number %}" 
+                       class="list-group-item list-group-item-action small {% if u == unit %}active{% endif %}">
+                        {{ chapter.chapter_number }}-{{ u.unit_number }} {{ u.title|truncatechars:7 }}
+                    </a>
+                    {% endfor %}
+                    <a href="{% url 'quiz' chapter.chapter_number %}" class="list-group-item list-group-item-action small">
+                        {{ chapter.chapter_number }}-{{ chapter.get_units|length|add:"1" }} 第{{ chapter.chapter_number }}章測驗
+                    </a>
                 </div>
             </div>
         </nav>
+        <div id="main-content-wrapper" class="main-content-area d-flex flex-grow-1 overflow-hidden">
+            <!--中間教材區-->
+            <div class="teaching-section border-end bg-white">
+                <div id="material-card" class="p-4 h-100 overflow-auto">
+                    <div class="card-body p-0">
+                        <h2 class="card-title fw-bold">CH{{ chapter.chapter_number }} {{ chapter.title }}</h2>
+                        <hr>
+                        <h3 class="h5 mt-4 text-secondary">{{ chapter.chapter_number }}-{{ unit.unit_number }} {{ unit.title }}</h3>
 
-        <!--中間教材區-->
-        <div class="col-lg-5 col-md-5 d-flex flex-column h-100">
-            <div id="material-card" class="card d-flex flex-column flex-grow-1">
-                <div class="card-body p-4">
-                    <h2 class="card-title">CH{{ chapter.chapter_number }}{{ chapter.title }}</h2>
-                    <hr>
-                    <h3 class="h4 mt-4">{{ chapter.chapter_number }}-{{ unit.unit_number }} {{ unit.title }}</h2>
-                    <div class="card-text">{{ teaching | safe }}</div>
-                    <div class="card-text">{{ example | safe }}</div>
-                    <div class="card-text">{{ summary | safe }}</div>
+                        <div class="card-text content-spacing">
+                            <h4 class="card-title fw-bold">觀念導讀</h4>
+                            <div class="markdown-render">{{ guide }}</div>
+                        </div>
+
+                        <div class="card-text content-spacing">
+                            <h4 class="card-title fw-bold">核心解析</h4>
+                            <div class="markdown-render">{{ core }}</div>
+                        </div>
+
+                        {% if example %}
+                        <div class="card-text mt-3">
+                            <h4 class="card-title fw-bold">範例</h4>
+                            <div class="markdown-render">{{ example }}</div>
+                        </div>
+                        {% endif %}
+
+                    </div>
                 </div>
             </div>
-        </div>
-
+        
         <!--右側Emotion&對話框-->
-         <div class="col-lg-5 col-md-5 d-flex flex-column">
+        <div id="chat-section-wrapper" class="chat-section d-flex flex-column p-3 overflow-hidden">
             <!-- Emotion區塊 -->
-            <div class="d-flex flex-column w-100">
-                <div id="emotion-display" class="card mb-4" style="flex-shrink: 0;">
-                    <span class="text-muted">情緒偵測中...</span>
-                </div>
-                <video id="webcam" autoplay playsinline muted style="opacity: 0; position: absolute; z-index: -1;"></video>
-                <canvas id="captureCanvas" style="display:none;"></canvas>
+            <div id="emotion-display" class="emotion-float-card mb-2" data-initial-emotion="{{ current_emotion|default:'' }}">
+                <span class="text-muted">情緒偵測中...</span>
             </div>
-            
+                <video id="webcam" autoplay playsinline muted style="position: absolute; opacity: 0; pointer-events: none; z-index: -1;"></video>
+                <canvas id="captureCanvas" style="display: none;"></canvas>
+
             <!-- 對話框區塊 -->
-            <div id="chat-container" class="card d-flex flex-column  flex-grow-1" >
-                <div class="card-header text-center fw-bold">
-                    【Chat】提問區域
+            <div id="chat-container" class="card shadow-sm border-0 flex-grow-1 d-flex flex-column overflow-hidden" >
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+                    <span class="fw-bold">【Chat】提問區域</span>
+                    <button id="fullscreen-toggle" class="btn btn-sm text-secondary border-0 d-flex align-items-center p-1">
+                        <span id="fs-icon" class="material-symbols-outlined">fullscreen</span>
+                    </button>
                 </div>
                 
                 <!-- 歷史對話 -->
-                <div id="chat-history" class="card-body p-2" style="overflow-y: auto;">
+                <div id="chat-history" class="card-body bg-light p-3 overflow-auto">
                     <div class="message assistant-message">
-                        延伸提問：<br>
-                        {% for question in extended_questions %}
-                            {{ forloop.counter }}. {{ question }}<br>
-                        {% endfor %}
+                        <strong>延伸提問：</strong>
+                        <div class="initial-extended-question">
+                            {{ extended_question }}
+                        </div>
                     </div>
                 </div>
                 
                 <!-- 輸入區塊 -->
-                <div class="card-footer p-2">
+                <div class="card-footer bg-white p-3 border-top">
                     <!-- 快捷操作按鈕 -->
                     <div class="d-grid gap-2 mb-2" style="grid-template-columns: 1fr 1fr;">
                         <button id="direct-question-btn" class="btn btn-sm btn-outline-secondary">提問</button>
-                        <button id="extend-question-btn1" class="btn btn-sm btn-outline-secondary">回應延伸題目1</button>
-                        <button id="extend-question-btn2" class="btn btn-sm btn-outline-secondary">回應延伸題目2</button>
-                        <button id="extend-question-btn3" class="btn btn-sm btn-outline-secondary">回應延伸題目3</button>
+                        <button id="extend-question-btn" class="btn btn-sm btn-outline-secondary">回應延伸題目</button>
                     </div>
                     <!-- 文字輸入區 -->
-                    <div class="input-group">
-                        <textarea id="chat-input" class="form-control" placeholder="選擇問題類型並輸入問題" rows="2"></textarea>
+                    <div class="input-group shadow-sm">
+                        <textarea id="chat-input" class="form-control" placeholder="選擇問題類型並輸入問題" rows="1"></textarea>
                         <button id="send-btn" class="btn btn-secondary">送出</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
     <!--切換單元-->
-    <div class="d-flex justify-content-center gap-3 my-2 mt-3 ">
+    <div id="unit-navigation" class="d-flex justify-content-center gap-3 my-2 mt-3 ">
         {% if previous_unit %}
-            <a href="{% url 'learning' chapter_code=previous_unit.chapter.chapter_number unit_code=previous_unit.unit_number %}"
-            class="btn btn-secondary">
-                &larr; 上一單元
-            </a>
-        {% endif %}
+        <a href="{% url 'learning' chapter_code=previous_unit.chapter.chapter_number unit_code=previous_unit.unit_number %}"
+        class="btn btn-sm btn-secondary record-exit"> &larr; 上一單元
+        </a>
+    {% endif %}
 
-        {% if next_unit %}
-            <a href="{% url 'learning' chapter_code=next_unit.chapter.chapter_number unit_code=next_unit.unit_number %}"
-            class="btn btn-secondary"> 
-                下一單元 &rarr;
-            </a>
-        {% else %}
+    {% if next_unit %}
+        <a href="{% url 'learning' chapter_code=next_unit.chapter.chapter_number unit_code=next_unit.unit_number %}"
+        class="btn btn-sm text-white record-exit" style="background-color: #09384e;"> 
+            下一單元 &rarr;
+        </a>
+    {% else %}
         <a href="{% url 'quiz' chapter_code=unit.chapter.chapter_number %}"
-           class="btn btn-secondary"> 
+        class="btn btn-sm text-white record-exit" style="background-color: #09384e;"> 
             進入測驗 &rarr;
         </a>
-        {% endif %}
+    {% endif %}
+        
     </div>
 </div>
 {% endblock %}
 {% block scripts %}
-
-{% comment %}
-    <!-- 傳遞record_id給前端 -->
-    <!--
+    <!--課程列表收合-->
     <script>
-    window.RECORD_ID = {{ record_id }};
-    window.END_URL = "{% url 'end-study' %}";
-    </script> -->
-{% endcomment %}
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('sidebar-toggle');
 
+            // 檢查元素是否存在，避免在沒有側邊欄的頁面報錯
+            if (sidebar && toggleBtn) {
+                toggleBtn.addEventListener('click', () => {
+                    sidebar.classList.toggle('collapsed');
+                    
+                    if (sidebar.classList.contains('collapsed')) {
+                        toggleBtn.innerHTML = '☰ ';
+                    } else {
+                        toggleBtn.innerHTML = '☰ ';
+                    }
+                });
+            }
+        });
+    </script>
+
+    <!--全螢幕-->
+    <script> 
+        document.addEventListener('DOMContentLoaded', () => {
+            const chatSection = document.getElementById('chat-section-wrapper');
+            const teachingSection = document.querySelector('.teaching-section');
+            const unitNav = document.getElementById('unit-navigation');
+            const fsBtn = document.getElementById('fullscreen-toggle');
+            const fsIcon = document.getElementById('fs-icon');
+
+            if (fsBtn) {
+                fsBtn.addEventListener('click', () => {
+                    // 切換 CSS 類別
+                    const isActive = chatSection.classList.toggle('fullscreen-active');
+                    teachingSection.classList.toggle('is-hidden');
+                    
+                    // 隱藏下方的上一頁/下一頁按鈕 (使用 Bootstrap 的 d-none)
+                    if (unitNav) {
+                        unitNav.classList.toggle('d-none', isActive);
+                    }
+                    
+                    // 更新圖示
+                    if (fsIcon) {
+                        fsIcon.innerText = isActive ? 'fullscreen_exit' : 'fullscreen';
+                    }
+                });
+            }
+        });
+    </script>
+    
+
+    <!-- 傳遞record_id給前端 -->
+    <script>
+        window.RECORD_ID = "{{ record_id|default:'' }}"; 
+        window.END_URL = "{% url 'end-study' %}";
+        window.HAS_SENT_RECORD = false;
+        window.LATEST_HINT = "{{ hint|escapejs }}";
+
+        // 除錯用：進入頁面時先印出來看看
+        console.log("初始化學習紀錄 - ID:", window.RECORD_ID, "URL:", window.END_URL);
+    </script>
 
     <script src="{% static 'js/material.js' %}"></script>
     <script src="{% static 'js/chat.js' %}"></script>
-    <!-- <script src="{% static 'js/duration.js' %}"></script> -->
     <script src="{% static 'js/camera.js' %}"></script>
-    <!--script src="{% static 'js/emotion.js' %}"></script-->
+    <script src="{% static 'js/duration.js' %}"></script>
 {% endblock %}
