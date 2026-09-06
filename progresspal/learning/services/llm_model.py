@@ -21,7 +21,7 @@ class RotationalGroqClient:
         return any(code in error_msg for code in retry_codes)
 
     def generate_qa_content(self, model, messages, temperature=0.3, max_tokens=1024):
-        """Llama 模型專用：標準問答"""
+        """gpt-oss-120b 專用，問答回應設定"""
         last_error = None           
         for index in range(len(self.api_keys)):
             try:
@@ -69,5 +69,5 @@ class RotationalGroqClient:
 def get_rotational_client():
     return RotationalGroqClient()
 
-model_qa = "llama-3.3-70b-versatile"
+model_qa = "openai/gpt-oss-120b"
 model_materials = "openai/gpt-oss-120b"
