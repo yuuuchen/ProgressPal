@@ -20,29 +20,29 @@ class RotationalGroqClient:
         retry_codes = ["429", "rate_limit", "401", "413", "503", "500", "overloaded"]
         return any(code in error_msg for code in retry_codes)
 
-    def generate_qa_content(self, model, messages, temperature=0.3, max_tokens=1024):
-        """gpt-oss-120b 專用，問答回應設定"""
-        last_error = None           
-        for index in range(len(self.api_keys)):
-            try:
-                client = self._get_client(index)
-                response = client.chat.completions.create(
-                    model=model,
-                    messages=messages,
-                    temperature=temperature,
-                    max_completion_tokens=max_tokens # 建議統一使用 max_completion_tokens
-                )                   
-                return response.choices[0].message.content
-            except Exception as e:
-                error_msg = str(e)
-                print(f"[除錯] QA Key #{index+1} 錯誤: {error_msg}")
-                if self._should_rotate(error_msg):
-                    last_error = e
-                    continue 
-                raise e           
-        raise RuntimeError("所有 QA API Key 的流量都已耗盡或觸發限制。") from last_error
+    # def generate_qa_content(self, model, messages, temperature=0.3, max_tokens=1024):
+    #     """gpt-oss-120b 專用，問答回應設定"""
+    #     last_error = None           
+    #     for index in range(len(self.api_keys)):
+    #         try:
+    #             client = self._get_client(index)
+    #             response = client.chat.completions.create(
+    #                 model=model,
+    #                 messages=messages,
+    #                 temperature=temperature,
+    #                 max_completion_tokens=max_tokens # 建議統一使用 max_completion_tokens
+    #             )                   
+    #             return response.choices[0].message.content
+    #         except Exception as e:
+    #             error_msg = str(e)
+    #             print(f"[除錯] QA Key #{index+1} 錯誤: {error_msg}")
+    #             if self._should_rotate(error_msg):
+    #                 last_error = e
+    #                 continue 
+    #             raise e           
+    #     raise RuntimeError("所有 QA API Key 的流量都已耗盡或觸發限制。") from last_error
 
-    def generate_materials_content(self, model, messages, temperature=0, max_tokens=2048):
+    def generate_content(self, model, messages, temperature=0, max_tokens=2048):
         """gpt-oss-120b 專用：低推理教材生成"""
         last_error = None           
         for index in range(len(self.api_keys)):
@@ -69,5 +69,6 @@ class RotationalGroqClient:
 def get_rotational_client():
     return RotationalGroqClient()
 
-model_qa = "openai/gpt-oss-120b"
-model_materials = "openai/gpt-oss-120b"
+model = "openai/gpt-oss-120b"
+# model_qa = "openai/gpt-oss-120b"
+# model_materials = "openai/gpt-oss-120b"
