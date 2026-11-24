@@ -55,7 +55,10 @@ def clean_text_tutoring(raw_text: str) -> dict:
     # print(f"[Debug] clean_text_tutoring 解析結果: {sections}")
     return sections
 
-def clean_text_qa(raw_text: str) -> dict:
+QA_MISSING = "（模型未輸出回答）"
+QA_FALLBACK_EXTENDED_QUESTION = "你還想更深入了解這個單元的哪個部分呢？"
+
+def clean_text_qa(raw_text: str, fallback: bool = True) -> dict:
   """
   將 QA 模式回應解析成 dict
   {
@@ -63,11 +66,12 @@ def clean_text_qa(raw_text: str) -> dict:
       "extended_question": "引導提問",
       "hint": "提示"
   }
+  fallback=False 時只做嚴格的 ### 格式解析（用來判斷是否需要重試）。
   """
   sections = {"answer": "", "extended_question": "", "hint": ""}
 
-  # 確保最後有換行，避免最後一段抓不到
-  raw_text = raw_text.strip() + "\n"
+  # 確保最後有換行，避免最後一段抓不到（模型可能回傳 None）
+  raw_text = (raw_text or "").strip() + "\n"
 
   # 匹配兩個區塊
   pattern = r"###\s*(回答問題|引導提問|提示)\s*([\s\S]*?)(?=\n###|\Z)"
@@ -82,10 +86,19 @@ def clean_text_qa(raw_text: str) -> dict:
     elif title == "提示":
         sections["hint"]= content
 
+  # 備援解析：模型沒照 ### 格式輸出，但有給文字時，直接把剩下的文字當作回答
+  if fallback:
+      if not sections["answer"]:
+          leftover = re.sub(pattern, "", raw_text)
+          leftover = re.sub(r"^\s*#+\s*回答問題\s*", "", leftover).strip()
+          sections["answer"] = leftover
+      if sections["answer"] and not sections["extended_question"]:
+          sections["extended_question"] = QA_FALLBACK_EXTENDED_QUESTION
+
   if not sections["answer"]:
-      sections["answer"] = "（模型未輸出回答）"
+      sections["answer"] = QA_MISSING
   if not sections["extended_question"]:
-      sections["extended_question"] = "（模型未輸出回答）"
+      sections["extended_question"] = QA_MISSING
 
   return sections
 

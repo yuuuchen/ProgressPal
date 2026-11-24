@@ -17,7 +17,9 @@ from learning.services.prompt import (
 from learning.models import QuizQuestion
 from accounts.models import QuizResult, QuizResultQuestion
 from learning.models import Chapter,Unit
-from learning.services.utils import clean_text_tutoring, clean_text_qa
+from learning.services.utils import clean_text_tutoring, clean_text_qa, QA_MISSING
+
+QA_MAX_ATTEMPTS = 2  # 第一次 + 重試一次
 from learning.services.content import get_unit
 from rag.services.rag import retrieve_docs
 from . import utils
@@ -173,8 +175,15 @@ def respond_to_question(prompt, engagement, role):
         {"role": "system", "content": system_instruction},
         {"role": "user", "content": prompt}
     ]    
-    resp_text = client.generate_content(model=model, messages=messages, temperature=temp)
-    result = clean_text_qa(resp_text)    
+    # 模型偶爾不照 ### 格式輸出：先嚴格解析，失敗就重試，最後一次才用備援解析
+    for attempt in range(1, QA_MAX_ATTEMPTS + 1):
+        resp_text = client.generate_content(model=model, messages=messages, temperature=temp)
+        result = clean_text_qa(resp_text, fallback=False)
+        if result["answer"] != QA_MISSING and result["extended_question"] != QA_MISSING:
+            break
+        print(f"[除錯] QA 回應格式不符（第 {attempt} 次），原始回應前 200 字: {(resp_text or '')[:200]!r}")
+    else:
+        result = clean_text_qa(resp_text)
     return {
         "answer": result.get("answer"),
         "extended_question": result.get("extended_question"),
