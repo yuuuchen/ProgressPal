@@ -18,7 +18,7 @@ class CustomUser(AbstractUser):
     ('high_prior_student', 'A'),
     ('low_prior_student', 'B'),
     ]
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student') #身分
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='low_prior_student') #身分
     grade = models.CharField(max_length=10, blank=True, null=True) #年級
     nickname = models.CharField(max_length=30, blank=True)
     email = models.EmailField(unique=True) 

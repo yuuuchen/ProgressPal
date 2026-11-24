@@ -1,6 +1,6 @@
 # learning/views.py
-from django.shortcuts import render
-from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import render, get_object_or_404
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -13,6 +13,14 @@ from .models import Chapter, Unit, QuizQuestion
 import json
 from datetime import timedelta
 
+QUOTA_MESSAGE = "目前 AI 助教的使用額度已用完，請稍後再試。"
+
+
+def _is_quota_error(e):
+    """llm_model 在所有 Groq API Key 都被限流時會丟出含「耗盡」的 RuntimeError"""
+    msg = str(e)
+    return "耗盡" in msg or "quota" in msg.lower()
+
 def homepage(request):
     """學習首頁"""
     chapters = Chapter.objects.prefetch_related('units').all()
@@ -24,12 +32,12 @@ def lesson(request):
     chapters = Chapter.objects.prefetch_related('units').all()
     return render(request, 'learning/lesson.html', {'chapters': chapters})
 
-@csrf_exempt
 @login_required(login_url='login')
+@ensure_csrf_cookie
 def generate_materials_view(request, chapter_code, unit_code):
     """生成教材內容頁面"""   
-    chapter = Chapter.objects.get(chapter_number=chapter_code)
-    unit = Unit.objects.get(chapter=chapter, unit_number=unit_code)
+    chapter = get_object_or_404(Chapter, chapter_number=chapter_code)
+    unit = get_object_or_404(Unit, chapter=chapter, unit_number=unit_code)
     units = chapter.get_units()
 
     unit_list = list(units)
@@ -59,7 +67,7 @@ def generate_materials_view(request, chapter_code, unit_code):
 
     except RuntimeError as e:
         # 捕捉 "所有 Groq API Key 的流量都已耗盡" 的錯誤
-        if "耗盡" in str(e) or "quota" in str(e).lower():
+        if _is_quota_error(e):
             # 渲染額度用盡的提示頁面
             return render(request, "learning/quota_exceeded.html")
         else:
@@ -97,7 +105,6 @@ def generate_materials_view(request, chapter_code, unit_code):
     }
     return render(request, "learning/study.html", context)
 
-@csrf_exempt
 @login_required(login_url='login')
 def answer_question_view(request, chapter_code, unit_code):
     """教材問答 """
@@ -132,15 +139,20 @@ def answer_question_view(request, chapter_code, unit_code):
         log_type = 'question'
 
     # 呼叫 AI 回答邏輯
-    result = main.answer_question(
-        question=user_question,
-        engagement=engagement,
-        chapter_id=chapter_code,
-        unit_id=unit_code,
-        role=role,
-        is_extended=is_extended,
-        extended_question_text = extended_q,
-    )
+    try:
+        result = main.answer_question(
+            question=user_question,
+            engagement=engagement,
+            chapter_id=chapter_code,
+            unit_id=unit_code,
+            role=role,
+            is_extended=is_extended,
+            extended_question_text = extended_q,
+        )
+    except RuntimeError as e:
+        if _is_quota_error(e):
+            return JsonResponse({"error": QUOTA_MESSAGE}, status=503)
+        raise
     answer = result.get("answer", "請詢問與資料結構相關的問題。")
     hint = result.get("hint", "")
     
@@ -171,8 +183,9 @@ def answer_question_view(request, chapter_code, unit_code):
 
 
 # 結束學習並更新學習記錄
-@csrf_exempt
 def end_study(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({"status": "error", "msg": "login required"}, status=401)
     if request.method == "POST":
         try:
             data = json.loads(request.body)
@@ -196,8 +209,9 @@ def end_study(request):
     return JsonResponse({"status": "error"}, status=405)
 
 # 將chapter、units 渲染到 quiz頁面
+@ensure_csrf_cookie
 def chapter_quiz_view(request, chapter_code):
-    chapter = Chapter.objects.get(chapter_number=chapter_code)
+    chapter = get_object_or_404(Chapter, chapter_number=chapter_code)
     units = chapter.get_units()
     return render(request, "learning/quiz.html", {
         "chapter": chapter,
@@ -205,7 +219,7 @@ def chapter_quiz_view(request, chapter_code):
     })
 # json 回傳測驗問題與選項給前端
 def chapter_quiz_api(request, chapter_code):
-    chapter = Chapter.objects.get(chapter_number=chapter_code)
+    chapter = get_object_or_404(Chapter, chapter_number=chapter_code)
     quiz_questions = main.get_exam_questions(chapter)
     serialized = [
         {
@@ -218,7 +232,6 @@ def chapter_quiz_api(request, chapter_code):
     return JsonResponse(serialized, safe=False)
 
 # 章節測驗批改
-@csrf_exempt
 @login_required(login_url='login')
 def check_answers(request, chapter_code):
     try:

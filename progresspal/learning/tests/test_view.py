@@ -15,7 +15,7 @@ class LearningViewsIntegrationTest(TestCase):
             username="test_mis",
             email="test_mis@gmail.com",
             password="MISMIS2486",
-            role="student"
+            role="low_prior_student"
         )
         self.client.login(username="test_mis", password="MISMIS2486")
 

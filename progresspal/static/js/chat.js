@@ -170,6 +170,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Json解析為 JavaScript 物件
             const data = await response.json();
+            if (!response.ok) {
+                showError(data.error || '抱歉，發生錯誤');
+                return;
+            }
             if (data.answer) {
                 appendMessage(data.answer, 'assistant');
                 let extendedText = `<strong>延伸提問：</strong>\n${data.extended_questions}`;
