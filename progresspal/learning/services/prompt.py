@@ -249,7 +249,9 @@ def set_system_prompt(knowledge_level='high_prior_student'):
 
   background = mapping.get(knowledge_level, "請根據學生程度調整教學方式。")
 
-  return SYSTEM_PROMPT.format(identity=f"{mapping[knowledge_level]['identity']}", background=f"{mapping[knowledge_level]['background']}")
+  # 未知或舊資料的 role（例如 'student'）一律視為低先備知識
+  profile = mapping.get(knowledge_level, mapping['low_prior_student'])
+  return SYSTEM_PROMPT.format(identity=profile['identity'], background=profile['background'])
 
 #print(set_system_prompt("low_prior_student"))
 

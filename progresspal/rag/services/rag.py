@@ -129,12 +129,12 @@ def hybrid_search(query_for_vector, query_for_bm25, original_question=None, k=3,
     for rank_idx, idx in enumerate(top_bm25_indices):
         if bm25_scores_all[idx] <= 0:
             continue
-        content = all_docs[idx].page_content
-        norm_key = _normalize_content_key(content)
-        
-        # 確保映射表裡儲存的是已被清洗乾淨的 Document
-        all_docs[idx].page_content = norm_key
-        doc_map[norm_key] = all_docs[idx]
+        source_doc = all_docs[idx]
+        norm_key = _normalize_content_key(source_doc.page_content)
+
+        # 複製一份，避免改寫 content.all_docs（get_unit 與 BM25 共用的教材）
+        if norm_key not in doc_map:
+            doc_map[norm_key] = Document(page_content=norm_key, metadata=dict(source_doc.metadata))
         bm25_ranks[norm_key] = rank_idx + 1
 
     # 執行 RRF (倒數排名融合) 演算法
