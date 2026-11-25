@@ -23,31 +23,11 @@
         {% csrf_token %}
 
         <div class="form-group">
-            <label for="username">帳號</label>
+            <label for="username">受試者編號</label>
             {{ form.username }}
             {% if form.username.errors %}
             <div class="message warning">
                 {{ form.username.errors.0 }}
-            </div>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label for="email">電子郵件</label>
-            {{ form.email }}
-            {% if form.email.errors %}
-            <div class="message warning">
-                {{ form.email.errors.0 }}
-            </div>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label for="nickname">暱稱</label>
-            {{ form.nickname }}
-            {% if form.nickname.errors %}
-            <div class="message warning">
-                {{ form.nickname.errors.0 }}
             </div>
             {% endif %}
         </div>
@@ -63,39 +43,15 @@
         </div>
 
         <div class="form-group">
-            <label for="grade">年級</label>
-            {{ form.grade }}
-            {% if form.grade.errors %}
-            <div class="message warning">
-                {{ form.grade.errors.0 }}
-            </div>
-            {% endif %}
-        </div>
-        <div class="form-group">
-            <label for="api_key">API Key</label>
+            <label for="api_key">Groq API Key</label>
             {{ form.api_key }}
+            <small class="text-muted d-block mt-1">
+                請到 <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a>
+                免費註冊並建立一把 API Key。Key 只會加密暫存在這次登入中，登出或 8 小時後自動清除，不會存進資料庫。
+            </small>
             {% if form.api_key.errors %}
             <div class="message warning">
                 {{ form.api_key.errors.0 }}
-            </div>
-            {% endif %}
-        </div>
-        <div class="form-group">
-            <label for="password1">密碼</label>
-            {{ form.password1 }}
-            {% if form.password1.errors %}
-            <div class="message warning">
-                {{ form.password1.errors.0 }}
-            </div>
-            {% endif %}
-        </div>
-
-        <div class="form-group">
-            <label for="password2">確認密碼</label>
-            {{ form.password2 }}
-            {% if form.password2.errors %}
-            <div class="message warning">
-                {{ form.password2.errors.0 }}
             </div>
             {% endif %}
         </div>

@@ -42,6 +42,12 @@ if not GROQ_API_KEYS:
     # raise ValueError("未設定任何 GROQ_API_KEY")
     print("--- [警告] 目前未設定任何 GROQ_API_KEY，請透過註冊頁面設定或手動加入 .env ---")
 
+# 受試者帳號的統一密碼（註冊時由系統設定，受試者不需自訂）
+PARTICIPANT_PASSWORD = os.getenv('PARTICIPANT_PASSWORD', 'MISMIS1234')
+
+# Session（含加密的受試者 Groq API Key）最長 8 小時，之後需重新登入並輸入 Key
+SESSION_COOKIE_AGE = 8 * 60 * 60
+
 #教材路徑
 TEACHING_MATERIAL_DIR = os.path.join(BASE_DIR, 'teaching_material')
 
@@ -81,6 +87,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'accounts.middleware.UserGroqKeyMiddleware',  # 每位使用者用自己的 Groq API Key
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]

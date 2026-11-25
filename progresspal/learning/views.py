@@ -8,12 +8,13 @@ from django.db import transaction
 from emotion.services.utils import compute_engagement
 from .services import main,utils
 from .forms import StudyForm
-from accounts.models import QuestionLog, LearningRecord
+from accounts.models import QuestionLog, LearningRecord, log_event
+from .services.llm_model import fallback_key_used
 from .models import Chapter, Unit, QuizQuestion
 import json
 from datetime import timedelta
 
-QUOTA_MESSAGE = "目前 AI 助教的使用額度已用完，請稍後再試。"
+QUOTA_MESSAGE = "目前無法使用 AI 助教：可能是你的 Groq API Key 已失效，或短時間內使用太多次。請稍候一分鐘再試，或到個人資料更新 API Key。"
 
 
 def _is_quota_error(e):
@@ -84,6 +85,8 @@ def generate_materials_view(request, chapter_code, unit_code):
         chapter_code=chapter_code,
         unit_code=unit_code
     )
+    if fallback_key_used():
+        log_event(request.user, 'fallback_key', chapter_code, unit_code, where='materials')
     # 除錯點：在終端機印出來看看
     # print(f"DEBUG: 產生的紀錄 ID 為 {record.id}")
 
@@ -162,7 +165,8 @@ def answer_question_view(request, chapter_code, unit_code):
     request.session.modified = True
 
     # 儲存問答記錄
-    QuestionLog.objects.create(
+    used_fallback = fallback_key_used()
+    question_log = QuestionLog.objects.create(
         user=user,
         chapter_code=chapter_code,
         unit_code=unit_code,
@@ -173,7 +177,10 @@ def answer_question_view(request, chapter_code, unit_code):
         engagement=engagement,
         hint_is_used=hint_is_used,
         click_time=click_time,
+        fallback_key_used=used_fallback,
     )
+    if used_fallback:
+        log_event(user, 'fallback_key', chapter_code, unit_code, question_log=question_log, where='answer')
     # 回傳 JSON
     return JsonResponse({
         "answer": answer,
