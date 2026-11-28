@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
+import threading
+import time
 import jieba
 import numpy as np
 from langchain_chroma import Chroma
@@ -13,15 +15,33 @@ from learning.services.content import all_docs
 PERSIST_DIR = os.path.join(settings.TEACHING_MATERIAL_DIR, 'material_db')
 db_path = os.path.join(PERSIST_DIR, "chroma.sqlite3")
 
-_vectorstore = None 
-_embeddings = None 
+_vectorstore = None
+_embeddings = None
 _bm25 = None
 _bm25_corpus_indices = None
+
+# 啟動時背景預載（rag.apps.RagConfig.ready）與第一個請求可能同時呼叫，用鎖避免重複載入；
+# 預載還沒完成時進來的請求會在這裡等它載完，而不是再載一次
+_vectorstore_lock = threading.Lock()
+_bm25_lock = threading.Lock()
+
+def warm_up():
+    """預先載入 Embeddings 模型、Chroma 與 BM25，讓第一位提問者不用等模型載入"""
+    start = time.time()
+    get_vectorstore()
+    get_bm25()
+    print(f"RAG 預載完成，耗時 {time.time() - start:.1f} 秒")
 
 """
 延遲載入，避免 reload 時重建 DB
 """
 def get_vectorstore():
+    if _vectorstore is not None:
+        return _vectorstore
+    with _vectorstore_lock:
+        return _load_vectorstore()
+
+def _load_vectorstore():
     global _vectorstore, _embeddings
 
     if _vectorstore is not None:
@@ -51,8 +71,14 @@ def get_bm25():
     取得 BM25 物件。
     只在第一次呼叫時建立索引，大幅提升後續搜尋速度。
     """
+    if _bm25 is not None:
+        return _bm25
+    with _bm25_lock:
+        return _build_bm25()
+
+def _build_bm25():
     global _bm25, _bm25_corpus_indices
-    
+
     if _bm25 is not None:
         return _bm25
 
