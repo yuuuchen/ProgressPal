@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+import sys
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -30,17 +31,26 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-o87b)n-0$0)b7(@0h@q_3%yuwa
 # Debug 模式
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-# 讀取所有 Groq API Keys 到列表中
-# GROQ_API_KEYS = []
-# for i in range(1, 3):
-#     # 修改環境變數名稱為 GROQ_API_KEY1, GROQ_API_KEY2...
-#     key = os.getenv(f"GROQ_API_KEY{i}")
-#     if key:
-#         GROQ_API_KEYS.append(key)
+# 伺服器的備援 Groq API Keys（.env 的 GROQ_API_KEY1、GROQ_API_KEY2…）
+# 受試者自己的 key（存在 Session）優先使用；失效或限流時才改用這些 key，並記錄 fallback_key_used
+GROQ_API_KEYS = []
+for i in range(1, 3):
+    key = os.getenv(f"GROQ_API_KEY{i}")
+    if key:
+        GROQ_API_KEYS.append(key)
 
-# if not GROQ_API_KEYS:
-#     # raise ValueError("未設定任何 GROQ_API_KEY")
-#     print("--- [警告] 目前未設定任何 GROQ_API_KEY，請透過註冊頁面設定或手動加入 .env ---")
+# 是否允許受試者的 key 失敗時改用伺服器的備援 key（設 False 則只用受試者自己的 key）
+GROQ_FALLBACK_TO_SERVER_KEYS = os.getenv('GROQ_FALLBACK_TO_SERVER_KEYS', 'True') == 'True'
+
+# 加密 Session 中受試者 Groq API Key 的 Fernet 金鑰（產生方式：Fernet.generate_key()）
+# 未設定時改用 SECRET_KEY 衍生的金鑰（見 accounts/crypto.py）
+FERNET_ENCRYPTION_KEY = os.getenv('FERNET_ENCRYPTION_KEY', '')
+
+# 受試者帳號的統一密碼（註冊時由系統設定，受試者不需自訂）
+PARTICIPANT_PASSWORD = os.getenv('PARTICIPANT_PASSWORD', 'MISMIS1234')
+
+# Session（含加密的受試者 Groq API Key）最長 8 小時，之後需重新登入並輸入 Key
+SESSION_COOKIE_AGE = 8 * 60 * 60
 
 #教材路徑
 TEACHING_MATERIAL_DIR = os.path.join(BASE_DIR, 'teaching_material')
@@ -86,6 +96,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'accounts.middleware.UserGroqKeyMiddleware',  # 每位使用者用自己的 Groq API Key
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -162,7 +173,12 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static')
 ]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# 正式環境（DEBUG=False，Dockerfile 會先 collectstatic）用 WhiteNoise 的壓縮 + 雜湊檔名；
+# 本機開發（DEBUG=True）與跑測試時沒有 collectstatic 產生的 manifest，改用 Django 預設的 storage，避免頁面 500
+if DEBUG or 'test' in sys.argv:
+    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+else:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 LOGIN_URL = '/user/login/'
 LOGIN_REDIRECT_URL = '/lesson/'

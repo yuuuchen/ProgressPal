@@ -10,14 +10,13 @@ from django.contrib import messages
 from .models import LearningRecord, QuestionLog, QuizResult, QuizResultQuestion
 from accounts.models import CustomUser
 from .forms import RegisterForm, LoginForm, ProfileUpdateForm, PasswordChangeForm
+from .api_key_session import store_api_key
 import os
 import json
 from collections import Counter, defaultdict # 用於關鍵字分析
 from learning.services.utils import KeywordAnalyzer # 用於錯題關鍵字分析
-from dotenv import set_key  # 引入 set_key 用來修改 .env
 from django.http import JsonResponse
 from .services.generate_csv import generate_user_csv_reports
-from cryptography.fernet import Fernet
 
 
 User = get_user_model()
@@ -29,23 +28,9 @@ def register(request):
         if form.is_valid():
             user = form.save()
             login(request, user)  # 必須先 login，再寫入 session
-
-            api_key = form.cleaned_data.get('api_key')
-            if api_key:
-                cipher = Fernet(os.environ['FERNET_ENCRYPTION_KEY'].encode())
-                encrypted_key = cipher.encrypt(api_key.strip().encode()).decode()
-                request.session['user_groq_api_key'] = encrypted_key
-                # # 定位 .env 檔案的絕對路徑
-                # env_path = os.path.join(settings.BASE_DIR, '.env')
-                
-                # # 如果檔案不存在，先建立一個空的以免 set_key 報錯
-                # if not os.path.exists(env_path):
-                #     open(env_path, 'a').close()
-                
-                # # 使用 set_key 安全地寫入或更新 GROQ_API_KEY1 的值
-                # set_key(env_path, 'GROQ_API_KEY1', api_key, quote_mode="never")
-                
-            # login(request, user)
+            # 受試者的 Groq API Key 以 Fernet（FERNET_ENCRYPTION_KEY）加密後只存在這次登入的 Session，
+            # 不寫入資料庫的使用者資料、不寫入 .env（見 accounts/api_key_session.py、accounts/crypto.py）
+            store_api_key(request, form.cleaned_data['api_key'])
             messages.success(request, '註冊成功，已自動登入！')
             return redirect('/lesson/')
     else:
@@ -76,11 +61,12 @@ def login_view(request):
 
             if user is not None:
                 login(request, user)
+                store_api_key(request, form.cleaned_data['api_key'])
 
                 # 加入記住我設定
                 if remember:
-                    # 2 週內不用重新登入（1209600 秒）
-                    request.session.set_expiry(1209600)
+                    # 最長保留 SESSION_COOKIE_AGE（8 小時），之後 Session 與其中的 API Key 一併失效
+                    request.session.set_expiry(settings.SESSION_COOKIE_AGE)
                 else:
                     # 瀏覽器關閉就自動登出
                     request.session.set_expiry(0)
@@ -112,6 +98,8 @@ def profile(request):
         if 'update_profile' in request.POST:
             if profile_form.is_valid():
                 profile_form.save()
+                if profile_form.cleaned_data.get('api_key'):
+                    store_api_key(request, profile_form.cleaned_data['api_key'])
                 messages.success(request, '個人資料已更新。')
                 return redirect('profile')
 

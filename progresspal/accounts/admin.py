@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CustomUser, LearningRecord, QuestionLog, QuizResult
+from .models import CustomUser, LearningRecord, QuestionLog, QuizResult, EventLog
 
 # 自訂使用者管理
 @admin.register(CustomUser)
@@ -25,6 +25,14 @@ class QuestionLogAdmin(admin.ModelAdmin):
     list_filter = ('engagement', 'chapter_code','type')
     search_fields = ('user', 'stu_input', 'answer', 'system_question')
     readonly_fields = ('created_at',)
+
+# 事件紀錄管理（唯讀）
+@admin.register(EventLog)
+class EventLogAdmin(admin.ModelAdmin):
+    list_display = ('user', 'event_type', 'chapter_code', 'unit_code', 'created_at')
+    list_filter = ('event_type',)
+    search_fields = ('user__username',)
+    readonly_fields = ('user', 'event_type', 'chapter_code', 'unit_code', 'question_log', 'detail', 'created_at')
 
 # 測驗結果管理
 @admin.register(QuizResult)

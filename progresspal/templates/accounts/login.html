@@ -41,6 +41,20 @@
             {% endif %}
         </div>
 
+        <div class="form-group">
+            <label for="api_key">Groq API Key</label>
+            {{ form.api_key }}
+            <small class="text-muted d-block mt-1">
+                每次登入都需要輸入。Key 只會加密暫存在這次登入中，登出或 8 小時後自動清除。
+                還沒有 Key？請到 <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a> 建立。
+            </small>
+            {% if form.api_key.errors %}
+            <div class="message warning">
+                {{ form.api_key.errors.0 }}
+            </div>
+            {% endif %}
+        </div>
+
         <div class="form-group remember">
             <label>
                 <input type="checkbox" name="remember"> 記住我

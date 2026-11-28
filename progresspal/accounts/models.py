@@ -21,7 +21,7 @@ class CustomUser(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='low_prior_student') #身分
     grade = models.CharField(max_length=10, blank=True, null=True) #年級
     nickname = models.CharField(max_length=30, blank=True)
-    email = models.EmailField(unique=True) 
+    email = models.EmailField(unique=True)
 
     def __str__(self):
         return f"{self.nickname} ({self.role})"
@@ -89,10 +89,62 @@ class QuestionLog(models.Model):
     hint_is_used = models.BooleanField(default=False) # 系統提示(當學生點選使用系統提示時會改為True)
     click_time = models.DateTimeField(blank=True, null=True) # 點擊時間
     engagement = models.CharField(max_length=20, blank=True, null=True)  # 參與度，例如：high、low
+    fallback_key_used = models.BooleanField(default=False)  # 這次回應是否改用伺服器的備援 Groq key
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Q by {self.user.username} @ {self.unit_code or 'N/A'}"
+
+# 事件紀錄（實驗分析用）
+class EventLog(models.Model):
+    """
+    記錄受試者在系統中的互動事件，供 RQ1、RQ3 分析（見 docs/SPEC_實驗資料與部署.md R5）
+    """
+    # 由前端回報的事件（POST /events/ 只接受這些）
+    CLIENT_EVENT_TYPES = [
+        ('proactive_trigger', '主動介入觸發'),
+        ('hint_shown', '提示出現'),
+        ('hint_click', '點擊提示'),
+        ('form_link_click', '點擊表單連結'),
+    ]
+    # 由後端記錄的事件
+    SERVER_EVENT_TYPES = [
+        ('unit_enter', '進入單元'),
+        ('unit_leave', '離開單元'),
+        ('extended_q_shown', '延伸提問出現'),
+        ('extended_q_answered', '回應延伸提問'),
+        ('face_fail', '情緒辨識失敗'),
+        ('fallback_key', '使用伺服器備援 key'),
+    ]
+    EVENT_TYPE_CHOICES = CLIENT_EVENT_TYPES + SERVER_EVENT_TYPES
+
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='event_logs')
+    event_type = models.CharField(max_length=30, choices=EVENT_TYPE_CHOICES)
+    chapter_code = models.CharField(max_length=50, blank=True, null=True)
+    unit_code = models.CharField(max_length=50, blank=True, null=True)
+    question_log = models.ForeignKey(QuestionLog, on_delete=models.SET_NULL, blank=True, null=True,
+                                     related_name='events')  # 相關的提問紀錄
+    detail = models.JSONField(default=dict, blank=True)  # 補充資訊，例如觸發當下的 low_streak、失敗原因
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.user.username} {self.event_type} @ {self.created_at:%H:%M:%S}"
+
+
+def log_event(user, event_type, chapter_code=None, unit_code=None, question_log=None, **detail):
+    """寫入一筆事件；chapter_code、unit_code 一律存成字串"""
+    return EventLog.objects.create(
+        user=user,
+        event_type=event_type,
+        chapter_code=None if chapter_code is None else str(chapter_code),
+        unit_code=None if unit_code is None else str(unit_code),
+        question_log=question_log,
+        detail=detail,
+    )
+
 
 # 測驗結果
 class QuizResult(models.Model):
