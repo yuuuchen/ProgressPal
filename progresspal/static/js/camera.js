@@ -102,26 +102,25 @@ document.addEventListener("DOMContentLoaded", () => {
             return; 
         }
 
-        // 信心分數低於門檻不更新
-        if (data.confidence < CONFIDENCE_THRESHOLD) {
+        // 信心分數低於門檻不更新（後端同樣不列入參與度計算）
+        if (data.low_confidence || data.confidence < CONFIDENCE_THRESHOLD) {
             console.log(`Confidence too low: ${data.confidence}`);
             return;
         }
 
-        // 計算低參與度次數
-        if (data.engagement === "low") {
-            lowEngagementCounter++;
-            if (lowEngagementCounter === PROACTIVE_THRESHOLD) {
-                if (window.LATEST_HINT) {
-                    // 呼叫 chat.js 裡的顯示按鈕函式
-                    appendHintButton(window.LATEST_HINT);
-                    // 觸發後清除暫存，避免重複顯示同一個提示
-                    window.LATEST_HINT = null; 
-                }
-                lowEngagementCounter = 0;
+        // 連續低參與次數由後端計算並存入資料庫（low_streak），每到 PROACTIVE_THRESHOLD 的倍數觸發一次主動介入
+        lowEngagementCounter = data.low_streak || 0;
+        if (data.engagement === "low" && lowEngagementCounter > 0 && lowEngagementCounter % PROACTIVE_THRESHOLD === 0) {
+            const hasHint = !!window.LATEST_HINT;
+            if (window.logExperimentEvent) {
+                window.logExperimentEvent('proactive_trigger', { low_streak: lowEngagementCounter, has_hint: hasHint });
             }
-        } else {
-            lowEngagementCounter = 0; // 觸發後重置次數
+            if (hasHint) {
+                // 呼叫 chat.js 裡的顯示按鈕函式
+                appendHintButton(window.LATEST_HINT);
+                // 觸發後清除暫存，避免重複顯示同一個提示
+                window.LATEST_HINT = null; 
+            }
         }
 
         // 信心分數高於門檻更新 

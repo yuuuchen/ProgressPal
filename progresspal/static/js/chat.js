@@ -296,6 +296,9 @@ document.addEventListener('DOMContentLoaded', () => {
             window.HINT_USED = true;  // <-- 【關鍵】記錄使用者已查看提示
             HintClickTime = new Date().toISOString();
             console.log("適性化提示點選時間已紀錄:", HintClickTime);
+            if (window.logExperimentEvent) {
+                window.logExperimentEvent('hint_click', { source: 'proactive' });
+            }
             content.classList.remove('d-none');
             btn.classList.add('d-none'); 
             chatHistory.scrollTop = chatHistory.scrollHeight;
@@ -304,6 +307,9 @@ document.addEventListener('DOMContentLoaded', () => {
         msgDiv.appendChild(btn);
         msgDiv.appendChild(content);
         chatHistory.appendChild(msgDiv);
+        if (window.logExperimentEvent) {
+            window.logExperimentEvent('hint_shown', { source: 'proactive' });
+        }
         chatHistory.scrollTop = chatHistory.scrollHeight;
     }
     });

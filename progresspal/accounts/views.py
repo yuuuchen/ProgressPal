@@ -7,7 +7,7 @@ from django.db.models.functions import TruncDate  # 導入日期截斷函式
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
-from .models import LearningRecord, QuestionLog, QuizResult, QuizResultQuestion
+from .models import LearningRecord, QuestionLog, QuizResult, QuizResultQuestion, EventLog, log_event
 from accounts.models import CustomUser
 from .forms import RegisterForm, LoginForm, ProfileUpdateForm, PasswordChangeForm
 from .api_key_session import store_api_key
@@ -80,6 +80,24 @@ def login_view(request):
     else:
         form = LoginForm()
     return render(request, 'accounts/login.html', {'form': form})
+
+# 前端回報實驗事件（主動介入觸發、提示出現與點擊、表單連結點擊）
+@login_required(login_url='login')
+def log_client_event(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only'}, status=405)
+    try:
+        data = json.loads(request.body or b'{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    event_type = data.get('event_type')
+    if event_type not in dict(EventLog.CLIENT_EVENT_TYPES):
+        return JsonResponse({'error': 'Unknown event_type'}, status=400)
+    detail = data.get('detail') or {}
+    if not isinstance(detail, dict) or len(json.dumps(detail)) > 2000:
+        return JsonResponse({'error': 'Invalid detail'}, status=400)
+    log_event(request.user, event_type, data.get('chapter_code'), data.get('unit_code'), detail=detail)
+    return JsonResponse({'status': 'ok'})
 
 # 登出動作
 def logout_view(request):

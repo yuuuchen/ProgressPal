@@ -5,10 +5,10 @@ from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.db import transaction
-from emotion.services.utils import compute_engagement
+from emotion.services.utils import compute_engagement, current_engagement
 from .services import main,utils
 from .forms import StudyForm
-from accounts.models import QuestionLog, LearningRecord, log_event
+from accounts.models import QuestionLog, LearningRecord, EventLog, log_event
 from .services.llm_model import fallback_key_used
 from .models import Chapter, Unit, QuizQuestion
 import json
@@ -61,7 +61,7 @@ def generate_materials_view(request, chapter_code, unit_code):
 
     # Engagement
     emotions = user.recent_emotion_history
-    engagement = compute_engagement(emotions)
+    engagement = current_engagement(user)  # 與情緒辨識 API、主動介入判斷使用同一個值
 
     current_emotion = emotions[-1] if emotions else "偵測中"
 
@@ -91,6 +91,9 @@ def generate_materials_view(request, chapter_code, unit_code):
         chapter_code=chapter_code,
         unit_code=unit_code
     )
+    log_event(request.user, 'unit_enter', chapter_code, unit_code, record_id=record.id)
+    if extended_question:
+        log_event(request.user, 'extended_q_shown', chapter_code, unit_code, source='materials')
     if fallback_key_used():
         log_event(request.user, 'fallback_key', chapter_code, unit_code, where='materials')
     # 除錯點：在終端機印出來看看
@@ -134,7 +137,7 @@ def answer_question_view(request, chapter_code, unit_code):
 
     # Engagement
     emotions = user.recent_emotion_history
-    engagement = compute_engagement(emotions)
+    engagement = current_engagement(user)  # 與情緒辨識 API、主動介入判斷使用同一個值
 
     # 讀取 session 延伸提問
     extended_q = request.session.get("current_extended_question", "")
@@ -189,6 +192,10 @@ def answer_question_view(request, chapter_code, unit_code):
         click_time=click_time,
         fallback_key_used=used_fallback,
     )
+    if is_extended:
+        log_event(user, 'extended_q_answered', chapter_code, unit_code, question_log=question_log)
+    if new_extended_question:
+        log_event(user, 'extended_q_shown', chapter_code, unit_code, question_log=question_log, source='answer')
     if used_fallback:
         log_event(user, 'fallback_key', chapter_code, unit_code, question_log=question_log, where='answer')
     # 回傳 JSON
@@ -197,6 +204,25 @@ def answer_question_view(request, chapter_code, unit_code):
         "extended_questions": new_extended_question,
         "hint": hint,
     })
+
+
+def _record_unit_leave(user, record):
+    """
+    duration.js 每 10 秒（以及離開頁面時）呼叫 end_study 更新結束時間，
+    因此每筆學習記錄只保留一筆 unit_leave 事件，時間與秒數隨每次更新改為最新值。
+    """
+    detail = {
+        'record_id': record.id,
+        'duration_seconds': round((record.end_time - record.start_time).total_seconds(), 2),
+    }
+    leave = EventLog.objects.filter(user=user, event_type='unit_leave', detail__record_id=record.id).first()
+    if leave is None:
+        log_event(user, 'unit_leave', record.chapter_code, record.unit_code, detail=detail)
+        leave = EventLog.objects.filter(user=user, event_type='unit_leave', detail__record_id=record.id).first()
+    else:
+        leave.detail = detail
+    leave.created_at = record.end_time
+    leave.save(update_fields=['detail', 'created_at'])
 
 
 # 結束學習並更新學習記錄
@@ -220,6 +246,7 @@ def end_study(request):
                     record.end_time = timezone.now()
                 
                 record.save()
+                _record_unit_leave(request.user, record)
                 return JsonResponse({"status": "ok"})
         except Exception as e:
             return JsonResponse({"status": "error", "msg": str(e)}, status=400)
