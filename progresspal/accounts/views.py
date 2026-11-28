@@ -1,6 +1,8 @@
 # accounts/views.py
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.admin.views.decorators import staff_member_required
+from django.utils import timezone
 from django.contrib.auth import login, authenticate, logout, get_user_model, update_session_auth_hash
 from django.db.models import Sum, Avg, Count, F
 from django.db.models.functions import TruncDate  # 導入日期截斷函式
@@ -80,6 +82,46 @@ def login_view(request):
     else:
         form = LoginForm()
     return render(request, 'accounts/login.html', {'form': form})
+
+# ===== 管理後台：實驗分析資料匯出（SPEC R7）=====
+def _excel_response(names, label):
+    import io
+    from django.http import HttpResponse
+    from .analysis_export import build_tables, write_excel
+
+    buffer = io.BytesIO()
+    write_excel(build_tables(), buffer, names)
+    stamp = timezone.localtime().strftime("%Y%m%d_%H%M%S")
+    response = HttpResponse(buffer.getvalue(),
+                            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = f'attachment; filename="{settings.EXPERIMENT_GROUP}_{label}_{stamp}.xlsx"'
+    return response
+
+
+@staff_member_required
+def admin_export_excel(request):
+    from .analysis_export import NUMERIC_TABLES
+    return _excel_response(NUMERIC_TABLES, "analysis")
+
+
+@staff_member_required
+def admin_export_text_excel(request):
+    from .analysis_export import TEXT_TABLES
+    return _excel_response(TEXT_TABLES, "text")
+
+
+@staff_member_required
+def admin_sync_sheets(request):
+    if request.method != 'POST':
+        return redirect('admin:index')
+    from .analysis_export import build_tables, sync_to_sheets
+    try:
+        written = sync_to_sheets(build_tables())
+        messages.success(request, f"已同步到 Google 試算表：{'、'.join(written)}")
+    except Exception as e:
+        messages.error(request, f"同步 Google 試算表失敗：{e}")
+    return redirect('admin:index')
+
 
 # 前端回報實驗事件（主動介入觸發、提示出現與點擊、表單連結點擊）
 @login_required(login_url='login')

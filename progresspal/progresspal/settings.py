@@ -56,6 +56,13 @@ SESSION_COOKIE_AGE = 8 * 60 * 60
 FORM_PRETEST_URL = os.getenv('FORM_PRETEST_URL', 'https://forms.gle/tPtqmmdWdhF1NLUN9')
 FORM_POSTTEST_URL = os.getenv('FORM_POSTTEST_URL', 'https://forms.gle/XF6C8RsULbF4oqoT7')
 
+# 實驗分析資料匯出（SPEC R7）
+# 組別名稱：寫入匯出資料的 system_type 欄位與 Google 試算表分頁前綴（實驗組 adaptive、對照組 control）
+EXPERIMENT_GROUP = os.getenv('EXPERIMENT_GROUP', 'adaptive')
+# Google 試算表 ID（網址 /spreadsheets/d/<ID>/ 中間那段）；分析試算表放數值資料，全文試算表放對話全文
+ANALYSIS_SHEET_ID = os.getenv('ANALYSIS_SHEET_ID', '')
+TEXT_SHEET_ID = os.getenv('TEXT_SHEET_ID', '')
+
 #教材路徑
 TEACHING_MATERIAL_DIR = os.path.join(BASE_DIR, 'teaching_material')
 

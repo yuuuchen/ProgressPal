@@ -90,6 +90,7 @@ class QuestionLog(models.Model):
     click_time = models.DateTimeField(blank=True, null=True) # 點擊時間
     engagement = models.CharField(max_length=20, blank=True, null=True)  # 參與度，例如：high、low
     fallback_key_used = models.BooleanField(default=False)  # 這次回應是否改用伺服器的備援 Groq key
+    response_seconds = models.FloatField(blank=True, null=True)  # AI 產生這次回應花費的秒數（RQ1 系統可行性）
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

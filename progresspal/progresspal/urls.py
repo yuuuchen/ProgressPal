@@ -25,6 +25,10 @@ import emotion.views as emotion
 
 urlpatterns = [
     path('', learning.homepage, name='homepage'),
+    # 管理後台：實驗分析資料匯出（需放在 admin.site.urls 之前）
+    path('admin/experiment/export-excel/', accounts.admin_export_excel, name='admin-export-excel'),
+    path('admin/experiment/export-text-excel/', accounts.admin_export_text_excel, name='admin-export-text-excel'),
+    path('admin/experiment/sync-sheets/', accounts.admin_sync_sheets, name='admin-sync-sheets'),
     path('admin/', admin.site.urls),
     # 使用者相關
     path('events/', accounts.log_client_event, name='log-event'),  # 前端回報實驗事件

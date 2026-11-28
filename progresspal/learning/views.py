@@ -12,6 +12,7 @@ from accounts.models import QuestionLog, LearningRecord, EventLog, log_event
 from .services.llm_model import fallback_key_used
 from .models import Chapter, Unit, QuizQuestion
 import json
+import time
 from datetime import timedelta
 from accounts.api_key_session import load_api_key
 
@@ -70,7 +71,9 @@ def generate_materials_view(request, chapter_code, unit_code):
     # 呼叫教材生成
     try:
         # 呼叫教材生成
+        llm_started = time.monotonic()
         result = main.display_materials(chapter_code, unit_code, engagement, role, api_key=user_api_key)
+        llm_seconds = round(time.monotonic() - llm_started, 2)
 
     except RuntimeError as e:
         # 捕捉 "所有 Groq API Key 的流量都已耗盡" 的錯誤
@@ -91,7 +94,7 @@ def generate_materials_view(request, chapter_code, unit_code):
         chapter_code=chapter_code,
         unit_code=unit_code
     )
-    log_event(request.user, 'unit_enter', chapter_code, unit_code, record_id=record.id)
+    log_event(request.user, 'unit_enter', chapter_code, unit_code, record_id=record.id, llm_seconds=llm_seconds)
     if extended_question:
         log_event(request.user, 'extended_q_shown', chapter_code, unit_code, source='materials')
     if fallback_key_used():
@@ -155,6 +158,7 @@ def answer_question_view(request, chapter_code, unit_code):
     user_api_key = _get_user_groq_api_key(request)
     # 呼叫 AI 回答邏輯
     try:
+        llm_started = time.monotonic()
         result = main.answer_question(
             question=user_question,
             engagement=engagement,
@@ -191,6 +195,7 @@ def answer_question_view(request, chapter_code, unit_code):
         hint_is_used=hint_is_used,
         click_time=click_time,
         fallback_key_used=used_fallback,
+        response_seconds=round(time.monotonic() - llm_started, 2),
     )
     if is_extended:
         log_event(user, 'extended_q_answered', chapter_code, unit_code, question_log=question_log)

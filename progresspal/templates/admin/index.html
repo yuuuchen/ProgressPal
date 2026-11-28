@@ -1,0 +1,19 @@
+{% extends "admin/index.html" %}
+{# 在管理後台首頁加上實驗分析資料匯出按鈕（SPEC R7）#}
+{% block content %}
+<div class="module" style="margin-bottom: 20px;">
+    <h2>實驗分析資料匯出（{{ experiment_group }}）</h2>
+    <div style="padding: 12px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+        <form method="post" action="{% url 'admin-sync-sheets' %}" style="margin: 0;">
+            {% csrf_token %}
+            <input type="submit" class="default" value="同步到 Google 試算表" style="float: none; margin: 0;">
+        </form>
+        <a class="button" href="{% url 'admin-export-excel' %}">下載分析 Excel</a>
+        <a class="button" href="{% url 'admin-export-text-excel' %}">下載對話全文 Excel</a>
+    </div>
+    <p style="padding: 0 12px 12px; color: #666; margin: 0;">
+        試算表每 10 分鐘自動同步一次（需設定 ANALYSIS_SHEET_ID）。分析資料不含姓名、email 與 API key；對話全文另存，請限制分享對象。
+    </p>
+</div>
+{{ block.super }}
+{% endblock %}
