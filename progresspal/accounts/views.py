@@ -383,13 +383,14 @@ def csv_output(request):
     if result['status'] == 'success':
         cloud_url = "https://drive.google.com/drive/folders/1u_bDCZYu1Jgfs9bosYRl_cCme89yGeqS?usp=sharing"
         
-        # 動態定義要在訊息中顯示的資料夾名稱
+        # 動態定義要在訊息中顯示的資料夾名稱與位置
         folder_name = f"{username}_data"
+        folder_path = result.get('folder', folder_name)
         
         messages.success(
             request, 
             f"<strong>🎉 報表輸出成功！</strong><br>"
-            f"系統已在 progresspal/{folder_name} 生成相關 CSV 檔案。<br>"
+            f"系統已在 {folder_path} 生成相關 CSV 檔案。<br>"
             f"<span style='color: red;'>⚠️ 提醒：請記得將整份 {folder_name} 資料夾上傳至雲端硬碟進行備份！</span><br><br>"
             f"<a href='{cloud_url}' target='_blank' class='btn btn-success btn-sm'>👉 點我前往雲端硬碟</a>"
         )
