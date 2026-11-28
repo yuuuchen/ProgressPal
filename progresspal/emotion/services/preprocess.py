@@ -11,6 +11,9 @@ logger = logging.getLogger(__name__)
 
 # ===================== Config =====================
 IMG_W, IMG_H = 224, 224
+# 模糊檢測閾值：臉部區域（裁切後、resize 前）的 Laplacian 變異數低於此值視為模糊，越小越寬容
+# 測試圖片：清楚的臉約 55~75，模糊的臉約 9
+BLUR_THRESHOLD = 30
 HAAR_DIR = cv2.data.haarcascades
 FACE_CASCADE = cv2.CascadeClassifier(os.path.join(HAAR_DIR, "haarcascade_frontalface_default.xml"))
 EYE_CASCADE = cv2.CascadeClassifier(os.path.join(HAAR_DIR, "haarcascade_eye.xml"))
@@ -29,6 +32,10 @@ class InvalidImageError(Exception):
 
 class NoFaceDetectedError(Exception):
     """當影像中找不到臉、臉太小或角度過大時拋出"""
+    pass
+
+class BlurryFaceError(NoFaceDetectedError):
+    """臉部影像過於模糊時拋出（繼承 NoFaceDetectedError，API 一樣回 422、不記錄情緒）"""
     pass
 
 # ===================== Helper Functions =====================
@@ -122,7 +129,12 @@ def preprocess_frame(uploaded_file):
     # 取信心度最高的一張臉
     x,y,w,h = max(results, key=lambda b:b[2]*b[3])
     roi = frame_gray[y:y+h, x:x+w]
-    
+
+    # 模糊檢測：在原始解析度的臉部區域計算（resize 會改變清晰度數值）
+    blur_score = cv2.Laplacian(roi, cv2.CV_64F).var()
+    if blur_score < BLUR_THRESHOLD:
+        raise BlurryFaceError(f"影像模糊 (清晰度 {blur_score:.1f} < {BLUR_THRESHOLD})")
+
     # -----------------------------------------------------------
     # Step 3: 裁切 (Crop Face ROI)、 Resize
     # -----------------------------------------------------------

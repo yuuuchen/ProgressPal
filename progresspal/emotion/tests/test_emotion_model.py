@@ -35,7 +35,8 @@ class TestEmotionModel(unittest.TestCase):
 
         result = predict_emotion(self.fake_face)
 
-        self.assertEqual(result["emotion"], "驚訝")  # 第 3 個標籤（index=2）
+        # EMOTION_LABELS = ["挫折", "困惑", "無聊", "喜悅", "投入", "驚訝"]，index=2 是「無聊」
+        self.assertEqual(result["emotion"], "無聊")
         self.assertAlmostEqual(result["confidence"], 0.5)
 
     @patch("emotion.emotion_model.model")

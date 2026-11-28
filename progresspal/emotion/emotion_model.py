@@ -32,9 +32,14 @@ def load_emotion_model():
 def predict_emotion(face_input: np.ndarray) -> dict:
     load_emotion_model()
 
-    # 1. 基本檢查
+    # 1. 基本檢查：必須是 preprocess_frame 產生的 (1, 224, 224, 1) 灰階影像
     if face_input is None:
         raise InputShapeError("輸入影像為 None")
+    expected_shape = (1, 224, 224, 1)
+    if getattr(face_input, "shape", None) != expected_shape:
+        raise InputShapeError(
+            f"輸入影像尺寸錯誤：預期 {expected_shape}，實際為 {getattr(face_input, 'shape', None)}"
+        )
 
     # 2. 轉 float32 
     x = face_input.astype("float32")
