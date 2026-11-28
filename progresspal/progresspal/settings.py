@@ -133,6 +133,9 @@ DATABASES = {
 }
 
 
+# 受試者 CSV 報表輸出位置：集中放在同一個資料夾，每位受試者一個子資料夾（Docker 時位於 DB_DIR 掛載資料夾內，重建容器不會遺失）
+CSV_EXPORT_DIR = Path(os.getenv('CSV_EXPORT_DIR', DB_DIR / 'csv_exports'))
+
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 

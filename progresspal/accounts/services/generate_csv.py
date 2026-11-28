@@ -9,10 +9,11 @@ def generate_user_csv_reports(username, system_type="adaptive"):
     負責從資料庫撈取特定使用者的學習與情緒紀錄，並生成三份 CSV 報表。
     回傳格式: dict 包含 status, message, files(若成功)
     """
-    db_path = os.path.join(settings.BASE_DIR, 'db.sqlite3')
+    # 使用 settings 中實際的資料庫位置（Docker 時在 DB_DIR 掛載資料夾）
+    db_path = str(settings.DATABASES['default']['NAME'])
     
-    # 1. 根據使用者名稱動態定義資料夾路徑 (格式: username_data)
-    data_dir = os.path.join(settings.BASE_DIR, f'{username}_data')
+    # 1. 所有報表集中放在 CSV_EXPORT_DIR（預設 csv_exports/），每位使用者一個子資料夾 (格式: username_data)
+    data_dir = os.path.join(settings.CSV_EXPORT_DIR, f'{username}_data')
     
     # 若該使用者的資料夾不存在，則自動建立
     os.makedirs(data_dir, exist_ok=True)
@@ -291,6 +292,7 @@ def generate_user_csv_reports(username, system_type="adaptive"):
         # 2. 更新回傳的檔案名稱，加上 username_data/ 前綴，讓前端顯示更精確
         return {
             'status': 'success', 
+            'folder': data_dir,
             'files': [
                 f"{username}_data/{username}_log.csv", 
                 f"{username}_data/{username}_emotion.csv", 
