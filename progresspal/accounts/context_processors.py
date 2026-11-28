@@ -15,6 +15,7 @@ def experiment_forms(request):
         return url.replace("{participant_id}", quote(participant_id))
 
     return {
+        "experiment_group": settings.EXPERIMENT_GROUP,
         "form_pretest_url": fill(settings.FORM_PRETEST_URL),
         "form_posttest_url": fill(settings.FORM_POSTTEST_URL),
     }
