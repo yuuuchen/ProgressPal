@@ -1,4 +1,4 @@
-from learning.services.llm_model import llm_usage, user_api_key
+from learning.services.llm_model import current_user_api_key, llm_usage
 
 from .api_key_session import load_api_key
 
@@ -18,10 +18,10 @@ class UserGroqKeyMiddleware:
     def __call__(self, request):
         user = getattr(request, "user", None)
         key = load_api_key(request) if user is not None and user.is_authenticated else ""
-        key_token = user_api_key.set(key)
+        key_token = current_user_api_key.set(key)
         usage_token = llm_usage.set({"fallback": False})
         try:
             return self.get_response(request)
         finally:
             llm_usage.reset(usage_token)
-            user_api_key.reset(key_token)
+            current_user_api_key.reset(key_token)

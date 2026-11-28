@@ -5,7 +5,7 @@
 """
 from .crypto import decrypt, encrypt
 
-SESSION_FIELD = "groq_api_key"
+SESSION_FIELD = "user_groq_api_key"
 
 
 def store_api_key(request, api_key):

@@ -1,0 +1,18 @@
+.git
+.gitignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+.venv/
+progresspal/.env
+progresspal/db.sqlite3
+progresspal/staticfiles/
+# 本機建立的教材向量庫不可帶進映像檔（版本可能不符），容器內會重新建立
+progresspal/teaching_material/material_db/
+progresspal/csv_exports/
+progresspal/debug_images/
+progresspal/*_log.csv

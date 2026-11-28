@@ -5,7 +5,7 @@ from groq import Groq
 from django.conf import settings
 
 # 目前請求的使用者自己的 Groq API Key（來自 Session），由 accounts.middleware.UserGroqKeyMiddleware 設定
-user_api_key = contextvars.ContextVar("user_api_key", default="")
+current_user_api_key = contextvars.ContextVar("current_user_api_key", default="")
 # 目前請求的 LLM 使用狀況，例如 {"fallback": True} 表示有回應是用伺服器備援 key 產生的
 llm_usage = contextvars.ContextVar("llm_usage", default=None)
 
@@ -16,12 +16,19 @@ def fallback_key_used():
     return bool(usage and usage.get("fallback"))
 
 
+def _clean_key(key):
+    return str(key).strip().replace('"', '').replace("'", "") if key else ""
+
+
 class RotationalGroqClient:
-    """自動輪替 Groq API Keys 的 Client"""
+    """
+    依序嘗試多把 Groq API Key 的 Client：
+    受試者自己的 key 排在最前面，後面是伺服器 .env 的備援 key（GROQ_API_KEY1、GROQ_API_KEY2…）。
+    """
     def __init__(self, api_keys=None, server_key_start=0):
         # 預先處理好 keys，避免每次呼叫都做字串處理
         raw_keys = api_keys if api_keys is not None else getattr(settings, "GROQ_API_KEYS", [])
-        self.api_keys = [str(k).strip().replace('"', '').replace("'", "") for k in raw_keys if k]
+        self.api_keys = [k for k in (_clean_key(k) for k in raw_keys) if k]
         # api_keys 中從這個位置開始是伺服器的 key（前面是使用者自己的）
         self.server_key_start = server_key_start
 
@@ -43,31 +50,12 @@ class RotationalGroqClient:
         retry_codes = ["429", "rate_limit", "401", "403", "organization_restricted", "413", "503", "500", "overloaded"]
         return any(code in error_msg for code in retry_codes)
 
-    # def generate_qa_content(self, model, messages, temperature=0.3, max_tokens=1024):
-    #     """Llama 模型專用：標準問答"""
-    #     last_error = None           
-    #     for index in range(len(self.api_keys)):
-    #         try:
-    #             client = self._get_client(index)
-    #             response = client.chat.completions.create(
-    #                 model=model,
-    #                 messages=messages,
-    #                 temperature=temperature,
-    #                 max_completion_tokens=max_tokens # 建議統一使用 max_completion_tokens
-    #             )                   
-    #             return response.choices[0].message.content
-    #         except Exception as e:
-    #             error_msg = str(e)
-    #             print(f"[除錯] QA Key #{index+1} 錯誤: {error_msg}")
-    #             if self._should_rotate(error_msg):
-    #                 last_error = e
-    #                 continue 
-    #             raise e           
-    #     raise RuntimeError("所有 QA API Key 的流量都已耗盡或觸發限制。") from last_error
-
     def generate_content(self, model, messages, temperature=0, max_tokens=2048):
         """gpt-oss-120b 專用：低推理教材生成"""
-        last_error = None           
+        if not self.api_keys:
+            raise RuntimeError("找不到您的 Groq API Key，請重新註冊或確認金鑰是否已輸入。")
+
+        last_error = None
         for index in range(len(self.api_keys)):
             try:
                 client = self._get_client(index)
@@ -75,7 +63,7 @@ class RotationalGroqClient:
                     model=model,
                     messages=messages,
                     temperature=temperature,
-                    max_completion_tokens=max_tokens, 
+                    max_completion_tokens=max_tokens,
                     top_p=1,
                     stream=False
                 )
@@ -86,19 +74,22 @@ class RotationalGroqClient:
                 print(f"[除錯] Materials Key #{index+1} 錯誤: {error_msg}")
                 if self._should_rotate(error_msg):
                     last_error = e
-                    continue 
-                raise e           
+                    continue
+                raise e
         raise RuntimeError("所有 Materials API Key 的流量都已耗盡或觸發限制。") from last_error
-    
-def get_rotational_client():
+
+
+def get_rotational_client(user_api_key=None):
     """
-    使用者有自己的 key 時優先使用；伺服器 .env 的 key 作為備援。
-    設定 GROQ_FALLBACK_TO_SERVER_KEYS = False 可關閉備援，只用使用者自己的 key。
+    受試者自己的 key 優先使用；伺服器 .env 的 key 作為備援，改用備援 key 時會記錄（fallback_key_used）。
+    - user_api_key：呼叫端明確傳入的 key（例如 learning.views 從 Session 解密後傳入）；
+      沒傳時使用 UserGroqKeyMiddleware 為這個請求設定的 key
+    - 設定 GROQ_FALLBACK_TO_SERVER_KEYS = False 可關閉備援，只用受試者自己的 key
     """
-    own_key = user_api_key.get()
+    own_key = _clean_key(user_api_key) or _clean_key(current_user_api_key.get())
     keys = [own_key] if own_key else []
     if not own_key or getattr(settings, "GROQ_FALLBACK_TO_SERVER_KEYS", True):
-        keys += [k for k in getattr(settings, "GROQ_API_KEYS", []) if k and k != own_key]
+        keys += [k for k in (_clean_key(k) for k in getattr(settings, "GROQ_API_KEYS", [])) if k and k != own_key]
     return RotationalGroqClient(keys, server_key_start=1 if own_key else 0)
 
 model = "openai/gpt-oss-120b"

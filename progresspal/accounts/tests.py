@@ -145,7 +145,7 @@ class KeySelectionAndFallbackTest(TestCase):
 
     def test_context_is_reset_after_request(self):
         self.run_in_request("gsk_user", lambda: None)
-        self.assertEqual(llm_model.user_api_key.get(), "")
+        self.assertEqual(llm_model.current_user_api_key.get(), "")
         self.assertIsNone(llm_model.llm_usage.get())
 
 

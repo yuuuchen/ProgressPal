@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+import sys
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -20,27 +21,30 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # 載入 .env
 env_path = os.path.join(BASE_DIR, '.env')
-if not os.path.exists(env_path):
-    print("--- [警告] 目前未建立 .env 檔案 ---")
-load_dotenv(env_path)
+if os.path.exists(env_path):
+    load_dotenv(env_path)
 
 # 從環境變數讀取設定
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default')
+# SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default')
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-o87b)n-0$0)b7(@0h@q_3%yuwajb+pep0d&oihf8motp=zz@%i')
 
 # Debug 模式
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-# 讀取所有 Groq API Keys 到列表中
+# 伺服器的備援 Groq API Keys（.env 的 GROQ_API_KEY1、GROQ_API_KEY2…）
+# 受試者自己的 key（存在 Session）優先使用；失效或限流時才改用這些 key，並記錄 fallback_key_used
 GROQ_API_KEYS = []
 for i in range(1, 3):
-    # 修改環境變數名稱為 GROQ_API_KEY1, GROQ_API_KEY2...
     key = os.getenv(f"GROQ_API_KEY{i}")
     if key:
         GROQ_API_KEYS.append(key)
 
-if not GROQ_API_KEYS:
-    # raise ValueError("未設定任何 GROQ_API_KEY")
-    print("--- [警告] 目前未設定任何 GROQ_API_KEY，請透過註冊頁面設定或手動加入 .env ---")
+# 是否允許受試者的 key 失敗時改用伺服器的備援 key（設 False 則只用受試者自己的 key）
+GROQ_FALLBACK_TO_SERVER_KEYS = os.getenv('GROQ_FALLBACK_TO_SERVER_KEYS', 'True') == 'True'
+
+# 加密 Session 中受試者 Groq API Key 的 Fernet 金鑰（產生方式：Fernet.generate_key()）
+# 未設定時改用 SECRET_KEY 衍生的金鑰（見 accounts/crypto.py）
+FERNET_ENCRYPTION_KEY = os.getenv('FERNET_ENCRYPTION_KEY', '')
 
 # 受試者帳號的統一密碼（註冊時由系統設定，受試者不需自訂）
 PARTICIPANT_PASSWORD = os.getenv('PARTICIPANT_PASSWORD', 'MISMIS1234')
@@ -60,12 +64,16 @@ TEACHING_MATERIAL_DIR = os.path.join(BASE_DIR, 'teaching_material')
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-o87b)n-0$0)b7(@0h@q_3%yuwajb+pep0d&oihf8motp=zz@%i'
+# SECRET_KEY = 'django-insecure-o87b)n-0$0)b7(@0h@q_3%yuwajb+pep0d&oihf8motp=zz@%i'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip() 
+    for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') 
+    if host.strip()
+]
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
@@ -87,6 +95,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -119,17 +128,18 @@ WSGI_APPLICATION = 'progresspal.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+DB_DIR = Path(os.getenv('DB_DIR', BASE_DIR))
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DB_DIR / 'db.sqlite3',
     }
 }
 
 
-# 受試者 CSV 報表輸出位置：集中放在同一個資料夾，每位受試者一個子資料夾
-CSV_EXPORT_DIR = Path(os.getenv('CSV_EXPORT_DIR', BASE_DIR / 'csv_exports'))
+# 受試者 CSV 報表輸出位置：集中放在同一個資料夾，每位受試者一個子資料夾（Docker 時位於 DB_DIR 掛載資料夾內，重建容器不會遺失）
+CSV_EXPORT_DIR = Path(os.getenv('CSV_EXPORT_DIR', DB_DIR / 'csv_exports'))
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -170,6 +180,14 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static')
 ]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# 正式環境（DEBUG=False，Dockerfile 會先 collectstatic）用 WhiteNoise 的壓縮 + 雜湊檔名；
+# 本機開發（DEBUG=True）與跑測試時沒有 collectstatic 產生的 manifest，改用 Django 預設的 storage，避免頁面 500
+if DEBUG or 'test' in sys.argv:
+    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+else:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 LOGIN_URL = '/user/login/'
 LOGIN_REDIRECT_URL = '/lesson/'
 LOGOUT_REDIRECT_URL = '/'
@@ -179,3 +197,10 @@ LOGOUT_REDIRECT_URL = '/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# 正式環境（HTTPS 反向代理）與 Session 資安防護
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_SECURE = True
