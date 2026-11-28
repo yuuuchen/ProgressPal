@@ -1,0 +1,13 @@
+.git
+.gitignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+.venv/
+progresspal/.env
+progresspal/db.sqlite3
+progresspal/staticfiles/

@@ -3,11 +3,16 @@ from groq import Groq
 from django.conf import settings
 
 class RotationalGroqClient:
-    """自動輪替 Groq API Keys 的 Client"""
-    def __init__(self):
-        # 預先處理好 keys，避免每次呼叫都做字串處理
-        raw_keys = getattr(settings, "GROQ_API_KEYS", [])
-        self.api_keys = [str(k).strip().replace('"', '').replace("'", "") for k in raw_keys]
+    """專屬於當前受試者的 Groq API Client"""
+    def __init__(self, user_api_key=None):
+        if user_api_key and str(user_api_key).strip():
+            clean_key = str(user_api_key).strip().replace('"', '').replace("'", "")
+            self.api_keys = [clean_key]
+        else:
+            self.api_keys = []
+        # # 預先處理好 keys，避免每次呼叫都做字串處理
+        # raw_keys = getattr(settings, "GROQ_API_KEYS", [])
+        # self.api_keys = [str(k).strip().replace('"', '').replace("'", "") for k in raw_keys]
 
     def _get_client(self, index):
         """內部私有方法：建立 Client"""
@@ -44,6 +49,9 @@ class RotationalGroqClient:
 
     def generate_content(self, model, messages, temperature=0, max_tokens=2048):
         """gpt-oss-120b 專用：低推理教材生成"""
+        if not self.api_keys:
+            raise RuntimeError("找不到您的 Groq API Key，請重新註冊或確認金鑰是否已輸入。")
+        
         last_error = None           
         for index in range(len(self.api_keys)):
             try:
@@ -66,8 +74,8 @@ class RotationalGroqClient:
                 raise e           
         raise RuntimeError("所有 Materials API Key 的流量都已耗盡或觸發限制。") from last_error
     
-def get_rotational_client():
-    return RotationalGroqClient()
+def get_rotational_client(user_api_key=None):
+    return RotationalGroqClient(user_api_key=user_api_key)
 
 model = "openai/gpt-oss-120b"
 

@@ -20,27 +20,27 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # 載入 .env
 env_path = os.path.join(BASE_DIR, '.env')
-if not os.path.exists(env_path):
-    print("--- [警告] 目前未建立 .env 檔案 ---")
-load_dotenv(env_path)
+if os.path.exists(env_path):
+    load_dotenv(env_path)
 
 # 從環境變數讀取設定
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default')
+# SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default')
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-o87b)n-0$0)b7(@0h@q_3%yuwajb+pep0d&oihf8motp=zz@%i')
 
 # Debug 模式
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 # 讀取所有 Groq API Keys 到列表中
-GROQ_API_KEYS = []
-for i in range(1, 3):
-    # 修改環境變數名稱為 GROQ_API_KEY1, GROQ_API_KEY2...
-    key = os.getenv(f"GROQ_API_KEY{i}")
-    if key:
-        GROQ_API_KEYS.append(key)
+# GROQ_API_KEYS = []
+# for i in range(1, 3):
+#     # 修改環境變數名稱為 GROQ_API_KEY1, GROQ_API_KEY2...
+#     key = os.getenv(f"GROQ_API_KEY{i}")
+#     if key:
+#         GROQ_API_KEYS.append(key)
 
-if not GROQ_API_KEYS:
-    # raise ValueError("未設定任何 GROQ_API_KEY")
-    print("--- [警告] 目前未設定任何 GROQ_API_KEY，請透過註冊頁面設定或手動加入 .env ---")
+# if not GROQ_API_KEYS:
+#     # raise ValueError("未設定任何 GROQ_API_KEY")
+#     print("--- [警告] 目前未設定任何 GROQ_API_KEY，請透過註冊頁面設定或手動加入 .env ---")
 
 #教材路徑
 TEACHING_MATERIAL_DIR = os.path.join(BASE_DIR, 'teaching_material')
@@ -50,12 +50,16 @@ TEACHING_MATERIAL_DIR = os.path.join(BASE_DIR, 'teaching_material')
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-o87b)n-0$0)b7(@0h@q_3%yuwajb+pep0d&oihf8motp=zz@%i'
+# SECRET_KEY = 'django-insecure-o87b)n-0$0)b7(@0h@q_3%yuwajb+pep0d&oihf8motp=zz@%i'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip() 
+    for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') 
+    if host.strip()
+]
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
@@ -77,6 +81,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -107,11 +112,12 @@ WSGI_APPLICATION = 'progresspal.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+DB_DIR = Path(os.getenv('DB_DIR', BASE_DIR))
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DB_DIR / 'db.sqlite3',
     }
 }
 
@@ -155,6 +161,9 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static')
 ]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 LOGIN_URL = '/user/login/'
 LOGIN_REDIRECT_URL = '/lesson/'
 LOGOUT_REDIRECT_URL = '/'
@@ -164,3 +173,10 @@ LOGOUT_REDIRECT_URL = '/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# 正式環境（HTTPS 反向代理）與 Session 資安防護
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_SECURE = True

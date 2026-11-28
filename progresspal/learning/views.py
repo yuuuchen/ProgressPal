@@ -12,9 +12,24 @@ from accounts.models import QuestionLog, LearningRecord
 from .models import Chapter, Unit, QuizQuestion
 import json
 from datetime import timedelta
+import os
+from cryptography.fernet import Fernet
 
 QUOTA_MESSAGE = "目前 AI 助教的使用額度已用完，請稍後再試。"
 
+def _get_user_groq_api_key(request):
+    """從 request.session 取出並解密受試者的 Groq API Key"""
+    encrypted_key = request.session.get("user_groq_api_key")
+    if not encrypted_key:
+        return None
+    fernet_key = os.getenv("FERNET_ENCRYPTION_KEY")
+    if not fernet_key:
+        raise RuntimeError("系統未設定 FERNET_ENCRYPTION_KEY，請檢查環境變數。")
+    try:
+        cipher = Fernet(fernet_key.encode("utf-8"))
+        return cipher.decrypt(encrypted_key.encode("utf-8")).decode("utf-8")
+    except Exception:
+        return None
 
 def _is_quota_error(e):
     """llm_model 在所有 Groq API Key 都被限流時會丟出含「耗盡」的 RuntimeError"""
@@ -60,10 +75,12 @@ def generate_materials_view(request, chapter_code, unit_code):
 
     current_emotion = emotions[-1] if emotions else "偵測中"
 
+    # 從 Session 解密受試者的 Groq API Key
+    user_api_key = _get_user_groq_api_key(request)
     # 呼叫教材生成
     try:
         # 呼叫教材生成
-        result = main.display_materials(chapter_code, unit_code, engagement, role)
+        result = main.display_materials(chapter_code, unit_code, engagement, role, api_key=user_api_key)
 
     except RuntimeError as e:
         # 捕捉 "所有 Groq API Key 的流量都已耗盡" 的錯誤
@@ -139,6 +156,8 @@ def answer_question_view(request, chapter_code, unit_code):
     else:
         log_type = 'question'
 
+    # 從 Session 解密受試者的 Groq API Key
+    user_api_key = _get_user_groq_api_key(request)
     # 呼叫 AI 回答邏輯
     try:
         result = main.answer_question(
@@ -149,6 +168,7 @@ def answer_question_view(request, chapter_code, unit_code):
             role=role,
             is_extended=is_extended,
             extended_question_text = extended_q,
+            api_key=user_api_key,
         )
     except RuntimeError as e:
         if _is_quota_error(e):

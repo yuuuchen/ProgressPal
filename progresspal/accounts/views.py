@@ -17,6 +17,7 @@ from learning.services.utils import KeywordAnalyzer # 用於錯題關鍵字分�
 from dotenv import set_key  # 引入 set_key 用來修改 .env
 from django.http import JsonResponse
 from .services.generate_csv import generate_user_csv_reports
+from cryptography.fernet import Fernet
 
 
 User = get_user_model()
@@ -27,20 +28,24 @@ def register(request):
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
+            login(request, user)  # 必須先 login，再寫入 session
 
             api_key = form.cleaned_data.get('api_key')
             if api_key:
-                # 定位 .env 檔案的絕對路徑
-                env_path = os.path.join(settings.BASE_DIR, '.env')
+                cipher = Fernet(os.environ['FERNET_ENCRYPTION_KEY'].encode())
+                encrypted_key = cipher.encrypt(api_key.strip().encode()).decode()
+                request.session['user_groq_api_key'] = encrypted_key
+                # # 定位 .env 檔案的絕對路徑
+                # env_path = os.path.join(settings.BASE_DIR, '.env')
                 
-                # 如果檔案不存在，先建立一個空的以免 set_key 報錯
-                if not os.path.exists(env_path):
-                    open(env_path, 'a').close()
+                # # 如果檔案不存在，先建立一個空的以免 set_key 報錯
+                # if not os.path.exists(env_path):
+                #     open(env_path, 'a').close()
                 
-                # 使用 set_key 安全地寫入或更新 GROQ_API_KEY1 的值
-                set_key(env_path, 'GROQ_API_KEY1', api_key, quote_mode="never")
+                # # 使用 set_key 安全地寫入或更新 GROQ_API_KEY1 的值
+                # set_key(env_path, 'GROQ_API_KEY1', api_key, quote_mode="never")
                 
-            login(request, user)
+            # login(request, user)
             messages.success(request, '註冊成功，已自動登入！')
             return redirect('/lesson/')
     else:

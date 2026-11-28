@@ -24,12 +24,12 @@ from learning.services.content import get_unit
 from rag.services.rag import retrieve_docs
 from . import utils
 
-def display_materials(chapter_id, unit_id, engagement, role):
+def display_materials(chapter_id, unit_id, engagement, role, api_key=None):
     """教材顯示"""
     unit = get_unit(chapter_id, unit_id)
     prompt = generate_materials(role, engagement, unit)    
     system_instruction = set_system_prompt(role)
-    client = get_rotational_client()
+    client = get_rotational_client(user_api_key=api_key)
     messages = [
         {"role": "system", "content": system_instruction},
         {"role": "user", "content": prompt}
@@ -63,9 +63,9 @@ def validate_user_input(question):
         return False, "偵測到重複性過高的內容，請輸入具體的提問。"
     return True, ""
 
-def expand_query_with_hyde(question, chapter_id, unit_id):
+def expand_query_with_hyde(question, chapter_id, unit_id, api_key=None):
     """利用 HyDE 方法，結合教材上下文將提問轉換成更豐富的檢索詞"""
-    client = get_rotational_client()
+    client = get_rotational_client(user_api_key=api_key)
     
     # 取得名稱以提供上下文
     chapter = Chapter.objects.get(chapter_number=chapter_id)
@@ -85,12 +85,12 @@ def expand_query_with_hyde(question, chapter_id, unit_id):
     expanded_query = client.generate_content(model=model, messages=messages, temperature=0.3)
     return expanded_query.strip()
 
-def generate_redirection_message(user_input, chapter_id, unit_id, error_msg=None):
+def generate_redirection_message(user_input, chapter_id, unit_id, error_msg=None, api_key=None):
     """
     - 若有 error_msg：針對輸入錯誤（亂碼、太短等）進行優化回應。
     - 若無 error_msg：針對離題（HyDE 判定 IRRELEVANT）進行引導。
     """
-    client = get_rotational_client()
+    client = get_rotational_client(user_api_key=api_key)
     chapter = Chapter.objects.get(chapter_number=chapter_id)
     unit = Unit.objects.get(chapter=chapter, unit_number=unit_id)
     docs = get_unit(chapter_id, unit_id)
@@ -129,7 +129,7 @@ def generate_redirection_message(user_input, chapter_id, unit_id, error_msg=None
             "extended_question": f"你知道 {unit.title} 最重要的概念是什麼嗎？"
         }
 
-def answer_question(question, engagement, role, chapter_id, unit_id, is_extended=False, extended_question_text=None):
+def answer_question(question, engagement, role, chapter_id, unit_id, is_extended=False, extended_question_text=None, api_key=None):
     """
     1. 基礎過濾：所有提問進入系統前的第一道防線。
     2. 延伸提問：使用者點選系統生成的延伸問題。
@@ -145,10 +145,10 @@ def answer_question(question, engagement, role, chapter_id, unit_id, is_extended
         )
     if is_extended:
         # 使用者點選延伸問題，直接進入延伸處理邏輯
-        return answer_extended_question(question, engagement, chapter_id, unit_id, extended_question_text, role)
+        return answer_extended_question(question, engagement, chapter_id, unit_id, extended_question_text, role, api_key=api_key)
     else:
         # 使用 HyDE 方法完整化提問
-        hyde_query = expand_query_with_hyde(question, chapter_id, unit_id)
+        hyde_query = expand_query_with_hyde(question, chapter_id, unit_id, api_key=api_key)
         # print(f"[Debug] HyDE 擴展後的查詢語句: {hyde_query}")
         if "[IRRELEVANT]" in hyde_query:
             return generate_redirection_message(question, chapter_id, unit_id, error_msg=None)
@@ -157,20 +157,20 @@ def answer_question(question, engagement, role, chapter_id, unit_id, is_extended
         # print(f"[Debug] 檢索到的文件: {docs}")
 
         prompt = generate_prompt(engagement, question, docs)    
-        return respond_to_question(prompt, engagement, role)
+        return respond_to_question(prompt, engagement, role, api_key=api_key)
 
-def answer_extended_question(question, engagement, chapter_id, unit_id, extended_question, role):
+def answer_extended_question(question, engagement, chapter_id, unit_id, extended_question, role, api_key=None):
     """處理延伸問題的回答"""
     docs = get_unit(chapter_id, unit_id)
     prompt = generate_prompt_extended(
         engagement, question, docs, extended_question,
     )
-    return respond_to_question(prompt, engagement, role)
+    return respond_to_question(prompt, engagement, role, api_key=api_key)
     
-def respond_to_question(prompt, engagement, role):
+def respond_to_question(prompt, engagement, role, api_key=None):
     system_instruction = set_system_prompt(role)
     temp = 0.5 if engagement != "low" else 0.7   
-    client = get_rotational_client()
+    client = get_rotational_client(user_api_key=api_key)
     messages = [
         {"role": "system", "content": system_instruction},
         {"role": "user", "content": prompt}
