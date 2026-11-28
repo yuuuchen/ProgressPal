@@ -176,4 +176,4 @@ class FallbackLoggingTest(TestCase):
     def test_normal_answer_is_not_flagged(self):
         self.ask(fallback=False)
         self.assertFalse(QuestionLog.objects.get().fallback_key_used)
-        self.assertFalse(EventLog.objects.exists())
+        self.assertFalse(EventLog.objects.filter(event_type="fallback_key").exists())

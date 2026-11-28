@@ -1,5 +1,6 @@
 <!-- templates/includes/header.html -->
 {% load static %}
+<script src="{% static 'js/experiment_events.js' %}"></script>
 <!DOCTYPE html>
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
@@ -15,15 +16,12 @@
                 <li class="nav-item">
                     <a class="nav-link" href="https://docs.google.com/document/d/1E4K-rz-NeawvteJfs-fmbDual-9bJ2mhvzt7EYmiEnA/edit?usp=sharing" target="_blank" rel="noopener noreferrer">實驗手冊</a>
                 </li>
+                <!-- 實驗表單：網址由 settings 的 FORM_PRETEST_URL／FORM_POSTTEST_URL 設定，可自動帶入受試者編號 -->
                 <li class="nav-item">
-                    <a class="nav-link" href="https://forms.gle/tPtqmmdWdhF1NLUN9" target="_blank" rel="noopener noreferrer">
-                        前測
-                    </a>
+                    <a class="nav-link" href="{{ form_pretest_url }}" target="_blank" rel="noopener" data-form-link="pretest">前測</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="https://forms.gle/XF6C8RsULbF4oqoT7" target="_blank" rel="noopener noreferrer">
-                        後測
-                    </a>
+                    <a class="nav-link" href="{{ form_posttest_url }}" target="_blank" rel="noopener" data-form-link="posttest">後測</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="/lesson">課程列表</a>
@@ -60,15 +58,12 @@
                 <li class="nav-item">
                     <a class="nav-link" href="https://docs.google.com/document/d/1E4K-rz-NeawvteJfs-fmbDual-9bJ2mhvzt7EYmiEnA/edit?usp=sharing" target="_blank" rel="noopener noreferrer">實驗手冊</a>
                 </li>
+                <!-- 實驗表單（未登入時不帶受試者編號） -->
                 <li class="nav-item">
-                    <a class="nav-link" href="https://forms.gle/tPtqmmdWdhF1NLUN9" target="_blank" rel="noopener noreferrer">
-                        前測
-                    </a>
+                    <a class="nav-link" href="{{ form_pretest_url }}" target="_blank" rel="noopener" data-form-link="pretest">前測</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="https://forms.gle/XF6C8RsULbF4oqoT7" target="_blank" rel="noopener noreferrer">
-                        後測
-                    </a>
+                    <a class="nav-link" href="{{ form_posttest_url }}" target="_blank" rel="noopener" data-form-link="posttest">後測</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="/lesson">課程列表</a>

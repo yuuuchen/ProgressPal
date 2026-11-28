@@ -134,15 +134,17 @@ class EventLog(models.Model):
         return f"{self.user.username} {self.event_type} @ {self.created_at:%H:%M:%S}"
 
 
-def log_event(user, event_type, chapter_code=None, unit_code=None, question_log=None, **detail):
-    """寫入一筆事件；chapter_code、unit_code 一律存成字串"""
+def log_event(user, event_type, chapter_code=None, unit_code=None, question_log=None, detail=None, **extra):
+    """寫入一筆事件；chapter_code、unit_code 一律存成字串，detail 與其他關鍵字參數合併存入 detail"""
+    def _code(value):
+        return None if value in (None, "") else str(value)[:50]
     return EventLog.objects.create(
         user=user,
         event_type=event_type,
-        chapter_code=None if chapter_code is None else str(chapter_code),
-        unit_code=None if unit_code is None else str(unit_code),
+        chapter_code=_code(chapter_code),
+        unit_code=_code(unit_code),
         question_log=question_log,
-        detail=detail,
+        detail={**(detail or {}), **extra},
     )
 
 

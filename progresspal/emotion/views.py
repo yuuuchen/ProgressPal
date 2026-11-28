@@ -4,11 +4,19 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from .emotion_model import predict_emotion, InputShapeError
 from .services.preprocess import preprocess_frame, NoFaceDetectedError, InvalidImageError 
-from .services.utils import compute_engagement
+from .services.utils import compute_engagement, current_engagement, update_engagement_state
 from .models import EmotionRecord
+from accounts.models import log_event
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _log_face_fail(user, reason, message):
+    try:
+        log_event(user, "face_fail", reason=reason, message=message[:200])
+    except Exception as e:
+        print(f"face_fail log error: {e}")
 
 REVERSE_EMOTION_CHOICES = {
     "frustration": "挫折",
@@ -33,11 +41,13 @@ def detect_emotion(request):
     try:
         frame = preprocess_frame(image_file)
     except NoFaceDetectedError as e:
-        # 預期錯誤：臉不明顯、無臉、多臉、模糊
+        # 預期錯誤：臉不明顯、無臉、多臉、模糊（記錄下來以計算有效樣本比例）
+        _log_face_fail(request.user, "no_face", str(e))
         return JsonResponse({"error": str(e)}, status=422)
 
     except InvalidImageError as e:
         # 非法圖片格式
+        _log_face_fail(request.user, "invalid_image", str(e))
         return JsonResponse({"error": str(e)}, status=422)
 
     except Exception as e:
@@ -71,25 +81,25 @@ def detect_emotion(request):
             "驚訝": "surprise",
             "喜悅": "delight",
         }
-        EmotionRecord.objects.create(
+        record = EmotionRecord.objects.create(
             user=request.user,
             emotion=EMOTION_CHOICES[result["emotion"]],
             confidence=result["confidence"]
         )
     except Exception as e:
         print(f"Database save error: {e}")
-    
-    # 4. 參與度計算
+        record = None
+
+    # 4. 參與度計算（統一由 update_engagement_state 計算並存入紀錄；前端以 low_streak 判斷主動介入）
     try:
-        recent_records = EmotionRecord.objects.filter(user=request.user).order_by('-timestamp')[:10]
-        emotion_sequence = [REVERSE_EMOTION_CHOICES[rec.emotion] for rec in reversed(recent_records)]
-        
-        # 計算參與度 (回傳 "high" 或 "low")
-        engagement_level = compute_engagement(emotion_sequence)
-        
-        # 將參與度加入要回傳給 camera.js 的結果中
-        result["engagement"] = engagement_level
-        
+        if record is not None:
+            update_engagement_state(record)
+            result["low_confidence"] = record.low_confidence
+            result["low_streak"] = record.low_streak
+        # 低信心樣本沒有自己的參與度，回傳目前（最近一筆有效樣本）的參與度
+        result["engagement"] = (record.engagement if record is not None and record.engagement
+                                else current_engagement(request.user))
+
     except Exception as e:
         print(f"Engagement calculation error: {e}")
         result["engagement"] = "unknown" # 若出錯則回傳未知

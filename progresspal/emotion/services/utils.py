@@ -67,3 +67,56 @@ def compute_engagement(emotions):
     return "high"
   else:
     return "low"
+
+
+# ===== 統一的參與度狀態（docs/SPEC_實驗資料與部署.md R6）=====
+# 情緒辨識 API、主動介入判斷、送給 LLM 的參與度都使用這裡的結果，並存入 EmotionRecord。
+CONFIDENCE_THRESHOLD = 0.5  # 信心度低於此值的樣本不列入參與度計算（與前端 camera.js 一致）
+ENGAGEMENT_WINDOW = 10      # 以最近 10 筆有效樣本計算參與度
+
+
+def update_engagement_state(record):
+  """
+  計算並存入一筆 EmotionRecord 的 low_confidence、engagement、low_streak。
+  - 低信心樣本：engagement 留空，low_streak 沿用前一筆有效樣本（不增加也不中斷）
+  - 有效樣本：以最近 ENGAGEMENT_WINDOW 筆有效樣本（含本筆）計算參與度；
+    low 時 low_streak = 前一筆有效樣本的 low_streak + 1，high 時歸零
+  """
+  from emotion.models import EmotionRecord
+
+  labels = dict(EmotionRecord.EMOTION_CHOICES)  # 英文代碼 → 中文
+  previous_valid = (EmotionRecord.objects
+                    .filter(user=record.user, low_confidence=False, timestamp__lte=record.timestamp)
+                    .exclude(pk=record.pk)
+                    .order_by("-timestamp", "-pk")
+                    .first())
+  record.low_confidence = record.confidence < CONFIDENCE_THRESHOLD
+
+  if record.low_confidence:
+    record.engagement = None
+    record.low_streak = previous_valid.low_streak if previous_valid else 0
+  else:
+    window = list(EmotionRecord.objects
+                  .filter(user=record.user, low_confidence=False, timestamp__lte=record.timestamp)
+                  .exclude(pk=record.pk)
+                  .order_by("-timestamp", "-pk")[:ENGAGEMENT_WINDOW - 1])
+    emotions = [labels.get(r.emotion, "未知") for r in reversed(window)] + [labels.get(record.emotion, "未知")]
+    record.engagement = compute_engagement(emotions)
+    if record.engagement == "low":
+      record.low_streak = (previous_valid.low_streak if previous_valid else 0) + 1
+    else:
+      record.low_streak = 0
+
+  record.save(update_fields=["low_confidence", "engagement", "low_streak"])
+  return record
+
+
+def current_engagement(user):
+  """使用者目前的參與度：最新一筆有效樣本的 engagement；尚無樣本時為 high（與原本預設一致）"""
+  from emotion.models import EmotionRecord
+
+  latest = (EmotionRecord.objects
+            .filter(user=user, low_confidence=False, engagement__isnull=False)
+            .order_by("-timestamp", "-pk")
+            .first())
+  return latest.engagement if latest else "high"

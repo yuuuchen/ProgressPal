@@ -25,6 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!hintTopBtn || !hintIcon) return;
 
         if (isEnabled) {
+            // 由不可按變為可按：記錄一次「提示出現」（對照組為手動求助）
+            if (hintTopBtn.disabled && window.logExperimentEvent) {
+                window.logExperimentEvent('hint_shown', { source: 'manual' });
+            }
             hintTopBtn.disabled = false;
             hintTopBtn.style.setProperty('background-color', '#ffffff');
             hintTopBtn.style.color = '#000000'; // 啟用時，文字維持黑色
@@ -81,6 +85,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // 當下擷取時間
             hintClickTime = new Date().toISOString(); 
             console.log("提示查看時間:", hintClickTime);
+            if (window.logExperimentEvent) {
+                window.logExperimentEvent('hint_click', { source: 'manual' });
+            }
 
             // 2. 建立提示區塊並利用系統現有的 appendMessage 刷進對話歷史紀錄中
             const hintPrefix = '<strong style="color: #264773;">💡 延伸提問小提示：</strong><br>';

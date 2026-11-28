@@ -48,6 +48,10 @@ PARTICIPANT_PASSWORD = os.getenv('PARTICIPANT_PASSWORD', 'MISMIS1234')
 # Session（含加密的受試者 Groq API Key）最長 8 小時，之後需重新登入並輸入 Key
 SESSION_COOKIE_AGE = 8 * 60 * 60
 
+# Navbar 的 Google 表單連結；可含 {participant_id}，系統會換成受試者編號（表單預填連結）
+FORM_PRETEST_URL = os.getenv('FORM_PRETEST_URL', 'https://forms.gle/tPtqmmdWdhF1NLUN9')
+FORM_POSTTEST_URL = os.getenv('FORM_POSTTEST_URL', 'https://forms.gle/XF6C8RsULbF4oqoT7')
+
 #教材路徑
 TEACHING_MATERIAL_DIR = os.path.join(BASE_DIR, 'teaching_material')
 
@@ -104,6 +108,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'accounts.context_processors.experiment_forms',
             ],
         },
     },

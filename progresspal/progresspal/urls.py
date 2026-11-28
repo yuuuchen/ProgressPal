@@ -27,6 +27,7 @@ urlpatterns = [
     path('', learning.homepage, name='homepage'),
     path('admin/', admin.site.urls),
     # 使用者相關
+    path('events/', accounts.log_client_event, name='log-event'),  # 前端回報實驗事件
     path('user/register/', accounts.register, name='register'),# 註冊頁面
     path('user/login/', accounts.login_view, name='login'), # 登入頁面
     path('user/logout/', accounts.logout_view, name='logout'), # 登出動作
